@@ -56,6 +56,13 @@ class Subscription {
 
   bool get isGhost => guilt.isGhost;
 
+  /// `month` / `year` / `week` — reads naturally in "per month" copy.
+  String get periodNoun => switch (cycle) {
+        BillingCycle.weekly => 'week',
+        BillingCycle.monthly => 'month',
+        BillingCycle.yearly => 'year',
+      };
+
   bool get isAiTool => category == 'ai' || category == 'dev';
 
   bool get isStreaming => category == 'streaming';
@@ -83,12 +90,64 @@ class Subscription {
     double inrPerUsd, {
     DateTime? asOf,
   }) {
+    // Money actually charged, so the figure and the charge count always agree.
+    final perCharge = amount *
+        (currency == CurrencyCode.usd ? inrPerUsd : 1) /
+        (target == CurrencyCode.usd ? inrPerUsd : 1);
+    return perCharge * chargeCount(asOf: asOf);
+  }
+
+  /// Share of the final-notice window still remaining, 0..1.
+  ///
+  /// The ring is not a billing-cycle gauge: an earlier version divided by the
+  /// cycle length, so a monthly plan renewing in 12 hours read "2 % left" while
+  /// the copy said "renews in 12h". The design's own numbers settle it —
+  /// `14h 22m` is drawn as `60 %`, and 14.4 / 24 = 0.60 — so the ring tracks the
+  /// last 24 hours before the charge.
+  double noticeWindowProgress({DateTime? now}) {
+    final left = timeUntilRenewal(now: now).inMinutes;
+    const window = SbWindow.finalNoticeHours * 60;
+    if (left >= window) return 1;
+    return (left / window).clamp(0.0, 1.0);
+  }
+
+  /// Charges that have actually been taken since [startDate].
+  ///
+  /// Counted by walking the real billing dates rather than dividing elapsed
+  /// days: an average month is 30.44 days, so dividing reported 9 charges for
+  /// ten monthly payments and disagreed with the rupee total printed beside it.
+  int chargeCount({DateTime? asOf}) {
     final now = asOf ?? DateTime.now();
     if (now.isBefore(startDate)) return 0;
-    final days = now.difference(startDate).inHours / 24.0;
-    final months = days / 30.4375;
-    return monthlyIn(target, inrPerUsd) * months;
+    var count = 0;
+    var date = startDate;
+    // Hard cap: 100 years of weekly billing is 5,200 charges.
+    while (!date.isAfter(now) && count < 6000) {
+      count++;
+      date = cycle.advance(date);
+    }
+    return count;
   }
+
+  /// This subscription with [nextBillingDate] advanced past [now].
+  ///
+  /// A stored renewal date goes stale the moment it passes. Without this, a
+  /// user who opens the app two days after being charged sees "renews now"
+  /// forever, the 48-hour rail skips the row, and no reminder is ever
+  /// scheduled again — the app silently stops working for that subscription.
+  Subscription rolledForward({DateTime? now}) {
+    final clock = now ?? DateTime.now();
+    if (nextBillingDate.isAfter(clock)) return this;
+    var next = nextBillingDate;
+    // Cap the walk: a weekly plan left for 10 years is ~520 iterations.
+    for (var i = 0; i <= 600 && !next.isAfter(clock); i++) {
+      next = cycle.advance(next);
+    }
+    return copyWith(nextBillingDate: next);
+  }
+
+  /// True when [nextBillingDate] is in the past and needs [rolledForward].
+  bool get isOverdue => nextBillingDate.isBefore(DateTime.now());
 
   /// How long until the next charge. Negative means overdue.
   Duration timeUntilRenewal({DateTime? now}) =>

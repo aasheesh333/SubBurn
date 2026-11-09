@@ -118,7 +118,7 @@ burn is the one error this product must never make).
 
 ```
 Box<Subscription>  'subscriptions_v1'   one row per subscription
-Box<AppSettings>   'settings_v1'        one row: currency, reminders, seeded, installId
+Box<AppSettings>   'settings_v1'        one row: currency, reminder opt-in, installId
 ```
 
 Adapters are **hand-written** (`local_adapters.dart`), not generated:
@@ -129,10 +129,21 @@ Adapters are **hand-written** (`local_adapters.dart`), not generated:
   never corrupt a box;
 - no build_runner step in CI.
 
-`seedIfNeeded()` plants five realistic rows exactly once (`settings.seeded`).
-They are ordinary rows: swipe to delete, tap to edit, they appear on the
-receipt. This is what makes the first launch show a real product instead of an
-empty state.
+**The store is empty on install and nothing is ever written to it by the app
+itself.** No demo rows, no sample ledger, no "try a receipt" shortcut that
+fakes data. Every number the product displays is a number the user entered,
+which is the only defensible position for a finance app: invented data is
+indistinguishable from a bug.
+
+Consequences that are deliberate:
+
+- the hero hides its split bar until there is more than one tool, because
+  "100 % active" over an empty ledger is a claim, not a measurement;
+- `BurnSummary` of an empty list is all zeros and never `NaN`;
+- the receipt renders an explicit empty state instead of a placeholder card;
+- the renewals screen shows "0 this month" rather than an example row.
+
+Sample ledgers exist only in `test/`, where they cannot reach a user.
 
 ---
 

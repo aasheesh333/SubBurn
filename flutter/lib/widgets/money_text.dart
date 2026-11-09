@@ -94,12 +94,23 @@ class MoneyText extends StatelessWidget {
 
     if (suffix == null) return text;
 
+    // The amount must never be the thing that overflows. On a 320 px screen at
+    // 130 % text a five-digit price plus its suffix is wider than the card, so
+    // the number is allowed to shrink inside its own run while the suffix keeps
+    // its intrinsic size.
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
-        text,
+        Flexible(
+          fit: FlexFit.loose,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.bottomLeft,
+            child: text,
+          ),
+        ),
         const SizedBox(width: 3),
         Text(
           suffix!,

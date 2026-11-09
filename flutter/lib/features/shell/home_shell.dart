@@ -37,7 +37,6 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               children: [
                 BurnDashboardScreen(
                   onAddSubscription: () => QuickAddSheet.show(context),
-                  onOpenStudio: () => setState(() => _index = 1),
                 ),
                 ViralReceiptScreen(
                   onAddSubscription: () => QuickAddSheet.show(context),
@@ -201,7 +200,7 @@ class _OfflineStrip extends StatelessWidget {
       color: SbColors.surfaceHi,
       alignment: Alignment.center,
       child: Text(
-        'Offline catalogue · live presets sync when you are online',
+        'Offline · using bundled presets',
         style: SbType.micro.copyWith(
           fontSize: 7.5,
           color: SbColors.textMuted,

@@ -200,11 +200,17 @@ class RoastEngine {
 enum RoastTone { savage, dry, corporate }
 
 enum RoastBand {
-  freeTierRefugee,
-  subscriptionCurious,
-  subscriptionHoarder,
-  siliconValleyPaypig,
-  aiIndustryPatron,
+  freeTierRefugee('FREE-TIER REFUGEE'),
+  subscriptionCurious('SUBSCRIPTION CURIOUS'),
+  subscriptionHoarder('SUBSCRIPTION HOARDER'),
+  siliconValleyPaypig('SILICON VALLEY PAYPIG'),
+  aiIndustryPatron('AI INDUSTRY PATRON');
+
+  const RoastBand(this.displayName);
+
+  /// Human label. Never derive this from `.name`: camelCase upper-cased reads
+  /// "FREETIERREFUGEE", which is what the empty receipt printed.
+  final String displayName;
 }
 
 class RoastInput {
@@ -249,7 +255,7 @@ class Roast {
   final String verdict;
 
   static Roast empty = Roast(
-    tier: RoastBand.freeTierRefugee.name.toUpperCase(),
+    tier: RoastBand.freeTierRefugee.displayName,
     line: 'Nothing is burning yet. Add a subscription and come back.',
     band: RoastBand.freeTierRefugee,
     intensity: 1,

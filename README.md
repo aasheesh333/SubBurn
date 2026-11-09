@@ -18,7 +18,7 @@ device. No account, no Firestore, no per-user backend cost.
 
 | Path | What it is |
 |---|---|
-| `flutter/` | **The app.** Riverpod + Hive, 4 screens, 32 tests, no TODOs. |
+| `flutter/` | **The app.** Riverpod + Hive, 4 screens, 58 tests, no TODOs. |
 | `index.html` | Design source of truth — all tokens + 4 frames in CSS |
 | `design-tokens.json` | Machine-readable tokens (colour, type, space, semantic rules) |
 | `HANDOFF.md` | Design rationale, token tables, Figma layer map, export contract |

@@ -17,6 +17,7 @@ import 'package:subburn/data/models/usage_guilt.dart';
 import 'package:subburn/data/repositories/subscription_repository.dart';
 import 'package:subburn/features/controls/controls_screen.dart';
 import 'package:subburn/features/dashboard/burn_dashboard_screen.dart';
+import 'package:subburn/features/detail/sub_detail_screen.dart';
 import 'package:subburn/features/quick_add/quick_add_sheet.dart';
 import 'package:subburn/features/renewals/renewals_screen.dart';
 import 'package:subburn/features/studio/viral_receipt_screen.dart';
@@ -87,6 +88,8 @@ class _FixedCatalogue extends CatalogueNotifier {
   Future<void> refresh() async {}
 }
 
+/// Golden-test fixture only. The shipped app never writes subscriptions the
+/// user did not add.
 Future<void> _seed(SubscriptionRepository repo) async {
   final now = DateTime.now();
   final specs = <(String, String, String, int, bool, int, String)>[
@@ -177,12 +180,42 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
   }
 
+  testWidgets('dashboard · first run (empty)', (tester) async {
+    final empty = SubscriptionRepository.inMemory();
+    tester.view.physicalSize = const Size(393 * 2, 852 * 2);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          repositoryProvider.overrideWithValue(empty),
+          catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
+          analyticsProvider.overrideWithValue(AnalyticsService(null)),
+          notificationServiceProvider.overrideWithValue(NotificationService()),
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.dark,
+          home: Scaffold(
+            backgroundColor: SbColors.bg,
+            body: BurnDashboardScreen(onAddSubscription: () {}),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/08-first-run.png'),
+    );
+  });
+
   testWidgets('dashboard', (tester) async {
     await pump(
       tester,
       BurnDashboardScreen(
         onAddSubscription: () {},
-        onOpenStudio: () {},
       ),
     );
     await expectLater(
@@ -192,7 +225,40 @@ void main() {
   });
 
   testWidgets('quick add', (tester) async {
-    await pump(tester, const QuickAddSheet());
+    tester.view.physicalSize = const Size(393 * 2, 852 * 2);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          repositoryProvider.overrideWithValue(repo),
+          catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
+          analyticsProvider.overrideWithValue(AnalyticsService(null)),
+          notificationServiceProvider.overrideWithValue(NotificationService()),
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.dark,
+          home: Builder(
+            builder: (context) => Scaffold(
+              backgroundColor: SbColors.bg,
+              body: Center(
+                child: TextButton(
+                  onPressed: () => QuickAddSheet.show(context),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final button = find.text('open');
+    await tester.tap(button);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/02-quick-add.png'),
@@ -220,6 +286,52 @@ void main() {
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/06-controls.png'),
+    );
+  });
+
+  testWidgets('detail', (tester) async {
+    await pump(tester, const SubDetailScreen(subscriptionId: 'preview_0'));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/04-detail.png'),
+    );
+  });
+
+  testWidgets('dashboard at 320 dp / 130 % text', (tester) async {
+    tester.view.physicalSize = const Size(320 * 2, 640 * 2);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          repositoryProvider.overrideWithValue(repo),
+          catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
+          analyticsProvider.overrideWithValue(AnalyticsService(null)),
+          notificationServiceProvider.overrideWithValue(NotificationService()),
+        ],
+        child: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 640),
+            textScaler: TextScaler.linear(1.3),
+          ),
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.dark,
+            home: Scaffold(
+              backgroundColor: SbColors.bg,
+              body: BurnDashboardScreen(
+                onAddSubscription: () {},
+                      ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/07-dashboard-320.png'),
     );
   });
 

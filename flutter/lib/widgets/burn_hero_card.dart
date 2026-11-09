@@ -46,7 +46,9 @@ class BurnHeroCard extends StatelessWidget {
     final ghostPct = _pctLabel(1 - _activeFraction);
 
     return Container(
-      height: 172,
+      // Authored at 164-172 px. A minimum instead of a fixed height means the
+      // card grows with large text on a small screen instead of clipping.
+      constraints: const BoxConstraints(minHeight: 164),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(SbRadius.hero),
@@ -84,6 +86,7 @@ class BurnHeroCard extends StatelessWidget {
             padding: const EdgeInsets.all(SbSpace.x4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
@@ -107,41 +110,59 @@ class BurnHeroCard extends StatelessWidget {
                       '${currency.format(monthlyTotal)} per month',
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Text(
-                      '$toolCount tools tracked · ',
-                      style: SbType.caption.copyWith(color: SbColors.textSecondary),
+                if (toolCount == 0)
+                  Text(
+                    'Nothing tracked yet',
+                    style: SbType.caption.copyWith(
+                      color: SbColors.textSecondary,
                     ),
-                    MoneyText(
-                      ghostAmount,
-                      style: SbType.micro.copyWith(fontSize: 9.5),
-                      color: SbColors.accentWarm,
-                    ),
-                    Text(
-                      ' is ghost spend',
-                      style: SbType.caption.copyWith(color: SbColors.textSecondary),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                _SplitBar(activeFraction: _activeFraction),
-                const SizedBox(height: SbSpace.x2),
-                Row(
-                  children: [
-                    _Legend(
-                      color: SbColors.accent,
-                      label: 'Active use',
-                      value: pct,
-                    ),
-                    const Spacer(),
-                    _Legend(
-                      color: const Color(0xFF7A7A86),
-                      label: 'Ghost subs',
-                      value: ghostPct,
-                    ),
-                  ],
-                ),
+                  )
+                else
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          '$toolCount ${toolCount == 1 ? 'tool' : 'tools'} tracked · ',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: SbType.caption
+                              .copyWith(color: SbColors.textSecondary),
+                        ),
+                      ),
+                      MoneyText(
+                        ghostAmount,
+                        style: SbType.micro.copyWith(fontSize: 9.5),
+                        color: SbColors.accentWarm,
+                      ),
+                      Text(
+                        ' is ghost spend',
+                        style: SbType.caption
+                            .copyWith(color: SbColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                // A 100 %-active bar over zero subscriptions is a claim, not a
+                // measurement, so the split only appears once it can be true.
+                if (toolCount > 0) ...[
+                  const SizedBox(height: SbSpace.x3),
+                  _SplitBar(activeFraction: _activeFraction),
+                  const SizedBox(height: SbSpace.x2),
+                  Row(
+                    children: [
+                      _Legend(
+                        color: SbColors.accent,
+                        label: 'Active use',
+                        value: pct,
+                      ),
+                      const Spacer(),
+                      _Legend(
+                        color: const Color(0xFF7A7A86),
+                        label: 'Ghost subs',
+                        value: ghostPct,
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -177,7 +198,7 @@ class _Delta extends StatelessWidget {
         ),
         const SizedBox(width: 3),
         Text(
-          '${currency.format(delta)} vs Oct',
+          '${currency.format(delta)} added this month',
           style: SbType.micro.copyWith(
             fontSize: 8,
             color: SbColors.accentWarm,

@@ -43,6 +43,9 @@ class SubscriptionsNotifier extends Notifier<List<Subscription>> {
 
   Future<void> add(Subscription subscription, {bool fromPreset = false}) async {
     final repo = ref.read(repositoryProvider);
+    // Optimistic first, then persist: the UI never waits on disk, and a
+    // Dismissible is never left in the tree after its row is gone.
+    state = _sorted([...state, subscription]);
     await repo.put(subscription);
     await _scheduleReminder(subscription);
     ref.read(analyticsProvider).logSubAdded(subscription, fromPreset: fromPreset);
@@ -51,20 +54,38 @@ class SubscriptionsNotifier extends Notifier<List<Subscription>> {
 
   Future<void> update(Subscription subscription) async {
     final repo = ref.read(repositoryProvider);
+    state = _sorted([
+      for (final s in state) s.id == subscription.id ? subscription : s,
+    ]);
     await repo.put(subscription);
     await _scheduleReminder(subscription);
-    state = repo.all();
   }
 
   Future<void> remove(String id) async {
     final repo = ref.read(repositoryProvider);
-    final removed = repo.byId(id);
+    final removed = repo.byId(id) ?? _findInState(id);
+    // Synchronous removal is a correctness requirement, not an optimisation:
+    // Dismissible asserts if a dismissed child is still present on the next
+    // build, and awaiting Hive first guaranteed exactly that window.
+    state = state.where((s) => s.id != id).toList(growable: false);
     await repo.delete(id);
     await ref.read(notificationServiceProvider).cancelFor(id);
     if (removed != null) {
       ref.read(analyticsProvider).logSubscriptionDeleted();
     }
-    state = repo.all();
+  }
+
+  Subscription? _findInState(String id) {
+    for (final s in state) {
+      if (s.id == id) return s;
+    }
+    return null;
+  }
+
+  static List<Subscription> _sorted(List<Subscription> list) {
+    final copy = [...list]
+      ..sort((a, b) => a.nextBillingDate.compareTo(b.nextBillingDate));
+    return List.unmodifiable(copy);
   }
 
   Future<void> clearAll() async {
@@ -75,9 +96,9 @@ class SubscriptionsNotifier extends Notifier<List<Subscription>> {
   }
 
   Future<void> restore(Subscription subscription) async {
+    state = _sorted([...state, subscription]);
     await ref.read(repositoryProvider).put(subscription);
     await _scheduleReminder(subscription);
-    state = ref.read(repositoryProvider).all();
   }
 
   Future<void> setReminders(String id, bool enabled) async {
@@ -139,7 +160,9 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   /// One anonymous id per install, created lazily and reused forever.
   Future<String> ensureInstallId() async {
-    final existing = ref.read(settingsProvider).installId;
+    // `ref.read(settingsProvider)` here would be a provider depending on
+    // itself — Riverpod asserts on that. The notifier already owns the value.
+    final existing = state.installId;
     if (existing != null && existing.isNotEmpty) return existing;
     final id = 'inst_${SubscriptionRepository.newId()}';
     await setInstallId(id);
@@ -163,8 +186,10 @@ final catalogueProvider =
 
 class CatalogueNotifier extends AsyncNotifier<CatalogueSnapshot> {
   @override
-  Future<CatalogueSnapshot> build() async {
-    await ref.read(settingsProvider.notifier).ensureInstallId();
+  Future<CatalogueSnapshot> build() {
+    // Nothing here may write to another provider: Riverpod forbids mutating
+    // state from inside a build, and doing so threw at runtime. The install id
+    // is created once in main() before the first frame.
     return ref.read(catalogueServiceProvider).load();
   }
 

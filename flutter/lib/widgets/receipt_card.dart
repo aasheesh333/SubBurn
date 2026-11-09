@@ -5,36 +5,34 @@ import '../theme/subburn_tokens.dart';
 import '../widgets/money_text.dart';
 
 /// A single itemised line on the receipt.
+///
+/// [monthly] is always the monthly equivalent of the charge the vendor really
+/// takes. Nothing here re-applies an annual discount: Quick Add already stores
+/// the discounted annual amount, so applying 17 % again would print a figure
+/// the user was never charged (it used to — ₹13,778 instead of ₹16,600).
 class ReceiptLine {
   const ReceiptLine({
     required this.name,
     required this.monthly,
     this.months = 12,
     this.billedYearly = false,
-    this.yearDiscount = 0.17,
   });
 
   final String name;
 
-  /// Monthly-equivalent price, before any annual discount.
+  /// Monthly equivalent of the real charge.
   final num monthly;
 
   final int months;
 
-  /// True when the vendor bills this tool once a year at a discount.
-  /// The receipt then prints the real annual charge, not `monthly × 12`.
+  /// True when the vendor bills this tool once a year. Used for the label only.
   final bool billedYearly;
 
-  /// The annual discount actually applied (default matches Quick Add's 17 %).
-  final double yearDiscount;
-
-  num get annual => billedYearly
-      ? (monthly * months * (1 - yearDiscount)).round()
-      : (monthly * months).round();
+  num get annual => (monthly * months).round();
 
   String quantityLabelIn(CurrencyCode currency) => billedYearly
-      ? '${currency.format(monthly)} × $months −${(yearDiscount * 100).round()}%'
-      : '${currency.format(monthly)} × $months';
+      ? '${currency.format(annual)} billed yearly'
+      : '${currency.format(monthly)}/mo × $months';
 }
 
 /// The viral artefact.

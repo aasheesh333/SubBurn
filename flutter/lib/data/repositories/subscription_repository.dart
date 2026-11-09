@@ -1,36 +1,64 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../hive/local_adapters.dart';
-import '../models/billing_cycle.dart';
-import '../models/currency.dart';
-import '../models/preset_tool.dart';
 import '../models/subscription.dart';
-import '../models/usage_guilt.dart';
 
-/// Local-first store. 100 % of user data lives here — Hive on the device, no
+/// Local-first store. 100 % of user data lives here — on the device, no
 /// Firestore, no account, no sync. That is what keeps the backend free at any
 /// user count.
+///
+/// The store starts empty, always. This is a money tracker: a fabricated
+/// subscription would show the user a burn figure they never incurred, and in
+/// a finance product invented data is indistinguishable from a bug.
+///
+/// Two backends, one contract:
+/// * [open] / [openTest] use Hive boxes (production, on-disk).
+/// * [inMemory] uses plain maps (widget tests, previews) — no file I/O, so
+///   widget tests do not stall in Flutter's fake-async zone.
 class SubscriptionRepository {
-  SubscriptionRepository._(this._subs, this._settings);
+  SubscriptionRepository._hive(this._subs, this._settings)
+      : _memSubs = null,
+        _memSettings = null;
+
+  SubscriptionRepository._memory(this._memSubs, this._memSettings)
+      : _subs = null,
+        _settings = null;
 
   static const boxName = 'subscriptions_v1';
   static const settingsBoxName = 'settings_v1';
   static const _settingsKey = 'app_settings';
 
-  final Box<Subscription> _subs;
-  final Box<AppSettings> _settings;
+  final Box<Subscription>? _subs;
+  final Box<AppSettings>? _settings;
+  final Map<String, Subscription>? _memSubs;
+  final Map<String, AppSettings>? _memSettings;
+
+  bool get isInMemory => _memSubs != null;
 
   static Future<SubscriptionRepository> open() async {
     await Hive.initFlutter();
     return _openBoxes();
   }
 
-  /// Opens an isolated store backed by [path] — used by the test suite.
+  /// Isolated on-disk store, for integration tests that care about persistence.
   static Future<SubscriptionRepository> openTest(String path) async {
     Hive.init(path);
     return _openBoxes();
+  }
+
+  /// Volatile store for widget tests and design previews.
+  factory SubscriptionRepository.inMemory({
+    Iterable<Subscription> seed = const [],
+    AppSettings settings = const AppSettings(),
+  }) {
+    final repo = SubscriptionRepository._memory(
+      {for (final s in seed) s.id: s},
+      {_settingsKey: settings},
+    );
+    return repo;
   }
 
   static Future<SubscriptionRepository> _openBoxes() async {
@@ -42,117 +70,83 @@ class SubscriptionRepository {
     }
     final subs = await Hive.openBox<Subscription>(boxName);
     final settings = await Hive.openBox<AppSettings>(settingsBoxName);
-    return SubscriptionRepository._(subs, settings);
+    return SubscriptionRepository._hive(subs, settings);
   }
 
-  List<Subscription> all() {
-    final list = _subs.values.toList();
+  List<Subscription> all({bool rollOverdue = true}) {
+    final list = _memSubs?.values.toList() ?? _subs!.values.toList();
+    if (rollOverdue) {
+      for (var i = 0; i < list.length; i++) {
+        final sub = list[i];
+        if (!sub.isOverdue) continue;
+        final corrected = sub.rolledForward();
+        list[i] = corrected;
+        // Persist the correction; failures here must not break reading.
+        unawaited(put(corrected));
+      }
+    }
     list.sort((a, b) => a.nextBillingDate.compareTo(b.nextBillingDate));
     return list;
   }
 
-  Subscription? byId(String id) => _subs.get(id);
-
-  Future<void> put(Subscription subscription) =>
-      _subs.put(subscription.id, subscription);
-
-  Future<void> delete(String id) => _subs.delete(id);
-
-  Future<void> clear() => _subs.clear();
-
-  int get length => _subs.length;
-
-  bool get isEmpty => _subs.isEmpty;
-
-  AppSettings get settings => _settings.get(_settingsKey) ?? const AppSettings();
-
-  Future<void> saveSettings(AppSettings value) =>
-      _settings.put(_settingsKey, value);
-
-  /// Plants five realistic rows on first launch so the dashboard, the roast
-  /// and the share card all have something to say before the user has typed
-  /// anything. Every row is a normal subscription — swipe to delete works, and
-  /// `settings.seeded` guarantees this happens exactly once.
-  Future<bool> seedIfNeeded(PresetCatalogue catalogue) async {
-    final current = settings;
-    if (current.seeded || _subs.isNotEmpty) {
-      if (!current.seeded) {
-        await saveSettings(current.copyWith(seeded: true));
-      }
-      return false;
-    }
-
-    final now = DateTime.now();
-    const specs = <_SeedSpec>[
-      _SeedSpec(
-        presetName: 'ChatGPT Plus',
-        amount: 1660,
-        startMonthsAgo: 13,
-        guilt: UsageGuilt.dailyDriver,
-        hoursToRenewal: 14,
-      ),
-      _SeedSpec(
-        presetName: 'Claude Pro',
-        amount: 1660,
-        startMonthsAgo: 8,
-        guilt: UsageGuilt.dailyDriver,
-        hoursToRenewal: 23,
-      ),
-      _SeedSpec(
-        presetName: 'Cursor Pro',
-        amount: 830,
-        startMonthsAgo: 3,
-        guilt: UsageGuilt.barelyTouch,
-        hoursToRenewal: 35,
-      ),
-      _SeedSpec(
-        presetName: 'GitHub Copilot',
-        amount: 415,
-        startMonthsAgo: 5,
-        guilt: UsageGuilt.barelyTouch,
-        hoursToRenewal: 120,
-      ),
-      _SeedSpec(
-        presetName: 'Midjourney',
-        amount: 285,
-        startMonthsAgo: 11,
-        guilt: UsageGuilt.dailyDriver,
-        hoursToRenewal: 200,
-      ),
-    ];
-
-    for (final spec in specs) {
-      final preset = _findPreset(catalogue, spec.presetName);
-      await put(
-        Subscription(
-          id: newId(),
-          name: preset?.name ?? spec.presetName,
-          vendor: preset?.vendor ?? 'SubBurn',
-          monogram:
-              preset?.monogram ?? spec.presetName.substring(0, 2).toUpperCase(),
-          brandColor: preset?.brandColor ?? 0xFF9A9AA4,
-          amount: spec.amount,
-          currency: CurrencyCode.inr,
-          cycle: BillingCycle.monthly,
-          guilt: spec.guilt,
-          category: preset?.category ?? 'ai',
-          startDate: DateTime(now.year, now.month - spec.startMonthsAgo, now.day),
-          nextBillingDate: now.add(Duration(hours: spec.hoursToRenewal)),
-          cancelUrl: preset?.cancelUrl ?? '',
-          presetId: preset?.id,
-        ),
-      );
-    }
-
-    await saveSettings(current.copyWith(seeded: true));
-    return true;
+  Subscription? byId(String id) {
+    final mem = _memSubs;
+    if (mem != null) return mem[id];
+    return _subs?.get(id);
   }
 
-  static PresetTool? _findPreset(PresetCatalogue catalogue, String name) {
-    for (final tool in catalogue.tools) {
-      if (tool.name == name) return tool;
+  /// Reads one subscription, normalising an overdue renewal date.
+  Subscription? byIdRolled(String id) {
+    final existing = byId(id);
+    if (existing == null || !existing.isOverdue) return existing;
+    final corrected = existing.rolledForward();
+    unawaited(put(corrected));
+    return corrected;
+  }
+
+  Future<void> put(Subscription subscription) async {
+    final mem = _memSubs;
+    if (mem != null) {
+      mem[subscription.id] = subscription;
+      return;
     }
-    return null;
+    await _subs!.put(subscription.id, subscription);
+  }
+
+  Future<void> delete(String id) async {
+    final mem = _memSubs;
+    if (mem != null) {
+      mem.remove(id);
+      return;
+    }
+    await _subs!.delete(id);
+  }
+
+  Future<void> clear() async {
+    final mem = _memSubs;
+    if (mem != null) {
+      mem.clear();
+      return;
+    }
+    await _subs!.clear();
+  }
+
+  int get length => _memSubs?.length ?? _subs!.length;
+
+  bool get isEmpty => length == 0;
+
+  AppSettings get settings =>
+      _memSettings?[_settingsKey] ??
+      _settings?.get(_settingsKey) ??
+      const AppSettings();
+
+  Future<void> saveSettings(AppSettings value) async {
+    final mem = _memSettings;
+    if (mem != null) {
+      mem[_settingsKey] = value;
+      return;
+    }
+    await _settings!.put(_settingsKey, value);
   }
 
   static String newId() {
@@ -163,23 +157,8 @@ class SubscriptionRepository {
   }
 
   Future<void> close() async {
-    await _subs.close();
-    await _settings.close();
+    if (isInMemory) return;
+    await _subs?.close();
+    await _settings?.close();
   }
-}
-
-class _SeedSpec {
-  const _SeedSpec({
-    required this.presetName,
-    required this.amount,
-    required this.startMonthsAgo,
-    required this.guilt,
-    required this.hoursToRenewal,
-  });
-
-  final String presetName;
-  final double amount;
-  final int startMonthsAgo;
-  final UsageGuilt guilt;
-  final int hoursToRenewal;
 }

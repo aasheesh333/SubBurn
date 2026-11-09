@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app.dart';
-import 'data/models/preset_tool.dart';
 import 'data/repositories/subscription_repository.dart';
 import 'services/catalogue_service.dart';
 import 'services/firebase_bootstrap.dart';
@@ -40,16 +39,18 @@ Future<void> main() async {
             'https://pub-8fbd857d2069417ab8436546106f26b3.r2.dev',
       );
 
-      // Seed before the first frame so the dashboard never flashes empty for
-      // an existing user; a brand-new install gets five realistic rows once.
-      PresetCatalogue bundled;
-      try {
-        bundled = await catalogueService.loadBundledCatalogue();
-      } catch (error) {
-        debugPrint('Bundled catalogue missing: $error');
-        bundled = PresetCatalogue.empty;
+      // Nothing is written to the ledger on install. The app opens on the
+      // empty state and the user adds their own subscriptions.
+
+      // One anonymous id per install, created before the first frame so no
+      // provider has to mutate another during build.
+      if (repository.settings.installId == null) {
+        await repository.saveSettings(
+          repository.settings.copyWith(
+            installId: 'inst_${SubscriptionRepository.newId()}',
+          ),
+        );
       }
-      await repository.seedIfNeeded(bundled);
 
       final notifications = NotificationService();
       try {

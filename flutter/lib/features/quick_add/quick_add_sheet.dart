@@ -54,6 +54,11 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
   String _query = '';
   bool _saving = false;
 
+  /// True while the price in the field is `12 × monthly × 0.83` rather than a
+  /// number the user typed. Makes the Yearly toggle reversible: switching back
+  /// to monthly divides by the same factor instead of compounding the discount.
+  bool _yearlyDiscountApplied = false;
+
   @override
   void initState() {
     super.initState();
@@ -95,6 +100,37 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
       _guilt = UsageGuilt.dailyDriver;
     });
   }
+
+  /// Switching cycle converts the amount instead of relabelling it.
+  ///
+  /// Monthly -> Yearly applies the advertised 17 % annual discount exactly
+  /// once; Yearly -> Monthly removes it and nothing else. Without this the
+  /// "-17 %" chip was decoration and the receipt was the only place the
+  /// discount existed.
+  void _switchCycle(BillingCycle next) {
+    if (next == _cycle) return;
+    final current = parseAmount(_priceController.text) ?? 0;
+    double converted;
+
+    if (next == BillingCycle.yearly && _cycle == BillingCycle.monthly) {
+      converted = current * 12 * (1 - _seedAnnualDiscount);
+      _yearlyDiscountApplied = true;
+    } else if (next == BillingCycle.monthly && _cycle == BillingCycle.yearly) {
+      converted = current / 12 / (_yearlyDiscountApplied ? (1 - _seedAnnualDiscount) : 1);
+      _yearlyDiscountApplied = false;
+    } else {
+      final monthly = current * _cycle.monthlyFactor;
+      converted = monthly / next.monthlyFactor;
+      _yearlyDiscountApplied = false;
+    }
+
+    setState(() {
+      _cycle = next;
+      _priceController.text = formatPlainAmount(converted.roundToDouble());
+    });
+  }
+
+  static const _seedAnnualDiscount = 0.17;
 
   void _switchCurrency(CurrencyCode next, double inrPerUsd) {
     if (next == _currency) return;
@@ -256,6 +292,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                     _SearchField(
                       controller: _queryController,
                       focusNode: _searchFocus,
+                      toolCount: catalogue?.tools.length ?? 0,
                       onChanged: (value) => setState(() => _query = value),
                     ),
                     const SizedBox(height: SbSpace.x3),
@@ -332,12 +369,12 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                         selected: _cycle,
                         labelOf: (c) => c.label,
                         trailingOf: (c) => c == BillingCycle.yearly ? '−17%' : null,
-                        onChanged: (c) => setState(() => _cycle = c),
+                        onChanged: _switchCycle,
                       ),
                     ),
                     const SizedBox(height: SbSpace.x3),
                     _Field(
-                      label: 'Price per ${_cycle.label.toLowerCase()} period',
+                      label: 'Price per ${_periodNoun(_cycle)}',
                       child: Row(
                         children: [
                           _CurrencyToggle(
@@ -364,7 +401,9 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                               decoration: const InputDecoration(
                                 hintText: '0',
                               ),
-                              onChanged: (_) => setState(() {}),
+                              onChanged: (_) => setState(
+                                () => _yearlyDiscountApplied = false,
+                              ),
                             ),
                           ),
                         ],
@@ -387,29 +426,47 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                           : 'Counted as active use. Ghost spend stays honest.',
                       style: SbType.caption.copyWith(color: SbColors.textMuted),
                     ),
-                    const SizedBox(height: SbSpace.x4),
-                    SizedBox(
-                      width: double.infinity,
-                      child: PrimaryButton(
-                        label: _saving ? 'Adding…' : 'Add to burn tracker',
-                        icon: _saving ? null : Icons.add_rounded,
-                        trailing: _priceTrailing(),
-                        onPressed: _saving ? null : _save,
-                      ),
-                    ),
-                    const SizedBox(height: SbSpace.x2),
-                    Center(
-                      child: Text(
-                        'Stored on this device only. No account, no upload.',
-                        style: SbType.micro.copyWith(
-                          fontSize: 8,
-                          color: SbColors.textMuted,
-                          letterSpacing: 0.02,
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: SbSpace.x3),
                   ],
                 ),
+              ),
+            ),
+            // Pinned action bar: the primary action must never scroll away.
+            // On a 640 dp phone the fields fill the sheet, so an in-scroll CTA
+            // meant "add a subscription" required a scroll first.
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                SbSpace.page,
+                SbSpace.x3,
+                SbSpace.page,
+                SbSpace.x3,
+              ),
+              decoration: const BoxDecoration(
+                color: SbColors.surface,
+                border: Border(top: BorderSide(color: SbColors.border)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: PrimaryButton(
+                      label: _saving ? 'Adding…' : 'Add to burn tracker',
+                      icon: _saving ? null : Icons.add_rounded,
+                      trailing: _priceTrailing(),
+                      onPressed: _saving ? null : _save,
+                    ),
+                  ),
+                  const SizedBox(height: SbSpace.x2),
+                  Text(
+                    'Stored on this device only. No account, no upload.',
+                    style: SbType.micro.copyWith(
+                      fontSize: 8,
+                      color: SbColors.textMuted,
+                      letterSpacing: 0.02,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -417,6 +474,13 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
       ),
     );
   }
+
+  /// `month` / `year` / `week` — "per monthly period" was a tautology.
+  static String _periodNoun(BillingCycle cycle) => switch (cycle) {
+        BillingCycle.weekly => 'week',
+        BillingCycle.monthly => 'month',
+        BillingCycle.yearly => 'year',
+      };
 
   String _priceTrailing() {
     final amount = parseAmount(_priceController.text);
@@ -432,11 +496,13 @@ class _SearchField extends StatelessWidget {
   const _SearchField({
     required this.controller,
     required this.focusNode,
+    required this.toolCount,
     required this.onChanged,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
+  final int toolCount;
   final ValueChanged<String> onChanged;
 
   @override
@@ -448,7 +514,9 @@ class _SearchField extends StatelessWidget {
       textInputAction: TextInputAction.search,
       style: SbType.body.copyWith(fontSize: 13, color: SbColors.text),
       decoration: InputDecoration(
-        hintText: 'Search 124 tools — ChatGPT, Netflix, Figma…',
+        hintText: toolCount > 0
+            ? 'Search $toolCount tools — ChatGPT, Netflix, Figma…'
+            : 'Search the catalogue…',
         prefixIcon: const Icon(
           Icons.search_rounded,
           size: 18,

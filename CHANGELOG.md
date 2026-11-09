@@ -15,7 +15,7 @@ First shipped version of the Flutter app, alongside the design package.
 - Subscription detail with renewal countdown, lifetime spend, ghost toggle,
   reminder control and a direct vendor cancellation link.
 - Renewals agenda and a controls screen.
-- First launch seeds five realistic subscriptions, once.
+- Ships with an empty ledger by design: no demo or sample subscriptions.
 
 ### Fixed from the design review
 

@@ -74,6 +74,7 @@ class NotificationService {
   /// Asks the OS for permission. Returns false when declined — callers must
   /// keep working, because reminders are a convenience, not a requirement.
   Future<bool> requestPermission() async {
+    if (!_initialized) return false;
     if (Platform.isAndroid) {
       final android = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
@@ -93,6 +94,10 @@ class NotificationService {
     Subscription subscription, {
     required bool enabled,
   }) async {
+    // A plugin that never initialised (desktop test host, a failed timezone
+    // lookup, a device where the channel was rejected) must not be able to
+    // break saving or deleting a subscription.
+    if (!_initialized) return;
     await cancelFor(subscription.id);
     if (!enabled || !subscription.remindersEnabled) return;
 
@@ -144,12 +149,24 @@ class NotificationService {
   }
 
   Future<void> cancelFor(String subscriptionId) async {
-    for (var slot = 0; slot < 2; slot++) {
-      await _plugin.cancel(id: _notificationId(subscriptionId, slot));
+    if (!_initialized) return;
+    try {
+      for (var slot = 0; slot < 2; slot++) {
+        await _plugin.cancel(id: _notificationId(subscriptionId, slot));
+      }
+    } catch (error) {
+      debugPrint('cancelFor($subscriptionId) failed: $error');
     }
   }
 
-  Future<void> cancelAll() => _plugin.cancelAll();
+  Future<void> cancelAll() async {
+    if (!_initialized) return;
+    try {
+      await _plugin.cancelAll();
+    } catch (error) {
+      debugPrint('cancelAll failed: $error');
+    }
+  }
 
   /// Stable FNV-1a hash so reminder ids survive app restarts and never collide
   /// with Android's 32-bit notification id space.

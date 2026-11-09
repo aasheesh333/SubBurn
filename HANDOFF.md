@@ -276,8 +276,11 @@ flutter/
 written by hand so the on-disk field order is code-reviewed; new fields append,
 never reorder. A round-trip test covers every field.
 
-First launch seeds five realistic rows exactly once (`settings.seeded`). They
-are ordinary subscriptions — swipe-to-delete works.
+The store starts **empty**, always. This is a money tracker: a fabricated
+subscription would show the user a burn figure they never incurred, so the app
+opens on the first-run state and every row in the ledger was added by the user.
+Golden-test fixtures are the one place sample rows exist, and they live in
+`test/screens_preview_test.dart`, not in `lib/`.
 
 ### Notifications
 

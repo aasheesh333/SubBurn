@@ -330,10 +330,7 @@ class _RenewalAlert extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final remaining = subscription.timeUntilRenewal();
-    final cycleLength = subscription.cycle.advance(subscription.startDate);
-    final totalHours = cycleLength.difference(subscription.startDate).inHours;
-    final leftHours = remaining.inHours.clamp(0, totalHours);
-    final progress = totalHours <= 0 ? 0.0 : leftHours / totalHours;
+    final progress = subscription.noticeWindowProgress();
     final urgent = remaining.inHours < 48;
 
     return SurfaceCard(
@@ -458,9 +455,7 @@ class _SpendCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final lifetime = subscription.lifetimeIn(currency, inrPerUsd);
     final monthly = subscription.monthlyIn(currency, inrPerUsd);
-    final monthsElapsed = DateTime.now().difference(subscription.startDate).inDays / 30.4375;
-    final charges =
-        (monthsElapsed * subscription.cycle.chargesPerYear / 12).round().clamp(1, 9999);
+    final charges = subscription.chargeCount();
 
     return SurfaceCard(
       padding: const EdgeInsets.all(SbSpace.x4),
@@ -488,7 +483,7 @@ class _SpendCard extends StatelessWidget {
               ),
               const SizedBox(width: SbSpace.x2),
               Text(
-                '$charges charges',
+                charges == 1 ? '1 charge' : '$charges charges',
                 style: SbType.micro.copyWith(
                   fontSize: 9,
                   color: SbColors.textMuted,
@@ -499,8 +494,9 @@ class _SpendCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'avg ${currency.format(monthly)}/mo · '
-            '${subscription.currency.format(subscription.amount)} per ${subscription.cycle.label.toLowerCase()} period',
+            'avg ${currency.format(monthly)}/mo · billed '
+            '${subscription.currency.format(subscription.amount)} per '
+            '${subscription.periodNoun}',
             style: SbType.caption.copyWith(
               fontSize: 9,
               color: SbColors.textSecondary,
@@ -630,9 +626,11 @@ class _CancelTimeline extends StatelessWidget {
     final afterCharge = subscription.cycle.advance(nextCharge);
     final today = DateTime.now();
 
+    // Deliberately restrained: a full green panel made "cancel" the loudest
+    // element on the screen, and shame converts worse than arithmetic. The
+    // kept-rupees figure is the hero; the tint is a whisper.
     return SurfaceCard(
       padding: const EdgeInsets.all(SbSpace.x4),
-      tint: SbColors.safe,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -661,6 +659,7 @@ class _CancelTimeline extends StatelessWidget {
                             color: SbColors.textSecondary,
                           ),
                         ),
+                        const SizedBox(width: 4),
                         MoneyText(
                           keep,
                           style: SbType.moneyMd.copyWith(fontSize: 17),

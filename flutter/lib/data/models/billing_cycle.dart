@@ -42,11 +42,38 @@ enum BillingCycle {
       };
 
   /// Advances [from] by exactly one billing period.
+  ///
+  /// Month arithmetic is clamped to the last valid day of the target month.
+  /// Dart's `DateTime(year, month + 1, day)` *overflows* instead: a
+  /// subscription billing on 31 January would renew on 3 March, and one billed
+  /// yearly on 29 February would renew on 1 March. Both are wrong by days, and
+  /// both silently shift every following renewal.
   DateTime advance(DateTime from) => switch (this) {
         BillingCycle.weekly => from.add(const Duration(days: 7)),
-        BillingCycle.monthly => DateTime(from.year, from.month + 1, from.day),
-        BillingCycle.yearly => DateTime(from.year + 1, from.month, from.day),
+        BillingCycle.monthly => addMonths(from, 1),
+        BillingCycle.yearly => addMonths(from, 12),
       };
+
+  /// The charge before [next] — the start of the period that is ending.
+  ///
+  /// Derived by walking back, because a clamped advance is not invertible:
+  /// 28 Feb → 31 Mar forward, but 31 Mar → 28 Feb backward. Walking back from
+  /// the known next charge keeps the period honest.
+  DateTime previousFrom(DateTime next) => switch (this) {
+        BillingCycle.weekly => next.subtract(const Duration(days: 7)),
+        BillingCycle.monthly => addMonths(next, -1),
+        BillingCycle.yearly => addMonths(next, -12),
+      };
+
+  /// Adds [months] to [date], clamping the day to the target month's length.
+  static DateTime addMonths(DateTime date, int months) {
+    final targetMonth = date.month + months;
+    final year = date.year + (targetMonth - 1) ~/ 12;
+    final month = (targetMonth - 1) % 12 + 1;
+    final lastDay = DateTime(year, month + 1, 0).day;
+    final day = date.day <= lastDay ? date.day : lastDay;
+    return DateTime(year, month, day);
+  }
 
   static BillingCycle fromStorage(String value) => BillingCycle.values.firstWhere(
         (c) => c.name == value,

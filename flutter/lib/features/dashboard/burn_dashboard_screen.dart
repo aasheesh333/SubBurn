@@ -23,11 +23,9 @@ class BurnDashboardScreen extends ConsumerWidget {
   const BurnDashboardScreen({
     super.key,
     required this.onAddSubscription,
-    required this.onOpenStudio,
   });
 
   final VoidCallback onAddSubscription;
-  final VoidCallback onOpenStudio;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -87,10 +85,7 @@ class BurnDashboardScreen extends ConsumerWidget {
             if (subscriptions.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: _EmptyState(
-                  onAdd: onAddSubscription,
-                  onOpenStudio: onOpenStudio,
-                ),
+                child: _EmptyState(onAdd: onAddSubscription),
               )
             else ...[
               const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x5)),
@@ -371,7 +366,13 @@ class _RenewingRail extends StatelessWidget {
         blendMode: BlendMode.dstIn,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: SbSpace.page),
+          // The mask fades the trailing card, but text must still be cut by the
+          // card, not by the viewport. Extra trailing padding keeps the last
+          // visible card clear of the fade.
+          padding: const EdgeInsets.only(
+            left: SbSpace.page,
+            right: SbSpace.page + 48,
+          ),
           itemCount: subscriptions.length,
           separatorBuilder: (_, __) => const SizedBox(width: SbSpace.x2),
           itemBuilder: (context, index) => _RenewalCard(
@@ -425,6 +426,9 @@ class _RenewalCard extends StatelessWidget {
                       ),
                       Text(
                         'Renews ${formatRenewalDay(subscription.nextBillingDate)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
                         style: SbType.micro.copyWith(
                           fontSize: 7.5,
                           color: SbColors.textMuted,
@@ -440,11 +444,15 @@ class _RenewalCard extends StatelessWidget {
               subscription.currency.format(subscription.amount),
               style: SbType.moneyMd.copyWith(color: SbColors.text),
             ),
-            StatusBadge(
-              formatCountdownLeft(remaining),
-              tone: urgent ? BadgeTone.warn : BadgeTone.neutral,
-              leadingDot: true,
-              pulse: urgent,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: StatusBadge(
+                formatCountdownLeft(remaining),
+                tone: urgent ? BadgeTone.warn : BadgeTone.neutral,
+                leadingDot: true,
+                pulse: urgent,
+              ),
             ),
           ],
         ),
@@ -650,22 +658,20 @@ class _GhostCallout extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.onAdd, required this.onOpenStudio});
+  const _EmptyState({required this.onAdd});
 
   final VoidCallback onAdd;
-  final VoidCallback onOpenStudio;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         SbSpace.page,
-        SbSpace.x8,
-        SbSpace.page,
         SbSpace.x6,
+        SbSpace.page,
+        SbSpace.x4,
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
             width: 64,
@@ -708,9 +714,26 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: SbSpace.x3),
-          TextButton(
-            onPressed: onOpenStudio,
-            child: const Text('See a sample receipt first'),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.lock_outline_rounded,
+                size: 11,
+                color: SbColors.textMuted,
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  'Stored on this device. No account needed.',
+                  style: SbType.micro.copyWith(
+                    fontSize: 8,
+                    color: SbColors.textMuted,
+                    letterSpacing: 0.02,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
