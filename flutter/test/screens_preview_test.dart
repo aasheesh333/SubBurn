@@ -50,19 +50,38 @@ Future<void> _loadFonts() async {
     await loader.load();
   }
 
-  // Material Icons ships with the SDK and is required for `Icons.*` glyphs.
-  for (final candidate in [
-    '/root/flutter/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
-  ]) {
-    final file = File(candidate);
-    if (!file.existsSync()) continue;
+  // Material Icons ships with the Flutter SDK and is required for `Icons.*`
+  // glyphs. The SDK path differs per machine (and on CI), so resolve it
+  // instead of hard-coding one user's home directory.
+  final iconsFile = _materialIconsFile();
+  if (iconsFile != null) {
     final loader = FontLoader('MaterialIcons');
-    final bytes = file.readAsBytesSync();
+    final bytes = iconsFile.readAsBytesSync();
     loader.addFont(
       Future.value(ByteData.view(Uint8List.fromList(bytes).buffer)),
     );
     await loader.load();
+  } else {
+    // ignore: avoid_print
+    print('MaterialIcons font not found; golden icons may render as tofu.');
   }
+}
+
+/// Locates `MaterialIcons-Regular.otf` inside the active Flutter SDK.
+File? _materialIconsFile() {
+  const relative = 'bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf';
+
+  final roots = <String>[
+    if (Platform.environment['FLUTTER_ROOT'] case final root?) root,
+    // <flutter>/bin/cache/dart-sdk/bin/dart → <flutter>
+    File(Platform.resolvedExecutable).parent.parent.parent.parent.parent.path,
+  ];
+
+  for (final root in roots) {
+    final candidate = File('$root/$relative');
+    if (candidate.existsSync()) return candidate;
+  }
+  return null;
 }
 
 CatalogueSnapshot _snapshot() {
