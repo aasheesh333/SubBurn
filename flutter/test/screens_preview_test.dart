@@ -90,7 +90,7 @@ class _FixedCatalogue extends CatalogueNotifier {
 
 /// Golden-test fixture only. The shipped app never writes subscriptions the
 /// user did not add.
-Future<void> _seed(SubscriptionRepository repo) async {
+Future<void> _fixtureLedger(SubscriptionRepository repo) async {
   final now = DateTime.now();
   final specs = <(String, String, String, int, bool, int, String)>[
     ('ChatGPT Plus', '[OI]', 'AI', 1660, true, 14, 'ai'),
@@ -161,7 +161,7 @@ void main() {
     dir = await Directory.systemTemp.createTemp('subburn_preview_');
     repo = await SubscriptionRepository.openTest(dir.path);
     snapshot = _snapshot();
-    await _seed(repo);
+    await _fixtureLedger(repo);
   });
 
   tearDownAll(() async {
@@ -205,6 +205,26 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/08-first-run.png'),
+    );
+  });
+
+  testWidgets('dashboard · first run (empty)', (tester) async {
+    final empty = SubscriptionRepository.inMemory();
+    tester.view.physicalSize = const Size(393 * 2, 852 * 2);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _harness(
+        child: BurnDashboardScreen(onAddSubscription: () {}),
+        repo: empty,
+        snapshot: snapshot,
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/08-first-run.png'),
