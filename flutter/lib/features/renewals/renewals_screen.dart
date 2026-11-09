@@ -58,8 +58,9 @@ class RenewalsScreen extends ConsumerWidget {
             style: SbType.body.copyWith(color: SbColors.textSecondary),
           ),
           const SizedBox(height: SbSpace.x4),
+          // Neutral surface: the green icon and switch carry the state. A full
+          // green panel here fought the amber countdowns directly below it.
           SurfaceCard(
-            tint: remindersOn ? SbColors.safe : SbColors.warn,
             child: Row(
               children: [
                 Icon(
@@ -211,15 +212,18 @@ class _RenewalRow extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(width: SbSpace.x1),
-          Icon(
-            subscription.remindersEnabled
-                ? Icons.notifications_active_rounded
-                : Icons.notifications_off_rounded,
-            size: 13,
-            color: subscription.remindersEnabled
-                ? SbColors.safe
-                : SbColors.textMuted,
+          const SizedBox(width: SbSpace.x2),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              subscription.remindersEnabled
+                  ? Icons.notifications_active_rounded
+                  : Icons.notifications_off_rounded,
+              size: 13,
+              color: subscription.remindersEnabled
+                  ? SbColors.safe
+                  : SbColors.textMuted,
+            ),
           ),
         ],
       ),
