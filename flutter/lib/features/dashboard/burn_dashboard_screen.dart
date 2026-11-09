@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/clock.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/currency.dart';
@@ -172,7 +173,7 @@ class BurnDashboardScreen extends ConsumerWidget {
     CurrencyCode currency,
     double inrPerUsd,
   ) {
-    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    final cutoff = SbClock.now().subtract(const Duration(days: 30));
     final recent = subs.where((s) => s.startDate.isAfter(cutoff)).toList();
     if (recent.isEmpty) return null;
     return recent.fold<double>(

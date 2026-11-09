@@ -34,6 +34,7 @@ abstract final class OneSignalService {
       }
       await OneSignal.Notifications.requestPermission(true);
       _ready = true;
+      debugPrint('OneSignal ready: $resolved');
     } catch (error) {
       // Never block startup on a third-party SDK.
       debugPrint('OneSignal init failed: $error');

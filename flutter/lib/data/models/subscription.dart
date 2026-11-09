@@ -1,3 +1,4 @@
+import '../../core/clock.dart';
 import 'billing_cycle.dart';
 import 'currency.dart';
 import 'usage_guilt.dart';
@@ -117,7 +118,7 @@ class Subscription {
   /// days: an average month is 30.44 days, so dividing reported 9 charges for
   /// ten monthly payments and disagreed with the rupee total printed beside it.
   int chargeCount({DateTime? asOf}) {
-    final now = asOf ?? DateTime.now();
+    final now = asOf ?? SbClock.now();
     if (now.isBefore(startDate)) return 0;
     var count = 0;
     var date = startDate;
@@ -136,7 +137,7 @@ class Subscription {
   /// forever, the 48-hour rail skips the row, and no reminder is ever
   /// scheduled again — the app silently stops working for that subscription.
   Subscription rolledForward({DateTime? now}) {
-    final clock = now ?? DateTime.now();
+    final clock = now ?? SbClock.now();
     if (nextBillingDate.isAfter(clock)) return this;
     var next = nextBillingDate;
     // Cap the walk: a weekly plan left for 10 years is ~520 iterations.
@@ -147,11 +148,11 @@ class Subscription {
   }
 
   /// True when [nextBillingDate] is in the past and needs [rolledForward].
-  bool get isOverdue => nextBillingDate.isBefore(DateTime.now());
+  bool get isOverdue => nextBillingDate.isBefore(SbClock.now());
 
   /// How long until the next charge. Negative means overdue.
   Duration timeUntilRenewal({DateTime? now}) =>
-      nextBillingDate.difference(now ?? DateTime.now());
+      nextBillingDate.difference(now ?? SbClock.now());
 
   bool renewsWithin(Duration window, {DateTime? now}) {
     final left = timeUntilRenewal(now: now);
@@ -245,7 +246,7 @@ class BurnSummary {
     required double inrPerUsd,
     DateTime? now,
   }) {
-    final clock = now ?? DateTime.now();
+    final clock = now ?? SbClock.now();
     var monthly = 0.0;
     var ghost = 0.0;
     var ai = 0.0;

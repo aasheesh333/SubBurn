@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SubBurn — Privacy Policy</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #09090B; color: #FAFAFA;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 56px 24px 96px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
+  .mark { width: 32px; height: 32px; border-radius: 10px;
+          background: linear-gradient(135deg,#FF4500,#FF8C00); }
+  .brand b { letter-spacing: .14em; font-size: 13px; }
+  h1 { font-size: 32px; line-height: 1.2; letter-spacing: -.02em; margin: 0 0 8px; }
+  .lede { color: #A1A1AA; margin: 0 0 8px; }
+  .updated { color: #9A9AA4; font-size: 12px; margin: 0 0 36px; }
+  h2 { font-size: 16px; letter-spacing: -.01em; margin: 36px 0 10px; }
+  p, li { color: #D4D4D8; font-size: 14.5px; }
+  ul { padding-left: 20px; }
+  li { margin: 6px 0; }
+  a { color: #FFB27A; }
+  .card { background: #121216; border: 1px solid #27272A; border-radius: 14px;
+          padding: 18px 20px; margin: 24px 0; }
+  .card p { margin: 0; color: #FAFAFA; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 4px; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #27272A;
+           vertical-align: top; }
+  th { color: #9A9AA4; font-weight: 600; font-size: 12px;
+       text-transform: uppercase; letter-spacing: .08em; }
+  td { color: #D4D4D8; }
+  footer { margin-top: 56px; color: #9A9AA4; font-size: 12px;
+           border-top: 1px solid #27272A; padding-top: 20px; }
+  code { background: #17171C; border: 1px solid #27272A; border-radius: 6px;
+         padding: 1px 6px; font-size: 13px; color: #FFB27A; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand"><div class="mark"></div><b>SUBBURN</b></div>
+
+  <h1>Privacy Policy</h1>
+  <p class="lede">SubBurn is an AI &amp; SaaS subscription tracker built local-first.</p>
+  <p class="updated">Last updated: 9 November 2026</p>
+
+  <div class="card">
+    <p><b>The short version:</b> your subscriptions never leave your phone.
+    There is no account, no cloud database, and no way for us to read your
+    ledger. We do not sell data and the app has no ads.</p>
+  </div>
+
+  <h2>1. Who we are</h2>
+  <p>SubBurn is published by an independent developer. For any privacy question,
+  contact <a href="mailto:aasheeshkatheriya@gmail.com">aasheeshkatheriya@gmail.com</a>.</p>
+
+  <h2>2. What the app stores on your device</h2>
+  <p>All subscription data is written to a local database (Hive) inside the app's
+  private storage:</p>
+  <ul>
+    <li>tool name, vendor, price, currency and billing cycle</li>
+    <li>start date and next renewal date</li>
+    <li>your usage-guilt choice (daily driver / barely touch it)</li>
+    <li>reminder on/off per subscription</li>
+    <li>your display currency and a random install identifier</li>
+  </ul>
+  <p>This data is not transmitted anywhere. It is excluded from Android cloud
+  backup and device-to-device transfer. Uninstalling the app deletes it.</p>
+
+  <h2>3. Network requests the app makes</h2>
+  <table>
+    <tr><th>Destination</th><th>What is sent</th><th>Why</th></tr>
+    <tr>
+      <td>Cloudflare R2 (static CDN)</td>
+      <td>A plain HTTPS GET. No identifiers, no cookies, no subscription data.</td>
+      <td>Download the public preset catalogue and a USD→INR exchange rate, cached for 7 days.</td>
+    </tr>
+    <tr>
+      <td>Firebase Analytics</td>
+      <td>Two product events — <code>sub_added</code> and
+      <code>roast_card_shared</code> — with coarse buckets (category, cycle,
+      price range, burn range) and an app-instance id.</td>
+      <td>Understand whether the core flow works.</td>
+    </tr>
+    <tr>
+      <td>Firebase Crashlytics</td>
+      <td>Crash stack traces, app version, device model, OS version, and a
+      crash-installation id.</td>
+      <td>Fix crashes. Never includes subscription names or amounts.</td>
+    </tr>
+    <tr>
+      <td>Firebase Remote Config</td>
+      <td>App version, platform, and a random app-instance id.</td>
+      <td>Adjust two configuration values without shipping an update.</td>
+    </tr>
+    <tr>
+      <td>Firebase Cloud Messaging / OneSignal</td>
+      <td>A push token and the random install id. Subscription data is never
+      included.</td>
+      <td>Deliver broadcast product announcements, if you allow notifications.</td>
+    </tr>
+  </table>
+
+  <h2>4. What we never collect</h2>
+  <ul>
+    <li>Your name, email address, phone number or contacts.</li>
+    <li>Your subscription list, prices, vendors, or the amount you spend.</li>
+    <li>Your location, photos, files, SMS, call logs or clipboard.</li>
+    <li>Advertising identifiers. The app contains no ad SDK and no tracking SDK
+    beyond the Firebase services listed above.</li>
+  </ul>
+
+  <h2>5. Permissions and why they are requested</h2>
+  <ul>
+    <li><b>Notifications</b> (optional) — renewal reminders 48 h and 24 h before a
+    charge. Scheduled with inexact alarms; the app does not request the
+    “alarms &amp; reminders” special access.</li>
+    <li><b>Internet</b> — the CDN and Firebase requests described above.</li>
+  </ul>
+  <p>Declining notifications leaves the rest of the app fully functional.</p>
+
+  <h2>6. Sharing and selling</h2>
+  <p>We do not sell, rent or share personal data with advertisers or data
+  brokers. The only processors are Google (Firebase) and Cloudflare, acting as
+  infrastructure providers under their own terms.</p>
+
+  <h2>7. Retention and deletion</h2>
+  <ul>
+    <li><b>Local ledger:</b> deleted when you delete a subscription, use
+    <i>Controls → Delete all subscriptions</i>, or uninstall the app.</li>
+    <li><b>Analytics and crash data:</b> retained by Firebase for 14 months
+    (Analytics) and 90 days (Crashlytics), then deleted automatically.</li>
+    <li><b>Push identity:</b> a random install id, removed when you uninstall or
+    opt out of notifications.</li>
+  </ul>
+  <p>To request deletion of any server-side analytics associated with your app
+  instance, email us and we will action it within 30 days.</p>
+
+  <h2>8. Children</h2>
+  <p>SubBurn is not directed at children under 13 and does not knowingly collect
+  data from them.</p>
+
+  <h2>9. Security</h2>
+  <p>All network traffic uses HTTPS and the app blocks cleartext traffic. Local
+  data sits inside the app sandbox, which other apps cannot read on a
+  non-rooted device.</p>
+
+  <h2>10. Changes</h2>
+  <p>If this policy changes materially, the “Last updated” date above changes and
+  the new version is published at this URL before the relevant app update ships.</p>
+
+  <footer>
+    SubBurn · <a href="./index.html">Home</a> ·
+    <a href="mailto:aasheeshkatheriya@gmail.com">Contact</a>
+  </footer>
+
+</div>
+</body>
+</html>

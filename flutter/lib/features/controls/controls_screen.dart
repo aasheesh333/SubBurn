@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../core/app_links.dart';
 
 import '../../core/theme/theme_tokens.dart';
 import '../../data/models/currency.dart';
@@ -182,6 +185,17 @@ class ControlsScreen extends ConsumerWidget {
                   child: const Text('PRIVACY'),
                 ),
               ),
+              _SettingRow(
+                title: 'Support',
+                subtitle: AppLinks.supportEmail,
+                child: TextButton(
+                  onPressed: () => launchUrl(
+                    AppLinks.supportEmailUri,
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  child: const Text('EMAIL'),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: SbSpace.x3),
@@ -268,6 +282,15 @@ class ControlsScreen extends ConsumerWidget {
           ),
         ),
         actions: [
+          TextButton(
+            onPressed: () {
+              launchUrl(
+                AppLinks.privacyPolicyUri,
+                mode: LaunchMode.externalApplication,
+              );
+            },
+            child: const Text('READ ONLINE'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('CLOSE'),

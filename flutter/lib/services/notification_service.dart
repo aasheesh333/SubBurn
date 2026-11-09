@@ -7,6 +7,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../core/clock.dart';
 import '../data/models/subscription.dart';
 
 /// Local renewal reminders.
@@ -111,7 +112,7 @@ class NotificationService {
 
     for (final entry in slots.entries) {
       final fireAt = subscription.nextBillingDate.subtract(entry.value);
-      if (fireAt.isBefore(DateTime.now().add(const Duration(minutes: 1)))) {
+      if (fireAt.isBefore(SbClock.now().add(const Duration(minutes: 1)))) {
         continue; // the window already opened; never fire a stale alarm
       }
       final window = entry.value.inHours;

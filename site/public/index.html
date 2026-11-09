@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SubBurn — AI &amp; SaaS subscription guilt tracker</title>
+<meta name="description" content="SubBurn turns a year of AI and SaaS subscriptions into a shareable burn receipt. Local-first, no account, no ads.">
+<meta name="theme-color" content="#09090B">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #09090B; color: #FAFAFA;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(900px 420px at 78% -12%, rgba(255,69,0,.22), transparent 60%),
+      radial-gradient(700px 360px at 8% 104%, rgba(255,140,0,.10), transparent 62%);
+    background-repeat: no-repeat;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 40px 24px 96px; }
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 72px; }
+  .mark { width: 34px; height: 34px; border-radius: 10px;
+          background: linear-gradient(135deg,#FF4500,#FF8C00); }
+  header b { letter-spacing: .15em; font-size: 13px; }
+  header nav { margin-left: auto; display: flex; gap: 20px; font-size: 13px; }
+  header a { color: #A1A1AA; text-decoration: none; }
+  header a:hover { color: #FAFAFA; }
+  .eyebrow { color: #FFB27A; font-size: 11px; letter-spacing: .18em;
+             text-transform: uppercase; margin-bottom: 16px; }
+  h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.04;
+       letter-spacing: -.035em; margin: 0 0 20px; max-width: 15ch; }
+  h1 em { font-style: normal;
+          background: linear-gradient(120deg,#FF4500,#FF8C00);
+          -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { color: #A1A1AA; font-size: 17px; max-width: 52ch; margin: 0 0 32px; }
+  .cta { display: inline-flex; align-items: center; gap: 10px;
+         background: linear-gradient(135deg,#FF4500,#FF8C00); color: #1A0800;
+         font-weight: 800; font-size: 14px; letter-spacing: .01em;
+         padding: 14px 22px; border-radius: 14px; text-decoration: none;
+         box-shadow: 0 16px 34px -12px rgba(255,69,0,.85); }
+  .meta { color: #9A9AA4; font-size: 12px; margin-top: 14px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+          margin: 72px 0 0; }
+  .card { background: #121216; border: 1px solid #27272A; border-radius: 16px; padding: 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 14px; letter-spacing: -.01em; }
+  .card p { margin: 0; color: #A1A1AA; font-size: 13.5px; }
+  .receipt { margin: 72px auto 0; max-width: 360px; background: #0B0B0E;
+             border: 1px solid #27272A; border-radius: 18px; padding: 22px;
+             font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .receipt .row { display: flex; justify-content: space-between; gap: 12px;
+                  font-size: 11px; color: #D4D4D8; margin: 7px 0; }
+  .receipt .row span:last-child { color: #FAFAFA; }
+  .receipt .rule { border-top: 1px dashed #3F3F46; margin: 12px 0; }
+  .receipt .total { display: flex; justify-content: space-between; align-items: baseline;
+                    font-size: 26px; font-weight: 700; color: #FF6A1A; margin-top: 4px; }
+  .receipt .tier { font-size: 10px; letter-spacing: .1em; color: #FF8C00;
+                   margin-bottom: 8px; text-transform: uppercase; }
+  .receipt .verdict { font-size: 10.5px; color: #A1A1AA; margin-top: 10px; }
+  footer { margin-top: 88px; padding-top: 22px; border-top: 1px solid #27272A;
+           color: #9A9AA4; font-size: 12px; display: flex; flex-wrap: wrap; gap: 16px; }
+  footer a { color: #A1A1AA; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="mark"></div>
+    <b>SUBBURN</b>
+    <nav>
+      <a href="./privacy.html">Privacy</a>
+      <a href="mailto:aasheeshkatheriya@gmail.com">Contact</a>
+    </nav>
+  </header>
+
+  <p class="eyebrow">AI &amp; SaaS subscription guilt tracker</p>
+  <h1>Your subscriptions, <em>roasted</em> into a receipt.</h1>
+  <p class="lede">
+    SubBurn adds up every AI and SaaS plan you pay for, shows what you actually
+    use, and turns the rest into a savage, shareable yearly burn receipt.
+    Local-first: no account, no cloud database, no ads.
+  </p>
+  <a class="cta" href="#how">See how it works</a>
+  <p class="meta">Android · dark mode only · 124 preset tools</p>
+
+  <div class="grid" id="how">
+    <div class="card">
+      <h3>Burn dashboard</h3>
+      <p>One hero number: your monthly burn. A split bar shows how much of it is
+      ghost spend you barely touch.</p>
+    </div>
+    <div class="card">
+      <h3>Renewal kill-switch</h3>
+      <p>48-hour warnings, lifetime spend, and a direct link to the vendor's own
+      cancellation page.</p>
+    </div>
+    <div class="card">
+      <h3>Receipt studio</h3>
+      <p>A 1080 × 1920 receipt with a deterministic roast. Same ledger, same
+      receipt, generated on your phone — never uploaded.</p>
+    </div>
+  </div>
+
+  <div class="receipt">
+    <div class="row"><span>SUBBURN · WRAPPED 2026</span><span>No. 00412</span></div>
+    <div class="rule"></div>
+    <div class="row"><span>ChatGPT Plus</span><span>₹19,920</span></div>
+    <div class="row"><span>Claude Pro</span><span>₹19,920</span></div>
+    <div class="row"><span>Cursor Pro</span><span>₹9,960</span></div>
+    <div class="row"><span>GitHub Copilot</span><span>₹4,980</span></div>
+    <div class="row"><span>Midjourney</span><span>₹3,420</span></div>
+    <div class="rule"></div>
+    <div class="row"><span>Ghost spend</span><span>25.7% · ₹14,940/yr</span></div>
+    <div class="rule"></div>
+    <div class="tier">Tier: Silicon Valley Paypig</div>
+    <div class="total"><span>₹58,200</span><span style="font-size:11px;color:#9A9AA4">/yr</span></div>
+    <p class="verdict">That is 2 years of a Mumbai gym membership.</p>
+  </div>
+
+  <footer>
+    <span>SubBurn</span>
+    <a href="./privacy.html">Privacy policy</a>
+    <a href="mailto:aasheeshkatheriya@gmail.com">aasheeshkatheriya@gmail.com</a>
+  </footer>
+
+</div>
+</body>
+</html>

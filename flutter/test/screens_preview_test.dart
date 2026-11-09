@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:subburn/app.dart';
 import 'package:subburn/core/theme/app_theme.dart';
+import 'package:subburn/core/clock.dart';
 import 'package:subburn/core/theme/theme_tokens.dart';
 import 'package:subburn/data/models/billing_cycle.dart';
 import 'package:subburn/data/models/currency.dart';
@@ -91,7 +92,7 @@ class _FixedCatalogue extends CatalogueNotifier {
 /// Golden-test fixture only. The shipped app never writes subscriptions the
 /// user did not add.
 Future<void> _fixtureLedger(SubscriptionRepository repo) async {
-  final now = DateTime.now();
+  final now = SbClock.now();
   final specs = <(String, String, String, int, bool, int, String)>[
     ('ChatGPT Plus', '[OI]', 'AI', 1660, true, 14, 'ai'),
     ('Claude Pro', 'Anthropic', 'CL', 1660, true, 23, 'ai'),
@@ -158,10 +159,16 @@ void main() {
   setUpAll(() async {
     await _loadFonts();
     GoogleFonts.config.allowRuntimeFetching = false;
+    // Freeze time so renewal countdowns in the goldens are deterministic.
+    SbClock.freeze(DateTime(2026, 11, 9, 9, 41));
     dir = await Directory.systemTemp.createTemp('subburn_preview_');
     repo = await SubscriptionRepository.openTest(dir.path);
     snapshot = _snapshot();
     await _fixtureLedger(repo);
+  });
+
+  tearDownAll(() {
+    SbClock.reset();
   });
 
   tearDownAll(() async {

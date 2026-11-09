@@ -120,6 +120,17 @@ Remote Config (`cdn_base_url`) without a release.
 
 ---
 
+## Production
+
+Release signing, Play data-safety answers, listing copy and the release flow live
+in [`docs/PLAY-STORE.md`](docs/PLAY-STORE.md). The privacy policy is served at
+
+- https://pub-8fbd857d2069417ab8436546106f26b3.r2.dev/privacy.html (canonical)
+- https://dhanuk.page.gd/SubBurn/privacy.html (mirror)
+
+The keystore is **not** in this repository. `flutter/android/key.properties` and
+`flutter/android/keystore/*.jks` are git-ignored; CI must supply them as secrets.
+
 ## Privacy
 
 Subscriptions never leave the device. The CDN requests carry no user data.

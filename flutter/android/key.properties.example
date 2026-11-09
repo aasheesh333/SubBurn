@@ -1,0 +1,13 @@
+# Release signing — NEVER COMMIT THIS FILE.
+#
+# Copy this to `android/key.properties`, fill in the values, and keep the
+# keystore itself outside version control (android/keystore/*.jks is ignored).
+#
+#   cp android/key.properties.example android/key.properties
+#
+# In CI, write this file from repository secrets before `flutter build
+# appbundle`; do not check it in.
+storePassword=your-store-password
+keyPassword=your-key-password
+keyAlias=mykey
+storeFile=keystore/subburn-release.jks

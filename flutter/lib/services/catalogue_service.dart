@@ -200,7 +200,12 @@ class RemoteConfigService {
 
   static const _defaults = <String, dynamic>{
     'cdn_base_url': 'https://pub-8fbd857d2069417ab8436546106f26b3.r2.dev',
-    'onesignal_app_id': String.fromEnvironment('ONESIGNAL_APP_ID'),
+    // Public OneSignal app id (not a secret). A --dart-define or the Remote
+    // Config console value overrides it without a code change.
+    'onesignal_app_id': String.fromEnvironment(
+      'ONESIGNAL_APP_ID',
+      defaultValue: '060140bf-e174-4f44-85d2-f5757dfdbd35',
+    ),
     'smart_reminders': true,
     'roast_tone': 'savage',
   };

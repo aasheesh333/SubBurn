@@ -2,6 +2,8 @@
 /// unit tested without a pump.
 library;
 
+import '../clock.dart';
+
 /// `14h 22m` / `1d 11h` / `2m` — the countdown copy used on renewal cards.
 String formatCountdown(Duration remaining) {
   if (remaining.isNegative) return 'now';
@@ -24,7 +26,7 @@ String formatCountdownLeft(Duration remaining) =>
 
 /// `today` / `tomorrow` / `Fri 14 Nov`
 String formatRenewalDay(DateTime date, {DateTime? now}) {
-  final clock = now ?? DateTime.now();
+  final clock = now ?? SbClock.now();
   final today = DateTime(clock.year, clock.month, clock.day);
   final target = DateTime(date.year, date.month, date.day);
   final diff = target.difference(today).inDays;

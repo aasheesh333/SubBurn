@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/clock.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/currency.dart';
@@ -624,7 +625,7 @@ class _CancelTimeline extends StatelessWidget {
     final keep = subscription.yearlyIn(currency, inrPerUsd);
     final nextCharge = subscription.nextBillingDate;
     final afterCharge = subscription.cycle.advance(nextCharge);
-    final today = DateTime.now();
+    final today = SbClock.now();
 
     // Deliberately restrained: a full green panel made "cancel" the loudest
     // element on the screen, and shame converts worse than arithmetic. The

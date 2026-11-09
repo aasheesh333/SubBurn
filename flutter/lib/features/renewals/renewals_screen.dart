@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/clock.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/currency.dart';
@@ -30,7 +31,7 @@ class RenewalsScreen extends ConsumerWidget {
     final ordered = [...subs]
       ..sort((a, b) => a.nextBillingDate.compareTo(b.nextBillingDate));
     final thisMonth = ordered.where((s) {
-      final now = DateTime.now();
+      final now = SbClock.now();
       return s.nextBillingDate.year == now.year &&
           s.nextBillingDate.month == now.month;
     }).length;

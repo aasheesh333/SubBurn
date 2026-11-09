@@ -1,13 +1,18 @@
-# SubBurn — OneSignal setup (5 minutes, manual)
+# SubBurn — OneSignal setup
 
-The integration is code-complete. Only the **App ID** is missing, because
-OneSignal's dashboard blocks automated registration:
+**Status: configured.** App ID
+`060140bf-e174-4f44-85d2-f5757dfdbd35` is baked into
+`RemoteConfigService` defaults, and `main.dart` initialises the SDK after the
+first frame. Remote Config key `onesignal_app_id` (or
+`--dart-define=ONESIGNAL_APP_ID`) overrides it without a release.
 
-- `app.onesignal.com/users/auth/google` → **403**
-- `app.onesignal.com/users/auth/github` → **403**
-- Email signup requires clicking a verification link in your inbox.
+The only remaining step on the OneSignal side is linking the FCM credentials
+(step 2 below) so Android push can actually be delivered — the SDK initialises
+and registers the device either way, but messages need the Firebase service
+account.
 
-So this last step has to happen in your browser.
+<details>
+<summary>Original manual steps (for reference)</summary>
 
 ## 1. Create the app
 
@@ -46,6 +51,8 @@ flutter build appbundle \
 `main.dart` calls `OneSignalService.initialize(...)` with the Remote Config value
 and falls back to the define. With neither set, the SDK is skipped with a debug
 log and the app behaves normally.
+
+</details>
 
 ## 4. Verify
 

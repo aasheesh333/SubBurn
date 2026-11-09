@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/clock.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../data/models/billing_cycle.dart';
 import '../../data/models/currency.dart';
@@ -88,7 +89,7 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
                         currency: settings.displayCurrency,
                         hiddenLineCount: hidden,
                         totalOverride: summary.yearly,
-                        year: DateTime.now().year,
+                        year: SbClock.now().year,
                       ),
               ),
             ),

@@ -1,9 +1,31 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     // Firebase services must be applied after the Android plugin.
     id("com.google.gms.google-services")
+    // Uploads the R8 mapping file so Crashlytics stack traces are readable.
+    id("com.google.firebase.crashlytics")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+/// Release signing is read from `android/key.properties`, which is never
+/// committed. When it is absent (a clean clone, a fork, a CI run without
+/// secrets) the release build falls back to the debug key and prints a warning,
+/// so `flutter build apk --release` still works for contributors — but the
+/// build that goes to Play must have the real keystore.
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+val hasReleaseKeystore = keystorePropertiesFile.exists()
+if (hasReleaseKeystore) {
+    FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
+} else {
+    logger.warn(
+        "WARNING: android/key.properties is missing. Release builds are signed " +
+            "with the debug key and cannot be uploaded to Play Console."
+    )
 }
 
 android {
@@ -26,19 +48,46 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Play requires an explicit, stable ABI set; arm64 is mandatory.
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")
+        }
+    }
+
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                // v2 is required by Play; v3 enables key rotation.
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
     }
 
     buildTypes {
         release {
-            // Debug signing keeps `flutter build apk --release` working out of
-            // the box. Swap in the upload keystore before the first Play upload.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+        debug {
+            // Keep debug builds fast and debuggable; Crashlytics collection is
+            // already disabled in Dart for kDebugMode.
+            isMinifyEnabled = false
         }
     }
 
@@ -48,10 +97,27 @@ android {
         jniLibs {
             useLegacyPackaging = false
         }
+        resources {
+            excludes += setOf(
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1",
+                "META-INF/*.kotlin_module",
+            )
+        }
     }
 
-    // Flutter ships every ABI by default in a universal APK; the app bundle
-    // handles splits, so nothing extra is needed here.
+    bundle {
+        // Split by language and density so the download stays small.
+        language {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
+        }
+    }
 }
 
 kotlin {

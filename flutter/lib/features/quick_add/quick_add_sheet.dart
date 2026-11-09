@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/clock.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/billing_cycle.dart';
@@ -165,7 +166,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
     }
 
     setState(() => _saving = true);
-    final now = DateTime.now();
+    final now = SbClock.now();
     final preset = _preset;
     final subscription = Subscription(
       id: SubscriptionRepository.newId(),
