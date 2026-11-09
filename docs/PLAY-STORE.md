@@ -7,6 +7,13 @@ Package: `com.subburn.subburn` · Version: `1.0.0 (1)`.
 
 ## 1. Build the signed App Bundle
 
+**Easiest:** push a commit. CI builds both the AAB and an installable APK and
+publishes them under the run's **Artifacts** section
+(`.github/workflows/build.yml`). Download `SubBurn-aab-<sha>.aab` and upload it
+to Play. `versionCode` is the GitHub run number, so it increases on every build.
+
+Locally:
+
 ```bash
 cd flutter
 flutter build appbundle --release

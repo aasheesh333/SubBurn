@@ -1,5 +1,8 @@
 # SubBurn
 
+[![Build](https://github.com/aasheesh333/SubBurn/actions/workflows/build.yml/badge.svg)](https://github.com/aasheesh333/SubBurn/actions/workflows/build.yml)
+[![Tests](https://github.com/aasheesh333/SubBurn/actions/workflows/ci.yml/badge.svg)](https://github.com/aasheesh333/SubBurn/actions/workflows/ci.yml)
+
 **An AI & SaaS subscription guilt tracker that turns a year of burn into a
 shareable roast receipt.**
 
@@ -119,6 +122,29 @@ The CDN endpoint is served from
 Remote Config (`cdn_base_url`) without a release.
 
 ---
+
+## Download a build
+
+Every push builds a signed release APK and AAB in parallel:
+
+1. Open the **Actions** tab → **Build** → the run for your commit.
+2. Scroll to **Artifacts** and download:
+   - `SubBurn-apk-<sha>` → installable arm64 APK
+   - `SubBurn-aab-<sha>` → Play Console upload bundle
+
+Artifacts are kept for 30 days. Both are signed with the release keystore; the
+APK's certificate SHA-256 matches `docs/PLAY-STORE.md`. If the four keystore
+secrets are not configured, the workflow still succeeds with a debug-signed
+build and prints a warning.
+
+Repository secrets required for a signed build:
+
+| Secret | Value |
+|---|---|
+| `KEYSTORE_BASE64` | `base64 -w0 android/keystore/subburn-release.jks` |
+| `KEYSTORE_PASSWORD` | keystore password |
+| `KEY_PASSWORD` | key password |
+| `KEY_ALIAS` | `mykey` |
 
 ## Production
 
