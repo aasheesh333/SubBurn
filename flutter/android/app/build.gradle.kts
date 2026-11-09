@@ -30,7 +30,11 @@ if (hasReleaseKeystore) {
 
 android {
     namespace = "com.subburn.subburn"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_local_notifications 23 and androidx.core 1.19 publish AARs built
+    // against API 37, so the app must compile against 37 as well. targetSdk
+    // stays at Flutter's default (36) — compiling against a newer SDK does not
+    // opt the app into new runtime behaviour.
+    compileSdk = 37
 
     // NDK r27+ is required for 16 KB page-size alignment on Android 15+.
     ndkVersion = flutter.ndkVersion

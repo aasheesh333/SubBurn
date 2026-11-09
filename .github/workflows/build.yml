@@ -74,10 +74,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          SHORT_SHA="${GITHUB_SHA:0:7}"
-          BRANCH="${GITHUB_REF_NAME//\//-}"
+          # Keep the public versionName from pubspec; only the versionCode is
+          # driven by CI so every upload to Play is monotonic.
           flutter build ${{ matrix.task }} --release ${{ matrix.flags }} \
-            --build-name "${BRANCH}-${SHORT_SHA}" \
             --build-number "$GITHUB_RUN_NUMBER"
 
       - name: Collect artifact
