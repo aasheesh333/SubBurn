@@ -113,10 +113,10 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
     double converted;
 
     if (next == BillingCycle.yearly && _cycle == BillingCycle.monthly) {
-      converted = current * 12 * (1 - _seedAnnualDiscount);
+      converted = current * 12 * (1 - annualDiscount);
       _yearlyDiscountApplied = true;
     } else if (next == BillingCycle.monthly && _cycle == BillingCycle.yearly) {
-      converted = current / 12 / (_yearlyDiscountApplied ? (1 - _seedAnnualDiscount) : 1);
+      converted = current / 12 / (_yearlyDiscountApplied ? (1 - annualDiscount) : 1);
       _yearlyDiscountApplied = false;
     } else {
       final monthly = current * _cycle.monthlyFactor;
@@ -130,7 +130,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
     });
   }
 
-  static const _seedAnnualDiscount = 0.17;
+  static const annualDiscount = 0.17;
 
   void _switchCurrency(CurrencyCode next, double inrPerUsd) {
     if (next == _currency) return;

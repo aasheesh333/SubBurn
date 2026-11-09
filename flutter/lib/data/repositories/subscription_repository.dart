@@ -50,15 +50,16 @@ class SubscriptionRepository {
   }
 
   /// Volatile store for widget tests and design previews.
+  ///
+  /// [initial] is test fixture data only — production always starts empty.
   factory SubscriptionRepository.inMemory({
-    Iterable<Subscription> seed = const [],
+    Iterable<Subscription> initial = const [],
     AppSettings settings = const AppSettings(),
   }) {
-    final repo = SubscriptionRepository._memory(
-      {for (final s in seed) s.id: s},
+    return SubscriptionRepository._memory(
+      {for (final s in initial) s.id: s},
       {_settingsKey: settings},
     );
-    return repo;
   }
 
   static Future<SubscriptionRepository> _openBoxes() async {

@@ -271,7 +271,7 @@ void main() {
 
     test('repository normalises on read', () async {
       final repo = SubscriptionRepository.inMemory(
-        seed: [
+        initial: [
           _sub(next: DateTime.now().subtract(const Duration(days: 3))),
         ],
       );
