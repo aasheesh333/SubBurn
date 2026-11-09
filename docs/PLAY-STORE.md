@@ -25,6 +25,10 @@ Signing is read from `android/key.properties` (never committed):
 If that file is missing the build falls back to the debug key and cannot be
 uploaded — the Gradle log prints a warning.
 
+CI builds both on every push (`.github/workflows/build.yml`), verified
+2026-11-09: APK 264 s, AAB 306 s, both signed with the certificate below.
+`versionCode` = GitHub run number, so it is monotonic across uploads.
+
 Keystore certificate SHA-256:
 
 ```
