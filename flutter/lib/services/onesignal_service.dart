@@ -11,13 +11,18 @@ abstract final class OneSignalService {
 
   /// Initialises the SDK when an app id is available.
   ///
-  /// The id comes from Remote Config first and a compile-time define second,
-  /// so switching it on is a console change, not a release.
+  /// The id comes from Remote Config first and a `--dart-define
+  /// ONESIGNAL_APP_ID=` second, so switching it on is a console change or a
+  /// build flag — never a code change.
   static Future<void> initialize({
     required String appId,
     String? installId,
   }) async {
-    final resolved = appId.trim();
+    // Precedence: Remote Config value → compile-time define. Either one is
+    // enough to switch push on without touching this file.
+    final resolved = appId.trim().isNotEmpty
+        ? appId.trim()
+        : const String.fromEnvironment('ONESIGNAL_APP_ID');
     if (resolved.isEmpty) {
       debugPrint('OneSignal skipped: no app id configured');
       return;

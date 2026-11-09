@@ -36,3 +36,8 @@ Thumbs.db
 !flutter/android/app/debug.keystore
 .env
 .env.*
+
+# Firebase service-account keys (server-side only, never client config)
+*firebase-adminsdk*.json
+*service-account*.json
+serviceAccountKey.json

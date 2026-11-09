@@ -61,6 +61,12 @@ seconds.
 | Tool grid | 4 × 3 preview, 1-tap select, orange ring + check |
 | Name | Free text, prefilled from the preset |
 | Billing cycle | Weekly / Monthly / Yearly `−17 %` |
+
+> The Figma frame shows two pills (Monthly / Yearly), matching the brief. The
+> app adds **Weekly** because the hero must normalise a weekly charge
+> (`× 52/12`); without the option that code path would be unreachable. The
+> third pill is the only intentional divergence between the frames and the
+> shipped app.
 | Price | ₹ INR / $ USD toggle, converts at the CDN rate |
 | Usage guilt | `Daily Driver` (green dot) / `Barely Touch It` (amber dot) |
 | CTA | `Add to burn tracker` + live `₹1,660 /mo` chip |

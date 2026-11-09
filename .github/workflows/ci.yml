@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  flutter:
+    name: Analyze & test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.4"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Fails on any analyzer diagnostic, so lints are not advisory.
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Test (includes golden screens and the 1080x1920 export)
+        run: flutter test --reporter expanded
+
+  design:
+    name: Design audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install render dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install playwright pillow
+          python3 -m playwright install --with-deps chromium
+
+      - name: WCAG contrast, tap targets, overflow
+        run: python3 tools/audit.py

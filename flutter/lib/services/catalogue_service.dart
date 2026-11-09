@@ -200,7 +200,7 @@ class RemoteConfigService {
 
   static const _defaults = <String, dynamic>{
     'cdn_base_url': 'https://pub-8fbd857d2069417ab8436546106f26b3.r2.dev',
-    'onesignal_app_id': '',
+    'onesignal_app_id': String.fromEnvironment('ONESIGNAL_APP_ID'),
     'smart_reminders': true,
     'roast_tone': 'savage',
   };
