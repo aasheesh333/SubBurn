@@ -1,0 +1,38 @@
+# Presentation
+*.png
+!.gitkeep
+# ...but keep the committed renders and goldens
+!/renders/*.png
+!/renders/*.json
+!/renders/svg/**
+!/renders/figma-png/**
+!/flutter/test/goldens/**
+
+# Flutter / Dart
+flutter/.dart_tool/
+flutter/build/
+flutter/.flutter-plugins
+flutter/.flutter-plugins-dependencies
+flutter/.packages
+flutter/pubspec.lock.bak
+**/*.iml
+**/.idea/
+**/.vscode/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local secrets and machine state
+**/local.properties
+**/key.properties
+*.jks
+*.keystore
+!flutter/android/app/debug.keystore
+.env
+.env.*

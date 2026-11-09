@@ -1,0 +1,53 @@
+{
+  "contrast": [],
+  "gradientText": [
+    {
+      "text": "\u20b94,850",
+      "cls": "big",
+      "px": 58
+    },
+    {
+      "text": "\u20b94,850",
+      "cls": "big",
+      "px": 58
+    },
+    {
+      "text": "\u20b916,570",
+      "cls": "big",
+      "px": 32
+    }
+  ],
+  "taps": [],
+  "tight": [],
+  "overflow": [],
+  "geometry": [
+    {
+      "frame": "1",
+      "w": 393,
+      "h": 852,
+      "contentBottom": 756,
+      "clearOfChrome": 16
+    },
+    {
+      "frame": "2",
+      "w": 393,
+      "h": 852,
+      "contentBottom": 756,
+      "clearOfChrome": 16
+    },
+    {
+      "frame": "3",
+      "w": 393,
+      "h": 852,
+      "contentBottom": 798,
+      "clearOfChrome": 20
+    },
+    {
+      "frame": "4",
+      "w": 393,
+      "h": 852,
+      "contentBottom": 726,
+      "clearOfChrome": 7
+    }
+  ]
+}

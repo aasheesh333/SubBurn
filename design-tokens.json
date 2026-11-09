@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "subburn.design-tokens.v1",
+  "name": "SubBurn",
+  "version": "1.0.0",
+  "meta": {
+    "canvas": { "width": 393, "height": 852, "reference": "iPhone 15 Pro / modern Android portrait" },
+    "outerPadding": 16,
+    "spatialGrid": 8,
+    "frameGap": 48,
+    "mode": "dark-only",
+    "notes": [
+      "Every spacing value in the app is a multiple of 8, except 1px hairline borders.",
+      "All currency, countdown timers and price tags use the mono family with tabular figures.",
+      "Radius scale: 10 tile / 12 inner item / 14 button / 18-20 hero composite / 24 hero / 46 device."
+    ]
+  },
+
+  "color": {
+    "bg":         { "value": "#09090B", "role": "canvas / rich obsidian" },
+    "surface":    { "value": "#121216", "role": "card, list row" },
+    "surfaceHi":  { "value": "#17171C", "role": "raised / hover surface" },
+    "border":     { "value": "#27272A", "role": "1px hairline on every card" },
+    "borderHi":   { "value": "#3F3F46", "role": "divider, inactive track" },
+
+    "accent":     { "value": "#FF4500", "role": "primary burn orange" },
+    "accentAlt":  { "value": "#FF8C00", "role": "gradient end" },
+    "accentWarm": { "value": "#FFB27A", "role": "orange text on dark (AA)" },
+
+    "safe":       { "value": "#10B981", "role": "active / daily driver" },
+    "warn":       { "value": "#F59E0B", "role": "renews in < 3 days" },
+    "danger":     { "value": "#EF4444", "role": "over budget / cancel" },
+
+    "text":       { "value": "#FAFAFA", "role": "primary" },
+    "textSecondary": { "value": "#A1A1AA", "role": "secondary" },
+    "textMuted":  { "value": "#9A9AA4", "role": "captions — 5.6:1, AA at 9px+" },
+    "dividerDeco":{ "value": "#52525B", "role": "non-text decoration only (fails AA, never used for text)" }
+  },
+
+  "gradient": {
+    "burn":       { "type": "linear", "angle": 135, "stops": ["#FF4500", "#FF8C00"] },
+    "burnVertical": { "type": "linear", "angle": 180, "stops": ["#FF8C00", "#FF4500"] },
+    "heroAmount": { "type": "text", "angle": 178, "stops": ["#FFFFFF", "#FFC9A0", "#FF6A1A"] },
+    "heroGlow":   { "type": "radial", "stops": ["rgba(255,69,0,0.34)", "rgba(255,140,0,0.10)", "transparent"] }
+  },
+
+  "typography": {
+    "families": {
+      "ui": { "family": "Plus Jakarta Sans", "fallback": "Inter", "weights": [400, 500, 600, 700, 800] },
+      "mono": {
+        "family": "JetBrains Mono",
+        "weights": [400, 500, 600, 700],
+        "features": ["tnum", "lnum"],
+        "note": "Upstream JetBrains Mono has no U+20B9. The bundled subset injects a ₹ glyph from Noto Sans Mono, scaled to 0.94em and centred on the mono advance. Flutter: bundle assets/fonts/jbm-*.woff2 as TTF or use the same merge."
+      }
+    },
+    "scale": {
+      "display":  { "size": 58, "lineHeight": 58, "weight": 600, "family": "mono",  "tracking": -0.055, "role": "hero burn amount" },
+      "h1":       { "size": 25, "lineHeight": 26, "weight": 800, "family": "ui",    "tracking": -0.035, "role": "share card title" },
+      "h2":       { "size": 22, "lineHeight": 24, "weight": 800, "family": "ui",    "tracking": -0.035, "role": "sheet title" },
+      "h3":       { "size": 16, "lineHeight": 20, "weight": 800, "family": "ui",    "tracking": -0.03,  "role": "screen title" },
+      "section":  { "size": 13, "lineHeight": 16, "weight": 700, "family": "ui",    "tracking": -0.015, "role": "section header" },
+      "body":     { "size": 12, "lineHeight": 16, "weight": 500, "family": "ui",    "tracking": 0,      "role": "row title" },
+      "caption":  { "size": 10, "lineHeight": 14, "weight": 500, "family": "ui",    "tracking": 0,      "role": "supporting line" },
+      "label":    { "size": 10, "lineHeight": 12, "weight": 700, "family": "ui",    "tracking": 0.115,  "role": "uppercase eyebrow" },
+      "micro":    { "size": 8,  "lineHeight": 10, "weight": 600, "family": "mono",  "tracking": 0.06,   "role": "pill / meta" },
+      "moneyLg":  { "size": 34, "lineHeight": 36, "weight": 600, "family": "mono",  "tracking": -0.055, "role": "total spent" },
+      "moneyMd":  { "size": 16, "lineHeight": 18, "weight": 600, "family": "mono",  "tracking": -0.04,  "role": "card price" },
+      "moneySm":  { "size": 12, "lineHeight": 14, "weight": 600, "family": "mono",  "tracking": -0.03,  "role": "row price" }
+    }
+  },
+
+  "space": {
+    "grid": 8,
+    "scale": { "0": 0, "1": 4, "2": 8, "3": 12, "4": 16, "5": 20, "6": 24, "7": 32, "8": 40, "9": 48, "10": 56 }
+  },
+
+  "radius": {
+    "tile": 10, "inner": 12, "button": 14, "composite": 18, "hero": 24, "sheet": 26, "device": 46, "pill": 999
+  },
+
+  "border": { "hairline": 1, "color": "#27272A" },
+
+  "elevation": {
+    "card": { "shadow": "inset 0 1px 0 rgba(255,255,255,0.045)", "note": "dark UI reads depth as an inner top highlight, not a drop shadow" },
+    "heroGlow": { "shadow": "0 24px 46px -26px rgba(255,69,0,0.55)" },
+    "ctaGlow":  { "shadow": "0 16px 34px -12px rgba(255,69,0,0.95)" },
+    "device":   { "shadow": "0 50px 100px -40px rgba(0,0,0,0.95)" }
+  },
+
+  "motion": {
+    "pulse": { "durationMs": 2400, "easing": "ease-in-out", "loop": true, "appliesTo": "renewal badges only", "reducedMotion": "disabled" }
+  },
+
+  "semantic": {
+    "ghostThresholdDays": 40,
+    "renewalWarningHours": 48,
+    "reminderHours": [48, 24],
+    "currencySymbol": "₹",
+    "fxRate": { "INR_per_USD": 83 },
+
+    "ghostShareDisplay": {
+      "decimals": 1,
+      "note": "25.67 % prints as 25.7 %, never a rounded 26 %. The percentage and the rupee figure must agree: 1,245 / 4,850 = 25.67 %."
+    },
+
+    "billing": {
+      "yearlyDiscount": 0.17,
+      "note": "A yearly-billed tool is priced at 12 × monthly × 0.83. Monthly bills are stored as-is and normalised on read with cycle.monthlyFactor (weekly 52/12, yearly 1/12)."
+    },
+
+    "catalogue": {
+      "cdn": "https://pub-8fbd857d2069417ab8436546106f26b3.r2.dev",
+      "objects": ["presets_v1.json", "rates.json"],
+      "cacheDays": 7,
+      "bundledFallback": "flutter/assets/json/presets_v1.json",
+      "toolCount": 124
+    },
+
+    "backend": {
+      "localData": "hive_ce (subscriptions_v1, settings_v1)",
+      "firebase": "Spark plan — analytics, crashlytics, messaging, remote config (12h min fetch)",
+      "push": "OneSignal broadcast only, keyed to a random install id",
+      "perUserCost": "0"
+    }
+  }
+}

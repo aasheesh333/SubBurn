@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SubBurn — 4-Screen Mobile UI</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<style>
+/* ==================================================================
+   SUBBURN · DESIGN TOKENS
+   Frame 393×852 · 16px outer padding · 8px spatial grid · dark only
+   ================================================================== */
+:root{
+  --bg:#09090B;
+  --surface:#121216;
+  --surface-2:#17171C;
+  --line:#27272A;
+  --line-hi:#3F3F46;
+
+  --accent:#FF4500;
+  --accent-2:#FF8C00;
+  --grad-burn:linear-gradient(135deg,#FF4500 0%,#FF8C00 100%);
+  --grad-burn-v:linear-gradient(180deg,#FF8C00 0%,#FF4500 100%);
+
+  --safe:#10B981;
+  --warn:#F59E0B;
+  --danger:#EF4444;
+
+  --text:#FAFAFA;
+  --text-2:#A1A1AA;
+  --muted:#52525B;
+  --muted-text:#9A9AA4;   /* 5.6:1 on #121216 — AA for small text */
+  --muted-2:#7E7E88;      /* 4.5:1 on #09090B */
+
+  --r-tile:10px;
+  --r-inner:12px;
+  --r-btn:14px;
+  --r-hero:24px;
+
+  --ui:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#060608}
+body{
+  font-family:var(--ui);color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  font-kerning:normal;
+}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"lnum" 1}
+svg{display:block}
+
+/* ==================================================================
+   BOARD
+   ================================================================== */
+#board{padding:40px;display:inline-block}
+.board-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:34px}
+.board-title{display:flex;align-items:center;gap:13px}
+.board-mark{width:36px;height:36px;border-radius:11px;background:var(--grad-burn);display:grid;place-items:center;
+  box-shadow:0 10px 26px -8px rgba(255,69,0,.7),inset 0 1px 0 rgba(255,255,255,.4)}
+.board-title h1{font-size:20px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;line-height:1}
+.board-title h1 span{color:var(--accent)}
+.board-sub{margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--muted-text);text-transform:uppercase}
+.board-meta{display:flex;gap:7px}
+.chip{font-family:var(--mono);font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-2);
+  border:1px solid var(--line);background:#0C0C0F;border-radius:999px;padding:5px 10px;white-space:nowrap}
+
+.frames{display:flex;gap:48px;align-items:flex-start}
+.frame-wrap{display:flex;flex-direction:column;gap:13px}
+.frame-label{display:flex;align-items:baseline;gap:8px;padding-left:4px;font-size:12px;font-weight:600;color:var(--text-2);letter-spacing:-.01em}
+.frame-label .num{font-family:var(--mono);font-size:9.5px;color:var(--accent);letter-spacing:.1em;font-weight:600}
+.frame-label .meta{margin-left:auto;font-family:var(--mono);font-size:8.5px;color:var(--muted-2);letter-spacing:.05em;text-transform:uppercase}
+
+.device{
+  position:relative;width:393px;height:852px;border-radius:46px;background:#09090B;overflow:hidden;
+  box-shadow:0 50px 100px -40px rgba(0,0,0,.95),
+             0 0 0 1px #2A2A31,
+             0 0 0 9px #0A0A0C,
+             0 0 0 10px #1B1B20;
+}
+.screen{position:relative;width:393px;height:852px;background:var(--bg);overflow:hidden;
+  display:flex;flex-direction:column;border-radius:46px}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:110px;height:30px;border-radius:16px;background:#000;z-index:60}
+
+.statusbar{height:54px;flex:0 0 54px;display:flex;align-items:center;justify-content:space-between;padding:0 25px;position:relative;z-index:50}
+.statusbar .time{font-size:13.5px;font-weight:700;letter-spacing:.01em;padding-top:11px}
+.sbar-right{display:flex;align-items:center;gap:5px;padding-top:11px}
+.pad{padding:0 16px}
+
+.home-ind{position:absolute;left:50%;transform:translateX(-50%);bottom:8px;width:132px;height:5px;border-radius:3px;background:#3F3F46;z-index:40}
+
+/* ==================================================================
+   PRIMITIVES
+   ================================================================== */
+.label{font-size:10px;font-weight:700;letter-spacing:.115em;text-transform:uppercase;color:var(--muted-text)}
+.sec-head{display:flex;align-items:center;justify-content:space-between;height:20px}
+.sec-head h3{font-size:13px;font-weight:700;letter-spacing:-.015em;color:var(--text)}
+.badge{display:inline-flex;align-items:center;gap:5px;height:19px;padding:0 7px;border-radius:6px;
+  font-family:var(--mono);font-size:8.5px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
+.badge.amber{color:#FBBF24;background:rgba(245,158,11,.11);border:1px solid rgba(245,158,11,.30)}
+/* Renewal countdown pulse — the only motion in the UI, reserved for urgency.
+   Respects reduced-motion. */
+.badge.amber .dot{animation:pulse 2.4s ease-out infinite}
+.badge.amber{animation:breathe 2.4s ease-in-out infinite}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(245,158,11,.55)}
+  70%{box-shadow:0 0 0 5px rgba(245,158,11,0)}
+  100%{box-shadow:0 0 0 0 rgba(245,158,11,0)}
+}
+@keyframes breathe{
+  0%,100%{border-color:rgba(245,158,11,.30)}
+  50%{border-color:rgba(245,158,11,.52)}
+}
+@media (prefers-reduced-motion:reduce){
+  .badge.amber,.badge.amber .dot{animation:none}
+}
+.badge.neutral{color:var(--text-2);background:#0C0C0F;border:1px solid var(--line)}
+.badge.safe{color:#34D399;background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.28)}
+.dot{width:4px;height:4px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px rgba(245,158,11,.15)}
+.badge.safe .dot{box-shadow:0 0 0 3px rgba(16,185,129,.14)}
+
+.tile{position:relative;display:grid;place-items:center;border-radius:var(--r-tile);flex:0 0 auto;
+  font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:-.03em}
+.tile::after{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(255,255,255,.10)}
+
+/* ==================================================================
+   FRAME 1 · BURN DASHBOARD
+   ================================================================== */
+.topbar{display:flex;align-items:center;gap:8px;height:48px;flex:0 0 48px}
+.logo{width:30px;height:30px;border-radius:10px;background:var(--grad-burn);display:grid;place-items:center;
+  box-shadow:0 6px 18px -4px rgba(255,69,0,.65),inset 0 1px 0 rgba(255,255,255,.38)}
+.wordmark{font-size:13.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;line-height:1}
+.topbar .chip{margin-left:auto;font-size:8px;padding:5px 8px;display:flex;align-items:center;gap:5px;color:var(--text-2)}
+
+/* hero */
+.hero{position:relative;flex:0 0 172px;border-radius:var(--r-hero);padding:16px;overflow:hidden;
+  background:linear-gradient(160deg,#1B1214 0%,#131316 52%,#111114 100%);
+  border:1px solid #33271F;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 24px 46px -26px rgba(255,69,0,.55)}
+.hero .glowA{position:absolute;width:280px;height:280px;right:-96px;top:-140px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,69,0,.34),rgba(255,140,0,.10) 45%,transparent 70%)}
+.hero .glowB{position:absolute;width:220px;height:160px;left:-70px;bottom:-110px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,140,0,.16),transparent 68%)}
+.hero-row{position:relative;display:flex;align-items:center;justify-content:space-between;height:12px}
+.hero-row .fx{font-family:var(--mono);font-size:8px;letter-spacing:.05em;color:var(--muted-text)}
+.delta{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:8px;letter-spacing:.02em;color:#FFB27A}
+.hero-amt{position:relative;display:flex;align-items:baseline;gap:8px;margin-top:2px;height:58px}
+.hero-amt .big{font-family:var(--mono);font-size:58px;line-height:1;font-weight:600;letter-spacing:-.055em;
+  background:linear-gradient(178deg,#FFFFFF 4%,#FFC9A0 46%,#FF6A1A 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 24px rgba(255,69,0,.30))}
+.hero-amt .per{font-family:var(--mono);font-size:11.5px;color:var(--muted-text);letter-spacing:.01em;padding-bottom:5px}
+.hero-sub{position:relative;display:flex;align-items:center;gap:5px;margin-top:10px;font-size:10px;color:var(--text-2);height:14px}
+.hero-sub b{color:#FFB27A;font-weight:600;font-family:var(--mono);font-size:9.5px;letter-spacing:-.01em}
+
+.bar{position:relative;margin-top:12px;height:7px;border-radius:4px;background:#1D1D23;display:flex;gap:2px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px}
+.bar .active{background:var(--grad-burn);box-shadow:0 0 16px rgba(255,69,0,.65)}
+.bar .ghost{background:#7A7A86}
+.legend{position:relative;display:flex;align-items:center;justify-content:space-between;margin-top:8px;height:12px;font-size:9.5px;width:100%}
+.legend .l{display:flex;align-items:center;gap:5px;color:var(--text-2)}
+.legend .k{width:5px;height:5px;border-radius:2px}
+.legend .val{font-family:var(--mono);font-size:9px;color:var(--muted-text);margin-left:2px}
+
+/* renewing rail */
+.rail{display:flex;gap:10px;overflow:hidden;flex:0 0 104px;margin-right:-16px;
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 86%,transparent 100%);
+  mask-image:linear-gradient(90deg,#000 0,#000 86%,transparent 100%)}
+.rcard{position:relative;width:148px;flex:0 0 148px;border-radius:var(--r-inner);padding:11px 12px;
+  background:linear-gradient(168deg,#17171C,#121216);border:1px solid var(--line);overflow:hidden}
+.rcard::before{content:"";position:absolute;left:8px;right:8px;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,140,0,.55),transparent)}
+.rcard .top{display:flex;align-items:center;gap:8px;height:30px}
+.rcard .tile{width:30px;height:30px;font-size:9.5px}
+.rcard .nm{font-size:10.5px;font-weight:700;line-height:1.1;letter-spacing:-.015em;white-space:nowrap}
+.rcard .pl{font-size:7.5px;color:var(--muted-text);margin-top:2px;letter-spacing:.01em;white-space:nowrap}
+.rcard .price{display:flex;align-items:baseline;gap:3px;font-family:var(--mono);font-size:16px;font-weight:600;letter-spacing:-.04em;margin-top:1px}
+.rcard .price span{font-size:8px;color:var(--muted-text);font-weight:400;letter-spacing:0}
+.rcard .badge{position:absolute;left:12px;bottom:11px;height:18px;font-size:8px}
+
+/* subscription list */
+.sublist{display:flex;flex-direction:column;gap:8px}
+.subitem{display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:var(--r-inner);
+  background:linear-gradient(90deg,#131318,#121216);border:1px solid var(--line)}
+.subitem .tile{width:30px;height:30px;font-size:9.5px}
+.subitem .meta{display:flex;flex-direction:column;gap:1px;min-width:0}
+.subitem .nm{font-size:11.5px;font-weight:600;letter-spacing:-.015em;white-space:nowrap;line-height:1.15}
+.subitem .cyc{font-family:var(--mono);font-size:7.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-text);line-height:1}
+.subitem .right{margin-left:auto;text-align:right;display:flex;flex-direction:column;gap:2px}
+.subitem .amt{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:-.03em;line-height:1.1}
+.subitem .flag{font-family:var(--mono);font-size:7.5px;letter-spacing:.07em;text-transform:uppercase;color:#D9A24F;line-height:1}
+.subitem .flag.ok{color:#4FBF9A}
+.subitem.ghost{background:linear-gradient(90deg,#111115,#0F0F13);border-style:dashed;border-color:#33333A}
+.subitem.ghost .nm{color:var(--text-2)}
+.subitem.ghost .tile{opacity:.6}
+
+/* ghost tax callout */
+.ghostcard{position:relative;display:flex;align-items:center;gap:10px;height:56px;padding:0 12px;border-radius:var(--r-inner);
+  background:linear-gradient(100deg,rgba(245,158,11,.10),rgba(18,18,22,.6) 58%);border:1px solid rgba(245,158,11,.24);overflow:hidden}
+.ghostcard .ico{width:26px;height:26px;border-radius:8px;background:rgba(245,158,11,.14);display:grid;place-items:center;flex:0 0 auto}
+.ghostcard .t{font-size:10.5px;font-weight:600;letter-spacing:-.01em}
+.ghostcard .s{font-size:8.5px;color:var(--muted-text);margin-top:2px}
+.ghostcard .go{margin-left:auto;font-family:var(--mono);font-size:8.5px;letter-spacing:.05em;color:#FBBF24;
+  display:flex;align-items:center;gap:3px;white-space:nowrap}
+
+/* tab bar */
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:80px;padding:10px 14px 0;z-index:30;
+  display:flex;align-items:flex-start;justify-content:space-between;
+  background:linear-gradient(180deg,rgba(9,9,11,0),rgba(9,9,11,.86) 34%,#09090B 62%);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.tab{width:56px;min-height:48px;display:flex;flex-direction:column;align-items:center;gap:5px;padding-top:5px;color:#8B8B95}
+.tab.on{color:var(--accent)}
+.tab span{font-family:var(--mono);font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700}
+.fab{width:46px;height:46px;border-radius:15px;background:var(--grad-burn);display:grid;place-items:center;margin-top:-9px;
+  box-shadow:0 12px 26px -8px rgba(255,69,0,.85),0 0 0 4px rgba(9,9,11,.9),inset 0 1px 0 rgba(255,255,255,.42)}
+
+/* ==================================================================
+   FRAME 2 · QUICK ADD SHEET
+   ================================================================== */
+.backdrop{position:absolute;inset:0;z-index:1;overflow:hidden}
+.backdrop .clone{opacity:.7;filter:blur(.6px) saturate(.9)}
+.backdrop .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(9,9,11,.86) 0%,rgba(9,9,11,.94) 40%,rgba(9,9,11,1) 62%)}
+
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:5;border-radius:26px 26px 0 0;padding:10px 16px 54px;
+  background:linear-gradient(180deg,#16161B 0%,#101014 42%,#0D0D10 100%);
+  border-top:1px solid #2E2E35;box-shadow:0 -28px 80px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.08)}
+.handle{width:36px;height:4px;border-radius:2px;background:#3F3F46;margin:0 auto 12px}
+.sheet-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:13px}
+.sheet-head h2{font-size:22px;font-weight:800;letter-spacing:-.035em;line-height:1.1}
+.sheet-head p{font-size:11px;color:var(--text-2);margin-top:4px;letter-spacing:-.005em}
+.xbtn{width:44px;height:44px;border-radius:13px;background:#1B1B21;border:1px solid var(--line);
+  display:grid;place-items:center;color:var(--text-2);flex:0 0 auto}
+
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 0;width:100%}
+.gitem{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;min-width:0}
+.gitem .tile{width:44px;height:44px;border-radius:12px;font-size:11.5px}
+.gitem .lbl{font-size:8px;color:var(--text-2);letter-spacing:-.005em;white-space:nowrap;line-height:1;text-align:center}
+.gitem.on .tile{box-shadow:0 0 0 1.5px var(--accent),0 0 0 4px rgba(255,69,0,.18),0 8px 20px -8px rgba(255,69,0,.8)}
+.gitem.on .lbl{color:var(--text);font-weight:600}
+.gitem .tick{position:absolute;right:-5px;top:-5px;width:16px;height:16px;border-radius:50%;
+  background:var(--accent);display:grid;place-items:center;border:2px solid #16161B}
+
+.field{margin-top:12px}
+.field.first{margin-top:14px}
+.field .label{display:block;margin-bottom:6px}
+.seg{display:flex;gap:4px;padding:4px;border-radius:12px;background:#0B0B0E;border:1px solid var(--line)}
+.seg button{flex:1;height:44px;border:0;background:transparent;border-radius:9px;
+  font-family:var(--ui);font-size:11px;font-weight:600;color:#8B8B95;
+  display:flex;align-items:center;justify-content:center;gap:5px;letter-spacing:-.01em}
+.seg button.on{background:linear-gradient(180deg,#231A16,#1B1512);color:var(--text);
+  border:1px solid rgba(255,140,0,.36);box-shadow:0 4px 14px -8px rgba(255,69,0,.9),inset 0 1px 0 rgba(255,255,255,.07)}
+.seg button .mini{font-family:var(--mono);font-size:8px;letter-spacing:.02em;color:#9A9AA4}
+.seg button.on .mini{color:#FFB27A}
+.seg .pip{width:5px;height:5px;border-radius:50%;flex:0 0 auto}
+
+.hint{display:flex;align-items:center;gap:5px;margin-top:6px;font-size:8.5px;color:var(--muted-text);letter-spacing:.005em}
+
+/* Price row: currency prefix + editable amount. The sheet cannot be
+   submitted without a real number, so this is the primary input. */
+.pricerow{display:flex;align-items:center;gap:6px;height:52px;padding:4px;border-radius:12px;
+  background:#0B0B0E;border:1px solid var(--line)}
+.ccy{display:flex;gap:2px;flex:0 0 auto}
+.ccy button{width:38px;height:44px;border:0;border-radius:9px;background:transparent;
+  font-family:var(--mono);font-size:14px;font-weight:600;color:var(--muted-text)}
+.ccy button.on{background:linear-gradient(180deg,#231A16,#1B1512);color:var(--text);
+  border:1px solid rgba(255,140,0,.36);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.amount{display:flex;align-items:baseline;gap:3px;flex:1;min-width:0;padding-left:4px}
+.amount input{width:100%;min-width:0;border:0;background:transparent;color:var(--text);
+  font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.045em;
+  font-variant-numeric:tabular-nums}
+.amount input:focus{outline:none}
+.amount span{font-family:var(--mono);font-size:8px;color:var(--muted-text);letter-spacing:0;flex:0 0 auto}
+.autofill{display:flex;align-items:center;gap:3px;flex:0 0 auto;padding:0 9px 0 8px;height:100%;
+  border-left:1px solid var(--line);font-family:var(--mono);font-size:7px;letter-spacing:.08em;
+  text-transform:uppercase;color:#4FBF9A}
+
+.cta{width:100%;height:52px;border:0;border-radius:var(--r-btn);background:var(--grad-burn);color:#180900;
+  font-family:var(--ui);font-size:13.5px;font-weight:800;letter-spacing:-.015em;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  box-shadow:0 16px 34px -12px rgba(255,69,0,.95),inset 0 1px 0 rgba(255,255,255,.42)}
+.cta .amt{font-family:var(--mono);font-size:10.5px;font-weight:600;opacity:.7;letter-spacing:-.02em;
+  border-left:1px solid rgba(0,0,0,.20);padding-left:9px}
+.ghost-link{display:flex;align-items:center;justify-content:center;gap:6px;height:44px;margin-top:2px;
+  font-size:10.5px;font-weight:600;color:#A1A1AA}
+
+/* ==================================================================
+   FRAME 3 · CARD STUDIO
+   ================================================================== */
+.studio-head{display:flex;align-items:center;gap:10px;height:48px;flex:0 0 48px}
+.icon-btn{width:44px;height:44px;border-radius:14px;background:#131318;border:1px solid var(--line);
+  display:grid;place-items:center;color:var(--text-2);flex:0 0 auto}
+.studio-head h2{font-size:16px;font-weight:800;letter-spacing:-.03em}
+.studio-head .exp{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:8.5px;padding:0 9px;height:28px;opacity:.75}
+
+.stage{position:relative;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  margin-top:2px;height:562px}
+.stage .glow{position:absolute;width:400px;height:400px;top:30px;left:50%;transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(circle,rgba(255,69,0,.24),rgba(255,140,0,.07) 46%,transparent 68%);filter:blur(26px)}
+.stage .frame-guide{position:absolute;inset:-7px;border:1px dashed #2E2E35;border-radius:20px;pointer-events:none}
+.receipt-wrap{position:relative;width:316px;height:562px;border-radius:18px;overflow:hidden;
+  box-shadow:0 44px 90px -34px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.08)}
+.receipt-scaler{transform:scale(.877778);transform-origin:top left}
+
+/* ---- the exportable 9:16 card (single clean node) ---- */
+.receipt{width:360px;height:640px;position:relative;overflow:hidden;display:flex;flex-direction:column;
+  padding:24px 22px 20px;background:#0B0B0E;border-radius:18px;border:1px solid #2C2318}
+.receipt .rg-top{position:absolute;width:420px;height:360px;left:-90px;top:-230px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,69,0,.30),rgba(255,140,0,.08) 46%,transparent 68%)}
+.receipt .rg-bot{position:absolute;width:520px;height:340px;left:50%;transform:translateX(-50%);bottom:-235px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,69,0,.24),transparent 64%)}
+
+.rc-brand{position:relative;display:flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:8px;letter-spacing:.17em;color:#FF8C00;text-transform:uppercase}
+.rc-brand .sq{width:9px;height:9px;border-radius:2.5px;background:var(--grad-burn)}
+.rc-brand .no{margin-left:auto;color:#5C5C66;letter-spacing:.1em}
+.rc-title{position:relative;margin-top:12px;font-size:25px;font-weight:800;letter-spacing:-.035em;line-height:1.04;text-transform:uppercase;color:#FAFAFA}
+.rc-title em{font-style:normal;color:#FF7A1F}
+.rc-sub{position:relative;margin-top:6px;font-family:var(--mono);font-size:8px;letter-spacing:.15em;
+  text-transform:uppercase;color:#6E6E78}
+.rc-dash{position:relative;height:1px;margin:12px 0 9px;
+  background:repeating-linear-gradient(90deg,#3A3A42 0 3px,transparent 3px 7px)}
+.rc-cols{position:relative;display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#8A8A94;margin-bottom:7px}
+.rc-rows{position:relative;display:flex;flex-direction:column;gap:9px}
+.rc-row{display:flex;align-items:flex-start;gap:6px}
+.rc-row .name{font-size:11px;font-weight:600;letter-spacing:-.015em;color:#E9E9EC;line-height:1.2}
+.rc-row .qty{font-family:var(--mono);font-size:7.5px;color:#6E6E78;letter-spacing:-.01em;line-height:1.2;margin-top:2px}
+.rc-row .amt{margin-left:auto;font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:-.03em;color:#FAFAFA;line-height:1.2;text-align:right}
+.rc-ghost{position:relative;margin-top:11px;padding:8px 9px;border-radius:9px;
+  background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.20)}
+.rc-ghost .row{display:flex;align-items:baseline;justify-content:space-between;
+  font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#C79447}
+.rc-ghost .row b{color:#FBBF24;font-weight:700;letter-spacing:.04em}
+.rc-ghost .gb{height:3px;border-radius:2px;background:#242329;margin-top:6px;overflow:hidden}
+.rc-ghost .gb i{display:block;height:100%;background:linear-gradient(90deg,#F59E0B,#FF4500);border-radius:2px}
+
+.rc-total{position:relative;margin-top:11px;padding-top:10px;border-top:1px solid #26262D}
+.rc-total .lbl{font-family:var(--mono);font-size:7px;letter-spacing:.17em;color:#7B7B85;text-transform:uppercase}
+.rc-total .amt{display:flex;align-items:baseline;gap:5px;margin-top:1px}
+.rc-total .amt b{font-family:var(--mono);font-size:44px;font-weight:600;letter-spacing:-.055em;line-height:1.05;
+  background:linear-gradient(125deg,#FFA03A 0%,#FF4500 78%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 18px rgba(255,69,0,.35))}
+.rc-total .amt span{font-family:var(--mono);font-size:9.5px;color:#6E6E78}
+
+.rc-roast{position:relative;margin-top:11px;border-radius:11px;padding:9px 10px;
+  border:1px solid rgba(255,69,0,.38);background:linear-gradient(158deg,rgba(255,69,0,.14),rgba(255,140,0,.03))}
+.rc-roast .tier{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:7.5px;
+  letter-spacing:.1em;color:#FFB27A;text-transform:uppercase}
+.rc-roast .tier b{color:#FF4500;font-weight:700}
+.rc-roast .meter{display:flex;gap:2px;margin-left:auto}
+.rc-roast .meter i{width:10px;height:3px;border-radius:1px;background:#3A2A22}
+.rc-roast .meter i.on{background:var(--grad-burn)}
+.rc-roast p{margin-top:5px;font-size:9px;line-height:1.4;color:#DCDCE0;letter-spacing:-.008em}
+.rc-verdict{position:relative;display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;border-radius:9px;
+  background:rgba(255,255,255,.028);border:1px solid #212127}
+.rc-verdict .k{font-family:var(--mono);font-size:7px;letter-spacing:.14em;text-transform:uppercase;color:#8A8A94;flex:0 0 auto}
+.rc-stats{position:relative;display:flex;margin-top:11px;border-top:1px solid #26262D;border-bottom:1px solid #26262D}
+.rc-stat{flex:1;padding:9px 8px 10px 11px;border-right:1px solid #26262D}
+.rc-stat:last-child{border-right:0}
+.rc-stat:first-child{padding-left:0}
+.rc-stat .k{font-family:var(--mono);font-size:7px;letter-spacing:.13em;text-transform:uppercase;color:#8A8A94}
+.rc-stat .v{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:-.03em;color:#E4E4E8;margin-top:3px;line-height:1}
+.rc-stat .v em{font-style:normal;font-size:7px;color:#6E6E78;letter-spacing:0;margin-left:2px}
+.rc-verdict .v{font-size:9.5px;color:#C9C9D0;letter-spacing:-.005em;line-height:1.3}
+.rc-barcode{position:relative;display:flex;align-items:flex-end;gap:1.8px;height:18px;margin-top:11px;opacity:.62}
+.rc-barcode i{height:100%;background:#9C9CA6;border-radius:.4px}
+.rc-foot{position:relative;display:flex;align-items:center;justify-content:space-between;margin-top:auto;
+  padding-top:10px;border-top:1px dashed #2A2A31;
+  font-family:var(--mono);font-size:7px;letter-spacing:.12em;color:#8A8A94;text-transform:uppercase}
+.rc-qr{display:grid;grid-template-columns:repeat(5,2px);gap:2px}
+.rc-qr i{width:2px;height:2px;background:#6E6E78;border-radius:.5px}
+
+.caption{display:flex;align-items:center;justify-content:center;gap:5px;height:24px;
+  font-size:9px;color:#9A9AA4;letter-spacing:.005em}
+
+.btn{height:52px;border-radius:var(--r-btn);display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:13px;font-weight:700;letter-spacing:-.015em;width:100%}
+.btn.solid{background:var(--grad-burn);color:#180900;
+  box-shadow:0 16px 36px -14px rgba(255,69,0,.95),inset 0 1px 0 rgba(255,255,255,.44)}
+.btn.outline{background:#101014;border:1px solid var(--line);color:var(--text);height:46px;font-size:12px}
+.btn.danger{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.34);color:#F87171;height:50px;
+  font-size:12.5px;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.note{display:flex;align-items:flex-start;gap:5px;margin-top:7px;font-size:9.5px;line-height:1.45;
+  color:#8B8B95;letter-spacing:.005em}
+
+/* ==================================================================
+   FRAME 4 · RENEWAL + KILL SWITCH
+   ================================================================== */
+.detail-head{display:flex;align-items:center;gap:10px;height:48px;flex:0 0 48px}
+.detail-head h2{font-size:15px;font-weight:800;letter-spacing:-.03em}
+.detail-head .spacer{flex:1}
+
+.idcard{position:relative;display:flex;align-items:center;gap:11px;padding:13px;border-radius:16px;overflow:hidden;
+  background:linear-gradient(150deg,#17141A,#121216 62%);border:1px solid var(--line)}
+.idcard::before{content:"";position:absolute;width:170px;height:170px;right:-64px;top:-84px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,69,0,.15),transparent 68%)}
+.idcard .tile{width:44px;height:44px;border-radius:12px;font-size:12.5px}
+.idcard .nm{font-size:14.5px;font-weight:800;letter-spacing:-.025em;line-height:1.15}
+.idcard .mt{font-size:9px;color:var(--muted-text);margin-top:3px;letter-spacing:.01em;white-space:nowrap}
+.idcard .spacer{flex:1}
+
+.alertcard{position:relative;display:flex;align-items:center;gap:12px;padding:13px;border-radius:16px;
+  background:linear-gradient(148deg,rgba(245,158,11,.11),rgba(18,18,22,.92) 64%);border:1px solid rgba(245,158,11,.30)}
+.alertcard .lbl{color:#C79A4B;font-size:8px}
+.alertcard .big{font-family:var(--mono);font-size:25px;font-weight:600;letter-spacing:-.045em;color:#FBBF24;
+  margin-top:3px;line-height:1}
+.alertcard .sub{font-size:9px;color:var(--text-2);margin-top:6px;letter-spacing:.005em}
+.alertcard .sub b{color:var(--text);font-family:var(--mono);font-weight:600;font-size:8.5px}
+.ring{position:relative;width:54px;height:54px;flex:0 0 54px;margin-left:auto}
+.ring svg{transform:rotate(-90deg);display:block}
+.ringtxt{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1px}
+.ringtxt b{font-family:var(--mono);font-size:9.5px;font-weight:600;line-height:1;
+  color:#FBBF24;letter-spacing:-.02em}
+.ringtxt span{font-family:var(--mono);font-size:6px;line-height:1;letter-spacing:.08em;
+  text-transform:uppercase;color:#9A8560}
+
+.spendcard{padding:15px;border-radius:18px;background:linear-gradient(165deg,#141419,#101014);border:1px solid var(--line)}
+.spendcard .big{font-family:var(--mono);font-size:32px;font-weight:600;letter-spacing:-.055em;margin-top:3px;line-height:1.1;
+  background:linear-gradient(180deg,#FFFFFF,#CFCFD6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.spendcard .big span{font-size:10px;color:#9A9AA4;-webkit-text-fill-color:#9A9AA4;margin-left:5px;letter-spacing:0}
+.spendcard .meta{font-size:9px;color:var(--muted-text);margin-top:3px;letter-spacing:.005em}
+.spendchart{position:relative;margin-top:12px}
+.bars{display:flex;align-items:flex-end;gap:3px;height:34px}
+.bars i{flex:1;border-radius:2px;background:#25252C}
+.bars i.g1{background:#33333B}
+.bars i.hi{background:var(--grad-burn-v);box-shadow:0 0 12px rgba(255,69,0,.55)}
+.axis{display:flex;justify-content:space-between;margin-top:6px;
+  font-family:var(--mono);font-size:7px;letter-spacing:.06em;color:#9A9AA4}
+
+.rowcard{display:flex;align-items:center;gap:10px;padding:12px 13px;min-height:56px;border-radius:var(--r-inner);
+  background:#121216;border:1px solid var(--line);min-height:54px}
+.rowcard .t{font-size:11px;font-weight:600;letter-spacing:-.01em}
+.rowcard .s{font-size:8.5px;color:var(--muted-text);margin-top:2px;letter-spacing:.005em}
+.rowcard .spacer{flex:1}
+.switch{width:48px;height:28px;border-radius:14px;background:var(--grad-burn);position:relative;flex:0 0 42px;
+  box-shadow:0 0 16px rgba(255,69,0,.45),inset 0 1px 0 rgba(255,255,255,.32)}
+.switch i{position:absolute;right:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.45)}
+
+.savecard{position:relative;display:flex;align-items:center;gap:11px;padding:12px 13px;border-radius:14px;overflow:hidden;
+  background:linear-gradient(100deg,rgba(16,185,129,.09),rgba(16,185,129,.02) 60%);border:1px solid rgba(16,185,129,.24)}
+.savecard .ico{width:30px;height:30px;border-radius:9px;background:rgba(16,185,129,.13);display:grid;place-items:center;flex:0 0 auto}
+.savecard .t{font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#5FC9A3}
+.savecard .v{font-family:var(--mono);font-size:16px;font-weight:600;letter-spacing:-.035em;color:#EAFBF4;margin-top:2px}
+.savecard .v span{font-size:8px;color:#6E9E8E;letter-spacing:0}
+.savecard .s{font-size:8px;color:#6E9E8E;margin-top:2px}
+
+.timeline{padding:12px 13px 16px;border-radius:var(--r-inner);
+  background:linear-gradient(150deg,rgba(16,185,129,.055),#0D0D11 46%);border:1px solid #23262A}
+.tl-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:11px}
+.tl-save{font-size:10px;color:#8FA8A0;margin-top:4px;letter-spacing:-.005em}
+.tl-save b{font-family:var(--mono);font-size:12px;font-weight:600;color:#EAFBF4;letter-spacing:-.03em}
+.tl-badge{font-family:var(--mono);font-size:6.5px;letter-spacing:.1em;color:#5FC9A3;
+  border:1px solid rgba(16,185,129,.28);background:rgba(16,185,129,.08);border-radius:5px;padding:4px 6px;white-space:nowrap}
+.tl{position:relative;display:flex;flex-direction:column;gap:0}
+.pt{position:relative;display:flex;gap:9px;padding-bottom:11px}
+.pt.last{padding-bottom:0}
+.pt>i{position:relative;flex:0 0 7px;width:7px;height:7px;margin-top:3px;border-radius:50%;background:#2C2C34;border:1px solid #3A3A43}
+.pt>i.ok{background:var(--safe);border-color:var(--safe);box-shadow:0 0 7px rgba(16,185,129,.55)}
+.pt:not(.last)::before{content:"";position:absolute;left:3px;top:11px;bottom:0;width:1px;background:#26262D}
+.pt .h{font-family:var(--mono);font-size:8px;letter-spacing:.07em;text-transform:uppercase;color:#B9B9C0;line-height:1.2}
+.pt .d{font-size:8.5px;color:#9A9AA4;margin-top:2px;letter-spacing:.005em;line-height:1.3}
+
+.bottom-dock{position:absolute;left:0;right:0;bottom:0;padding:12px 16px 22px;z-index:20;
+  background:linear-gradient(180deg,rgba(9,9,11,0),#09090B 26%)}
+
+/* ==================================================================
+   TOKEN STRIP
+   ================================================================== */
+.tokens{display:flex;gap:44px;align-items:flex-start;margin-top:38px;padding-top:22px;border-top:1px solid #17171B}
+.tok h4{font-family:var(--mono);font-size:8px;letter-spacing:.15em;color:#9A9AA4;text-transform:uppercase;margin-bottom:11px}
+.sw-row{display:flex;gap:7px}
+.sw .box{width:50px;height:30px;border-radius:7px;border:1px solid rgba(255,255,255,.07)}
+.sw p{font-family:var(--mono);font-size:7px;color:#9A9AA4;margin-top:5px;letter-spacing:.02em}
+.type-ramp{display:flex;align-items:baseline;gap:18px}
+.type-ramp div{display:flex;align-items:baseline;gap:6px}
+.type-ramp .t1{font-size:22px;font-weight:800;letter-spacing:-.035em}
+.type-ramp .t2{font-size:14px;font-weight:600;letter-spacing:-.02em}
+.type-ramp .t3{font-size:9.5px;color:var(--text-2);letter-spacing:.115em;text-transform:uppercase;font-weight:700}
+.type-ramp .m{font-family:var(--mono);font-size:16px;font-weight:600;letter-spacing:-.04em;color:#FF8C00}
+
+/* ==================================================================
+   EXPORT MODES
+   ================================================================== */
+body.solo{background:transparent}
+body.solo #board{padding:0}
+body.solo .board-head,body.solo .frame-label,body.solo .tokens,
+body.solo .frame-wrap:not(.solo),body.solo .island{display:none}
+body.solo .frame-wrap.solo{margin:0}
+body.solo .device{width:393px;height:852px;border:0;border-radius:0;box-shadow:none;background:#09090B;overflow:visible}
+body.solo .screen{width:393px;height:852px;border-radius:0}
+body.solo.receipt-mode .screen{display:none}
+/* SVG export uses the same scaled layout as the PNG; the extractor converts
+   CSS scale into real geometry, so no override is needed here. The receipt
+   card is additionally exported standalone at 360x640 (see ?export=receipt). */
+#receipt-export{display:none}
+body.solo.receipt-mode #receipt-export{display:block;position:fixed;inset:0;width:360px;height:640px}
+body.solo.receipt-mode .receipt{border:0;border-radius:0}
+</style>
+</head>
+<body>
+
+<div id="board">
+  <div class="board-head">
+    <div class="board-title">
+      <div class="board-mark">
+        <svg width="16" height="17" viewBox="0 0 24 24" fill="none"><path d="M12.6 2.2c1 3.5-.6 5.2-2.3 6.9-1.8 1.8-3.2 3.4-3.2 5.9a5.9 5.9 0 0 0 11.8 0c0-2.3-1-3.7-2.2-5-.3 1-.9 2-1.9 2.6.6-3-.7-6.5-2.2-10.4Z" fill="#1A0800"/></svg>
+      </div>
+      <div>
+        <h1>Sub<span>Burn</span></h1>
+        <div class="board-sub">AI &amp; SaaS subscription guilt tracker · v1.0</div>
+      </div>
+    </div>
+    <div class="board-meta">
+      <div class="chip">393 × 852</div>
+      <div class="chip">8px grid</div>
+      <div class="chip">Dark only</div>
+      <div class="chip">48px gap</div>
+    </div>
+  </div>
+
+  <div class="frames">
+
+    <!-- ═══════════ FRAME 1 ═══════════ -->
+    <section class="frame-wrap" data-f="1">
+      <div class="frame-label"><span class="num">01</span> Burn dashboard <span class="meta">Home · default</span></div>
+      <div class="device">
+        <div class="island"></div>
+        <div class="screen" id="f1">
+          <div class="statusbar"><span class="time">9:41</span><div class="sbar-right">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="1" fill="#FAFAFA"/><rect x="4.5" y="5" width="3" height="6" rx="1" fill="#FAFAFA"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="#FAFAFA"/><rect x="13.5" y="0" width="3" height="11" rx="1" fill="#FAFAFA"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 10.2 9.9 8a2.9 2.9 0 0 0-3.8 0L8 10.2Z" fill="#FAFAFA"/><path d="M4.2 6.4a6.2 6.2 0 0 1 7.6 0" stroke="#FAFAFA" stroke-width="1.5" stroke-linecap="round"/><path d="M1.4 3.4a10.2 10.2 0 0 1 13.2 0" stroke="#FAFAFA" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="#FAFAFA" stroke-opacity=".45"/><rect x="2.5" y="2.5" width="15" height="7" rx="1.6" fill="#FAFAFA"/><path d="M23 4.2v3.6c1.1-.3 1.4-1 1.4-1.8s-.3-1.5-1.4-1.8Z" fill="#FAFAFA" fill-opacity=".5"/></svg>
+          </div></div>
+
+          <div class="pad" style="display:flex;flex-direction:column;flex:1;min-height:0;padding-bottom:96px">
+            <div class="topbar">
+              <div class="logo">
+                <svg width="15" height="16" viewBox="0 0 24 24" fill="none"><path d="M12.6 2.2c1 3.5-.6 5.2-2.3 6.9-1.8 1.8-3.2 3.4-3.2 5.9a5.9 5.9 0 0 0 11.8 0c0-2.3-1-3.7-2.2-5-.3 1-.9 2-1.9 2.6.6-3-.7-6.5-2.2-10.4Z" fill="#1A0800"/></svg>
+              </div>
+              <div class="wordmark">SubBurn</div>
+              <div class="chip"><span class="dot" style="background:#FF4500;box-shadow:0 0 0 3px rgba(255,69,0,.14)"></span>Monthly AI &amp; SaaS burn</div>
+            </div>
+
+            <div class="hero">
+              <div class="glowA"></div><div class="glowB"></div>
+              <div class="hero-row">
+                <div class="label">Monthly burn</div>
+                <div class="delta">
+                  <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#FFB27A" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
+                  ₹620 vs Oct
+                </div>
+              </div>
+              <div class="hero-amt"><div class="big">₹4,850</div><div class="per">/ mo</div></div>
+              <div class="hero-sub">5 tools tracked · <b>₹1,245</b> is ghost spend</div>
+              <div class="bar"><i class="active" style="width:74.3%"></i><i class="ghost" style="width:25.7%"></i></div>
+              <div class="legend">
+                <div class="l"><span class="k" style="background:linear-gradient(90deg,#FF4500,#FF8C00)"></span>Active use <span class="val">74.3%</span></div>
+                <div class="l"><span class="k" style="background:#7A7A86"></span>Ghost subs <span class="val">25.7%</span></div>
+              </div>
+            </div>
+
+            <div style="height:14px"></div>
+
+            <div class="sec-head">
+              <h3>Renewing soon</h3>
+              <span class="badge amber"><span class="dot"></span>48H WINDOW</span>
+            </div>
+            <div style="height:8px"></div>
+            <div class="rail" id="renewing"></div>
+
+            <div style="height:12px"></div>
+
+            <div class="sec-head">
+              <h3>Active subscriptions</h3>
+              <span class="badge neutral">5 TOOLS</span>
+            </div>
+            <div style="height:8px"></div>
+            <div class="sublist" id="sublist"></div>
+
+            <div style="height:12px"></div>
+
+            <div class="ghostcard">
+              <div class="ico">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"><path d="M12 3a6 6 0 0 0-3.5 10.9V17h7v-3.1A6 6 0 0 0 12 3Z"/><path d="M9.5 20.5h5"/></svg>
+              </div>
+              <div>
+                <div class="t">25.7% of your burn is ghost subs</div>
+                <div class="s">2 tools untouched for 40+ days</div>
+              </div>
+              <div class="go">REVIEW
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabbar">
+            <div class="tab on">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12.8 3c.7 2.8-.5 4.1-1.8 5.4-1.4 1.4-2.6 2.7-2.6 4.7a4.8 4.8 0 0 0 9.6 0c0-1.8-.8-3-1.8-4-.2.8-.7 1.5-1.5 2 .5-2.4-.5-5.2-1.9-8.1Z" fill="currentColor"/></svg>
+              <span>Burn</span>
+            </div>
+            <div class="tab">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M3.5 10h17"/></svg>
+              <span>Studio</span>
+            </div>
+            <div class="fab">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A0800" stroke-width="2.7" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg>
+            </div>
+            <div class="tab">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M18 15.5V11a6 6 0 1 0-12 0v4.5L4.5 18h15L18 15.5Z"/><path d="M10 20.5a2.4 2.4 0 0 0 4 0"/></svg>
+              <span>Alerts</span>
+            </div>
+            <div class="tab">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5"/></svg>
+              <span>Me</span>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ FRAME 2 ═══════════ -->
+    <section class="frame-wrap" data-f="2">
+      <div class="frame-label"><span class="num">02</span> Quick add <span class="meta">Bottom sheet</span></div>
+      <div class="device">
+        <div class="island"></div>
+        <div class="screen" id="f2">
+          <div class="statusbar"><span class="time">9:41</span><div class="sbar-right">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="1" fill="#FAFAFA"/><rect x="4.5" y="5" width="3" height="6" rx="1" fill="#FAFAFA"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="#FAFAFA"/><rect x="13.5" y="0" width="3" height="11" rx="1" fill="#FAFAFA"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 10.2 9.9 8a2.9 2.9 0 0 0-3.8 0L8 10.2Z" fill="#FAFAFA"/><path d="M4.2 6.4a6.2 6.2 0 0 1 7.6 0" stroke="#FAFAFA" stroke-width="1.5" stroke-linecap="round"/><path d="M1.4 3.4a10.2 10.2 0 0 1 13.2 0" stroke="#FAFAFA" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="#FAFAFA" stroke-opacity=".45"/><rect x="2.5" y="2.5" width="15" height="7" rx="1.6" fill="#FAFAFA"/><path d="M23 4.2v3.6c1.1-.3 1.4-1 1.4-1.8s-.3-1.5-1.4-1.8Z" fill="#FAFAFA" fill-opacity=".5"/></svg>
+          </div></div>
+
+          <div class="backdrop" id="backdrop"><div class="scrim"></div></div>
+
+          <div class="sheet">
+            <div class="handle"></div>
+            <div class="sheet-head">
+              <div>
+                <h2>Add subscription</h2>
+                <p>Pick a tool, set the burn, log the guilt.</p>
+              </div>
+              <div class="xbtn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              </div>
+            </div>
+
+            <div class="grid" id="toolgrid"></div>
+
+            <div class="field first">
+              <span class="label">Billing cycle</span>
+              <div class="seg">
+                <button class="on">Monthly</button>
+                <button>Yearly <span class="mini">save 17%</span></button>
+              </div>
+            </div>
+
+            <div class="field">
+              <span class="label">Price</span>
+              <div class="pricerow">
+                <div class="ccy">
+                  <button class="on">₹</button><button>$</button>
+                </div>
+                <div class="amount">
+                  <input value="1,660" inputmode="decimal" aria-label="Price per month">
+                  <span>/ mo</span>
+                </div>
+                <div class="autofill">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  detected
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <span class="label">Usage guilt level</span>
+              <div class="seg">
+                <button class="on"><span class="pip" style="background:#10B981;box-shadow:0 0 7px #10B981"></span>Daily driver</button>
+                <button><span class="pip" style="background:#F59E0B"></span>Barely touch it</button>
+              </div>
+              <div class="hint">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#6E6E78" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11.5 11.5h.5v5"/></svg>
+                Ghost score recalculates from how often you open the app.
+              </div>
+            </div>
+
+            <div style="height:14px"></div>
+            <button class="cta">Add to burn tracker <span class="amt">₹1,660 /mo</span></button>
+            <div class="ghost-link">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg>
+              Scan a receipt instead
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ FRAME 3 ═══════════ -->
+    <section class="frame-wrap" data-f="3">
+      <div class="frame-label"><span class="num">03</span> Card studio <span class="meta">Share · RepaintBoundary</span></div>
+      <div class="device">
+        <div class="island"></div>
+        <div class="screen" id="f3">
+          <div class="statusbar"><span class="time">9:41</span><div class="sbar-right">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="1" fill="#FAFAFA"/><rect x="4.5" y="5" width="3" height="6" rx="1" fill="#FAFAFA"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="#FAFAFA"/><rect x="13.5" y="0" width="3" height="11" rx="1" fill="#FAFAFA"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 10.2 9.9 8a2.9 2.9 0 0 0-3.8 0L8 10.2Z" fill="#FAFAFA"/><path d="M4.2 6.4a6.2 6.2 0 0 1 7.6 0" stroke="#FAFAFA" stroke-width="1.5" stroke-linecap="round"/><path d="M1.4 3.4a10.2 10.2 0 0 1 13.2 0" stroke="#FAFAFA" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="#FAFAFA" stroke-opacity=".45"/><rect x="2.5" y="2.5" width="15" height="7" rx="1.6" fill="#FAFAFA"/><path d="M23 4.2v3.6c1.1-.3 1.4-1 1.4-1.8s-.3-1.5-1.4-1.8Z" fill="#FAFAFA" fill-opacity=".5"/></svg>
+          </div></div>
+
+          <div class="pad" style="display:flex;flex-direction:column;flex:1;min-height:0;padding-bottom:54px">
+            <div class="studio-head">
+              <div class="icon-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+              </div>
+              <h2>Card studio</h2>
+              <span class="badge neutral exp">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 15V4h11"/><path d="M20 9v11H9"/></svg>
+                9:16
+              </span>
+            </div>
+
+            <div class="stage">
+              <div class="glow"></div>
+              <div style="position:relative">
+                <div class="frame-guide"></div>
+                <div class="receipt-wrap"><div class="receipt-scaler" id="receipt-mount"></div></div>
+              </div>
+            </div>
+
+            <div class="caption">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#6E6E78" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+              1080 × 1920 · exported from one isolated frame
+            </div>
+
+            <div style="margin-top:auto;padding-bottom:4px">
+              <button class="btn solid">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#180900" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+                Share receipt to X / Story
+              </button>
+              <div style="height:8px"></div>
+              <button class="btn outline">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 18v2h16v-2"/></svg>
+                Save to photos
+              </button>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ FRAME 4 ═══════════ -->
+    <section class="frame-wrap" data-f="4">
+      <div class="frame-label"><span class="num">04</span> Renewal &amp; kill-switch <span class="meta">Detail · 48h alert</span></div>
+      <div class="device">
+        <div class="island"></div>
+        <div class="screen" id="f4">
+          <div class="statusbar"><span class="time">9:41</span><div class="sbar-right">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="1" fill="#FAFAFA"/><rect x="4.5" y="5" width="3" height="6" rx="1" fill="#FAFAFA"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="#FAFAFA"/><rect x="13.5" y="0" width="3" height="11" rx="1" fill="#FAFAFA"/></svg>
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 10.2 9.9 8a2.9 2.9 0 0 0-3.8 0L8 10.2Z" fill="#FAFAFA"/><path d="M4.2 6.4a6.2 6.2 0 0 1 7.6 0" stroke="#FAFAFA" stroke-width="1.5" stroke-linecap="round"/><path d="M1.4 3.4a10.2 10.2 0 0 1 13.2 0" stroke="#FAFAFA" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="#FAFAFA" stroke-opacity=".45"/><rect x="2.5" y="2.5" width="15" height="7" rx="1.6" fill="#FAFAFA"/><path d="M23 4.2v3.6c1.1-.3 1.4-1 1.4-1.8s-.3-1.5-1.4-1.8Z" fill="#FAFAFA" fill-opacity=".5"/></svg>
+          </div></div>
+
+          <div class="pad" style="display:flex;flex-direction:column;flex:1;min-height:0;padding-bottom:126px">
+            <div class="detail-head">
+              <div class="icon-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+              </div>
+              <h2>Subscription</h2>
+              <div class="spacer"></div>
+              <div class="icon-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+              </div>
+            </div>
+
+            <div style="height:8px"></div>
+
+            <div class="idcard">
+              <div class="tile" style="background:linear-gradient(150deg,rgba(16,163,127,.30),rgba(16,163,127,.10));color:#6EE7B7;border:1px solid rgba(16,163,127,.36)">AI</div>
+              <div>
+                <div class="nm">ChatGPT Plus</div>
+                <div class="mt">OpenAI · monthly · since Oct ’25</div>
+              </div>
+              <div class="spacer"></div>
+              <span class="badge safe"><span class="dot" style="background:#10B981"></span>ACTIVE</span>
+            </div>
+
+            <div style="height:8px"></div>
+
+            <div class="alertcard">
+              <div>
+                <div class="label lbl">Renews in</div>
+                <div class="big">14h 22m</div>
+                <div class="sub">₹1,660 on Mon 9 Nov · <b>•• 4242</b></div>
+              </div>
+              <div class="ring">
+                <svg width="54" height="54"><circle cx="27" cy="27" r="23" stroke="#2A2419" stroke-width="3.5" fill="none"/><circle cx="27" cy="27" r="23" stroke="#F59E0B" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="144.5" stroke-dashoffset="57.8" opacity=".92"/></svg>
+                <div class="ringtxt"><b>60%</b><span>left</span></div>
+              </div>
+            </div>
+
+            <div style="height:8px"></div>
+
+            <div class="spendcard">
+              <div class="label">Total spent since signup</div>
+              <div class="big">₹16,570<span>14 charges</span></div>
+              <div class="meta">avg ₹1,184/mo · price rose to ₹1,660 in Jun ’26</div>
+              <div class="spendchart">
+                <div class="bars" id="spendbars"></div>
+                <div class="axis"><span>OCT ’25</span><span>JUN ’26</span><span>NOV ’26</span></div>
+              </div>
+            </div>
+
+            <div style="height:8px"></div>
+
+            <div class="rowcard">
+              <div>
+                <div class="t">Usage guilt</div>
+                <div class="s">Opened 2h ago · 22 sessions this month</div>
+              </div>
+              <div class="spacer"></div>
+              <span class="badge safe"><span class="dot" style="background:#10B981"></span>DAILY DRIVER</span>
+            </div>
+
+            <div style="height:10px"></div>
+
+            <div class="rowcard">
+              <div>
+                <div class="t">Renewal reminder</div>
+                <div class="s">Local push · 24h before charge</div>
+              </div>
+              <div class="spacer"></div>
+              <div class="switch"><i></i></div>
+            </div>
+
+            <div style="height:8px"></div>
+
+            <div class="timeline">
+              <div class="tl-head">
+                <div>
+                  <div class="label" style="color:#5FC9A3">If you cancel today</div>
+                  <div class="tl-save">Keep <b>₹19,920</b> / yr</div>
+                </div>
+                <div class="tl-badge">CANCEL ANYTIME</div>
+              </div>
+              <div class="tl">
+                <div class="pt"><i class="ok"></i><div><div class="h">Now</div><div class="d">Reminder cancelled, card untouched</div></div></div>
+                <div class="pt"><i></i><div><div class="h">9 Nov</div><div class="d">No ₹1,660 charge. Nothing renews.</div></div></div>
+                <div class="pt last"><i></i><div><div class="h">8 Dec</div><div class="d">First month you keep the money</div></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bottom-dock">
+            <button class="btn danger">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-8 8"/><path d="M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/></svg>
+              Cancel with OpenAI
+            </button>
+            <div class="note">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#63636D" stroke-width="2" style="margin-top:1px;flex:0 0 9px"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4Z"/></svg>
+              Opens the vendor's official cancellation page. SubBurn never touches your credentials.
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="tokens">
+    <div class="tok">
+      <h4>Color</h4>
+      <div class="sw-row">
+        <div class="sw"><div class="box" style="background:#09090B;border-color:#2A2A31"></div><p>BG 09090B</p></div>
+        <div class="sw"><div class="box" style="background:#121216"></div><p>SRF 121216</p></div>
+        <div class="sw"><div class="box" style="background:#27272A"></div><p>BRD 27272A</p></div>
+        <div class="sw"><div class="box" style="background:linear-gradient(135deg,#FF4500,#FF8C00)"></div><p>ACCENT</p></div>
+        <div class="sw"><div class="box" style="background:#10B981"></div><p>SAFE</p></div>
+        <div class="sw"><div class="box" style="background:#F59E0B"></div><p>WARN</p></div>
+        <div class="sw"><div class="box" style="background:#EF4444"></div><p>DANGER</p></div>
+        <div class="sw"><div class="box" style="background:#A1A1AA"></div><p>TEXT-2</p></div>
+      </div>
+    </div>
+    <div class="tok">
+      <h4>Type</h4>
+      <div class="type-ramp">
+        <div><span class="t1">Display 58</span><span class="m">₹4,850</span></div>
+        <div><span class="t2">Title 16</span></div>
+        <div><span class="t3">Label 10</span></div>
+      </div>
+      <div style="margin-top:9px;font-family:var(--mono);font-size:7.5px;color:#9A9AA4;letter-spacing:.07em">PLUS JAKARTA SANS 400–800 · JETBRAINS MONO 400–700 + ₹</div>
+    </div>
+    <div class="tok">
+      <h4>Radius</h4>
+      <div class="sw-row">
+        <div class="sw"><div class="box" style="border-radius:10px;background:#17171C"></div><p>10 tile</p></div>
+        <div class="sw"><div class="box" style="border-radius:12px;background:#17171C"></div><p>12 item</p></div>
+        <div class="sw"><div class="box" style="border-radius:24px;background:#17171C"></div><p>24 hero</p></div>
+        <div class="sw"><div class="box" style="border-radius:45px;background:#17171C"></div><p>45 device</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="receipt-export"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   DATA — one source of truth for every frame
+   ══════════════════════════════════════════════════════════════ */
+const FX = 83;
+const TOOLS = [
+  {id:'chatgpt',  mark:'AI', name:'ChatGPT Plus',   plan:'OPENAI · PLUS',        color:'#10A37F', inr:1660, guilt:'daily'},
+  {id:'claude',   mark:'CL', name:'Claude Pro',      plan:'ANTHROPIC · PRO',     color:'#D97757', inr:1660, guilt:'daily'},
+  {id:'cursor',   mark:'CU', name:'Cursor Pro',      plan:'ANYSPHERE · PRO',     color:'#9C9CA6', inr:830,  guilt:'barely'},
+  {id:'copilot',  mark:'GH', name:'GitHub Copilot',  plan:'GITHUB · INDIVIDUAL', color:'#A78BFA', inr:415,  guilt:'barely'},
+  {id:'midjourney',mark:'MJ',name:'Midjourney',      plan:'MIDJOURNEY · LITE',   color:'#7C8797', inr:285,  guilt:'daily'}
+];
+const POPULAR = [
+  {id:'chatgpt',  mark:'AI', label:'ChatGPT',   color:'#10A37F'},
+  {id:'midjourney',mark:'MJ',label:'Midjourney',color:'#7C8797'},
+  {id:'cursor',   mark:'CU', label:'Cursor',    color:'#9C9CA6'},
+  {id:'netflix',  mark:'NF', label:'Netflix',   color:'#E50914'},
+  {id:'spotify',  mark:'SP', label:'Spotify',   color:'#1DB954'},
+  {id:'copilot',  mark:'GH', label:'Copilot',   color:'#A78BFA'},
+  {id:'notion',   mark:'NO', label:'Notion',    color:'#D4D4D8'},
+  {id:'figma',    mark:'FG', label:'Figma',     color:'#F24E1E'},
+  {id:'adobe',    mark:'AD', label:'Adobe CC',  color:'#FA0F00'},
+  {id:'canva',    mark:'CV', label:'Canva',     color:'#00C4CC'},
+  {id:'perplexity',mark:'PX',label:'Perplexity',color:'#1FB8CD'},
+  {id:'grammarly',mark:'GR', label:'Grammarly', color:'#15C39A'}
+];
+
+const TOTAL_INR  = TOOLS.reduce((a,t)=>a+t.inr,0);   // ₹4,850
+const YEARLY     = TOTAL_INR*12;                     // ₹58,200
+const GHOST      = TOOLS.filter(t=>t.guilt==='barely').reduce((a,t)=>a+t.inr,0);
+/* 25.67 % → one decimal, so the % and the rupee figure agree exactly.
+   Rounding to 26 % while printing ₹1,245 was the v1 inconsistency. */
+const GHOST_PCT  = (GHOST/TOTAL_INR*100).toFixed(1);  // '25.7'
+const ACTIVE_PCT = (100-parseFloat(GHOST_PCT)).toFixed(1);
+
+const inr = n => '₹' + n.toLocaleString('en-IN');
+/* Monogram fills are brand hues; text on them is lifted toward white so the
+   initial clears 4.5:1 at 10px (brand hue is kept for the tint + border). */
+const lift = (hex, amt = 0.52) => {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = ch => Math.round(ch + (255 - ch) * amt);
+  const r = mix((n >> 16) & 255), g = mix((n >> 8) & 255), b = mix(n & 255);
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+};
+const tileStyle = c =>
+  `background:linear-gradient(150deg,${c}3D,${c}14);color:${lift(c)};` +
+  `box-shadow:inset 0 0 0 1px ${c}2E`;
+const tile = (t, cls='') => `<div class="tile ${cls}" style="${tileStyle(t.color)}">${t.mark}</div>`;
+
+/* ── F1 · renewing rail ───────────────────────────────────── */
+const renewals = [
+  {t:TOOLS[0], eta:'14h 22m left', when:'today'},
+  {t:TOOLS[1], eta:'23h 05m left', when:'today'},
+  {t:TOOLS[2], eta:'1d 11h left',  when:'tomorrow'}
+];
+document.getElementById('renewing').innerHTML = renewals.map(r=>`
+  <div class="rcard">
+    <div class="top">
+      ${tile(r.t)}
+      <div>
+        <div class="nm">${r.t.name}</div>
+        <div class="pl">Renews ${r.when}</div>
+      </div>
+    </div>
+    <div class="price">${inr(r.t.inr)}<span>/mo</span></div>
+    <span class="badge amber"><span class="dot"></span>${r.eta}</span>
+  </div>`).join('');
+
+/* ── F1 · subscription list ───────────────────────────────── */
+document.getElementById('sublist').innerHTML = TOOLS.map(t=>{
+  const ghost = t.guilt === 'barely';
+  return `
+  <div class="subitem ${ghost?'ghost':''}">
+    ${tile(t)}
+    <div class="meta">
+      <div class="nm">${t.name}</div>
+      <div class="cyc">${t.plan}</div>
+    </div>
+    <div class="right">
+      <div class="amt">${inr(t.inr)}</div>
+      <div class="flag ${ghost?'':'ok'}">${ghost?'GHOST · 41d':'DAILY USE'}</div>
+    </div>
+  </div>`;
+}).join('');
+
+/* ── F2 · 12-tool grid ────────────────────────────────────── */
+document.getElementById('toolgrid').innerHTML = POPULAR.map(p=>`
+  <div class="gitem ${p.id==='chatgpt'?'on':''}">
+    <div class="tile" style="${tileStyle(p.color)}">
+      ${p.mark}
+      ${p.id==='chatgpt'?`<div class="tick"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#160800" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>`:''}
+    </div>
+    <span class="lbl">${p.label}</span>
+  </div>`).join('');
+
+/* ── F2 · dimmed dashboard behind the sheet ───────────────── */
+(() => {
+  const src = document.getElementById('f1').cloneNode(true);
+  src.removeAttribute('id');
+  src.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));
+  src.classList.add('clone');
+  src.style.position = 'absolute';
+  src.style.inset = '0';
+  const bd = document.getElementById('backdrop');
+  bd.insertBefore(src, bd.firstChild);
+})();
+
+/* ── F4 · 13-month spend bars ─────────────────────────────── */
+const spend = [1,1,1,1,1,1,1,1,2,2,2,2,2,2];
+document.getElementById('spendbars').innerHTML = spend.map((v,i)=>{
+  const h = 5 + (v/2)*29;
+  const cls = i>=8 ? 'hi' : '';
+  return `<i class="${cls}" style="height:${h.toFixed(1)}px"></i>`;
+}).join('');
+
+/* ── F3 · the exportable 9:16 card ────────────────────────────
+   360×640 layout box → exported at 1080×1920 (@3x).
+   Everything in here must be self-contained: one clean node
+   with no shadow/glow bleeding outside its bounds.            */
+function receiptHTML(){
+  const rows = TOOLS.map(t=>`
+    <div class="rc-row">
+      <div>
+        <div class="name">${t.name}</div>
+        <div class="qty">${inr(t.inr)}/mo × 12</div>
+      </div>
+      <div class="amt">${inr(t.inr*12)}</div>
+    </div>`).join('');
+  const qr = Array.from({length:25},(_,i)=>
+    `<i style="opacity:${[0,1,2,5,6,7,10,12,14,17,18,19,20,22,24].includes(i)?1:.14}"></i>`).join('');
+  const W = [1,1,2,1,3,1,1,2,1,1,2,3,1,1,2,1];
+  const bars = Array.from({length:46},(_,i)=>`<i style="width:${W[i%W.length]}px"></i>`).join('');
+
+  return `
+  <div class="receipt">
+    <div class="rg-top"></div><div class="rg-bot"></div>
+
+    <div class="rc-brand"><span class="sq"></span>SubBurn · Wrapped 2026<span class="no">No. 00412</span></div>
+
+    <div class="rc-title">My 2026 AI<br><em>tax receipt</em></div>
+    <div class="rc-sub">Audit of reckless optimism</div>
+
+    <div class="rc-dash"></div>
+    <div class="rc-cols"><span>Line item</span><span>Annual</span></div>
+    <div class="rc-rows">${rows}</div>
+
+    <div class="rc-ghost">
+      <div class="row"><span>Ghost spend</span><b>${GHOST_PCT}% · ${inr(GHOST*12)}/yr</b></div>
+      <div class="gb"><i style="width:${GHOST_PCT}%"></i></div>
+    </div>
+
+    <div class="rc-stats">
+      <div class="rc-stat"><div class="k">Tools</div><div class="v">5</div></div>
+      <div class="rc-stat"><div class="k">Avg / mo</div><div class="v">${inr(TOTAL_INR)}</div></div>
+      <div class="rc-stat"><div class="k">Per workday</div><div class="v">₹220</div></div>
+    </div>
+
+    <div class="rc-total">
+      <div class="lbl">Total yearly burn</div>
+      <div class="amt"><b>${inr(YEARLY)}</b><span>/yr</span></div>
+    </div>
+
+    <div class="rc-roast">
+      <div class="tier">Tier: <b>Silicon Valley Paypig</b>
+        <span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>
+      </div>
+      <p>Paying ${inr(YEARLY)}/yr to generate memes and fix center divs.</p>
+    </div>
+
+    <div class="rc-verdict">
+      <span class="k">Verdict</span>
+      <span class="v">That is 2 years of a Mumbai gym membership.</span>
+    </div>
+    <div class="rc-barcode">${bars}</div>
+    <div class="rc-foot">
+      <span>subburn.app</span>
+      <div class="rc-qr">${qr}</div>
+    </div>
+  </div>`;
+}
+document.getElementById('receipt-mount').innerHTML = receiptHTML();
+document.querySelector('#receipt-mount .receipt').id = 'receipt-card';
+document.getElementById('receipt-export').innerHTML = receiptHTML();
+
+/* ── export modes ─────────────────────────────────────────── */
+const q = new URLSearchParams(location.search);
+if (q.get('export') === 'frame'){
+  document.body.classList.add('solo');
+  const n = q.get('n');
+  document.querySelectorAll('.frame-wrap').forEach(w=>w.classList.toggle('solo', w.dataset.f===n));
+}
+if (q.get('export') === 'receipt'){
+  document.body.classList.add('solo','receipt-mode');
+}
+if (q.get('svg') === '1'){
+  document.body.classList.add('svg-mode');
+}
+
+/* ── layout audit (called by tools/render.py) ─────────────── */
+window.__audit = () => {
+  const out = [];
+  document.querySelectorAll('.screen').forEach(s=>{
+    const pad = s.querySelector('.pad');
+    if(!pad || s.closest('.backdrop')) return;
+    out.push({
+      id: s.id || 'clone',
+      required: pad.scrollHeight,
+      available: pad.clientHeight,
+      overflow: pad.scrollHeight - pad.clientHeight
+    });
+  });
+  return out;
+};
+</script>
+</body>
+</html>

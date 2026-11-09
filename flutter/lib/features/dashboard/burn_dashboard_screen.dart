@@ -1,0 +1,719 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/theme/theme_tokens.dart';
+import '../../core/utils/formatters.dart';
+import '../../data/models/currency.dart';
+import '../../data/models/subscription.dart';
+import '../../state/providers.dart';
+import '../../widgets/burn_hero_card.dart';
+import '../../widgets/money_text.dart';
+import '../../widgets/primary_button.dart';
+import '../../widgets/status_badge.dart';
+import '../../widgets/surface_card.dart';
+import '../../widgets/tool_tile.dart';
+import '../detail/sub_detail_screen.dart';
+
+/// Screen 1 — the burn dashboard.
+///
+/// Answers one question in under a second: how much am I burning, and how much
+/// of it is ghost spend. The hero number is the product; everything below is a
+/// supporting argument.
+class BurnDashboardScreen extends ConsumerWidget {
+  const BurnDashboardScreen({
+    super.key,
+    required this.onAddSubscription,
+    required this.onOpenStudio,
+  });
+
+  final VoidCallback onAddSubscription;
+  final VoidCallback onOpenStudio;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summary = ref.watch(burnSummaryProvider);
+    final settings = ref.watch(settingsProvider);
+    final subscriptions = ref.watch(subscriptionsProvider);
+
+    return SafeArea(
+      bottom: false,
+      child: RefreshIndicator(
+        color: SbColors.accent,
+        backgroundColor: SbColors.surfaceHi,
+        onRefresh: () => ref.read(catalogueProvider.notifier).refresh(),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                SbSpace.page,
+                SbSpace.x2,
+                SbSpace.page,
+                0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: _TopBar(
+                  currency: settings.displayCurrency,
+                  onToggleCurrency: () {
+                    final next = settings.displayCurrency == CurrencyCode.inr
+                        ? CurrencyCode.usd
+                        : CurrencyCode.inr;
+                    ref.read(settingsProvider.notifier).setCurrency(next);
+                  },
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                SbSpace.page,
+                SbSpace.x4,
+                SbSpace.page,
+                0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: BurnHeroCard(
+                  monthlyTotal: summary.monthly,
+                  activeAmount: summary.activeMonthly,
+                  ghostAmount: summary.ghostMonthly,
+                  toolCount: summary.count,
+                  delta: _monthDelta(
+                    subscriptions,
+                    settings.displayCurrency,
+                    ref.watch(ratesProvider).inrPerUsd,
+                  ),
+                ),
+              ),
+            ),
+            if (subscriptions.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: _EmptyState(
+                  onAdd: onAddSubscription,
+                  onOpenStudio: onOpenStudio,
+                ),
+              )
+            else ...[
+              const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x5)),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: SbSpace.page),
+                sliver: SliverToBoxAdapter(
+                  child: _SectionHeader(
+                    title: 'Renewing soon',
+                    badge: StatusBadge(
+                      '${SbWindow.renewingHours}H WINDOW',
+                      tone: BadgeTone.warn,
+                      leadingDot: true,
+                      pulse: summary.dueSoon.any(
+                        (s) => s.timeUntilRenewal().inHours < 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x2)),
+              SliverToBoxAdapter(
+                child: _RenewingRail(subscriptions: summary.dueSoon),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x4)),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: SbSpace.page),
+                sliver: SliverToBoxAdapter(
+                  child: _SectionHeader(
+                    title: 'Subscriptions',
+                    badge: StatusBadge('${summary.count} TOOLS'),
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x2)),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: SbSpace.page),
+                sliver: SliverList.separated(
+                  itemCount: subscriptions.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: SbSpace.x2),
+                  itemBuilder: (context, index) {
+                    final sub = subscriptions[index];
+                    return _SubscriptionRow(
+                      key: ValueKey(sub.id),
+                      subscription: sub,
+                      currency: settings.displayCurrency,
+                      inrPerUsd: ref.watch(ratesProvider).inrPerUsd,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => SubDetailScreen(subscriptionId: sub.id),
+                        ),
+                      ),
+                      onDelete: () => _delete(context, ref, sub),
+                    );
+                  },
+                ),
+              ),
+              if (summary.ghostCount > 0) ...[
+                const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x3)),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: SbSpace.page),
+                  sliver: SliverToBoxAdapter(
+                    child: _GhostCallout(
+                      percent: summary.ghostShare * 100,
+                      count: summary.ghostCount,
+                      yearly: summary.currency.format(summary.ghostYearly),
+                    ),
+                  ),
+                ),
+              ],
+              const SliverToBoxAdapter(child: SizedBox(height: 96)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Month-over-month delta is derived from the data we have: the part of the
+  /// monthly burn that belongs to tools started inside the last 30 days. It is
+  /// honest about what it can know, and hidden when it would be zero.
+  static double? _monthDelta(
+    List<Subscription> subs,
+    CurrencyCode currency,
+    double inrPerUsd,
+  ) {
+    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    final recent = subs.where((s) => s.startDate.isAfter(cutoff)).toList();
+    if (recent.isEmpty) return null;
+    return recent.fold<double>(
+      0,
+      (sum, s) => sum + s.monthlyIn(currency, inrPerUsd),
+    );
+  }
+
+  Future<void> _delete(
+    BuildContext context,
+    WidgetRef ref,
+    Subscription subscription,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(subscriptionsProvider.notifier).remove(subscription.id);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('${subscription.name} removed'),
+          action: SnackBarAction(
+            label: 'UNDO',
+            onPressed: () {
+              ref.read(subscriptionsProvider.notifier).restore(subscription);
+            },
+          ),
+        ),
+      );
+  }
+}
+
+class _TopBar extends StatelessWidget {
+  const _TopBar({required this.currency, required this.onToggleCurrency});
+
+  final CurrencyCode currency;
+  final VoidCallback onToggleCurrency;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(SbRadius.tile),
+            gradient: SbGradients.burn,
+            boxShadow: const [SbShadow.cardInner],
+          ),
+          child: const Icon(
+            Icons.local_fire_department_rounded,
+            size: 18,
+            color: Color(0xFF1A0800),
+          ),
+        ),
+        const SizedBox(width: SbSpace.x2),
+        Text(
+          'SUBBURN',
+          style: SbType.section.copyWith(
+            letterSpacing: 0.15 * 13,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const Spacer(),
+        Semantics(
+          button: true,
+          label: 'Display currency: ${currency.code}. Tap to switch.',
+          child: InkWell(
+            onTap: onToggleCurrency,
+            borderRadius: BorderRadius.circular(SbRadius.pill),
+            child: Container(
+              height: 28,
+              padding: const EdgeInsets.symmetric(horizontal: 9),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(SbRadius.pill),
+                color: SbColors.surface,
+                border: Border.all(color: SbColors.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const _LiveDot(),
+                  const SizedBox(width: 5),
+                  Text(
+                    '${currency.code} · BURN',
+                    style: SbType.micro.copyWith(
+                      fontSize: 8,
+                      color: SbColors.textSecondary,
+                      letterSpacing: 0.08,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.unfold_more_rounded,
+                    size: 11,
+                    color: SbColors.textMuted,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LiveDot extends StatelessWidget {
+  const _LiveDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 5,
+      height: 5,
+      decoration: BoxDecoration(
+        color: SbColors.accent,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: SbColors.accent.withValues(alpha: 0.35),
+            blurRadius: 0,
+            spreadRadius: 3,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, this.badge});
+
+  final String title;
+  final Widget? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(title, style: SbType.section.copyWith(color: SbColors.text)),
+        const Spacer(),
+        if (badge != null) badge!,
+      ],
+    );
+  }
+}
+
+class _RenewingRail extends StatelessWidget {
+  const _RenewingRail({required this.subscriptions});
+
+  final List<Subscription> subscriptions;
+
+  @override
+  Widget build(BuildContext context) {
+    if (subscriptions.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: SbSpace.page),
+        child: SurfaceCard(
+          height: 64,
+          child: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_outline_rounded,
+                size: 16,
+                color: SbColors.safe,
+              ),
+              const SizedBox(width: SbSpace.x2),
+              Expanded(
+                child: Text(
+                  'Nothing renews in the next ${SbWindow.renewingHours} hours.',
+                  style: SbType.caption.copyWith(color: SbColors.textSecondary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 106,
+      child: ShaderMask(
+        shaderCallback: (rect) => const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Colors.white, Colors.white, Colors.transparent],
+          stops: [0, 0.86, 1],
+        ).createShader(rect),
+        blendMode: BlendMode.dstIn,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: SbSpace.page),
+          itemCount: subscriptions.length,
+          separatorBuilder: (_, __) => const SizedBox(width: SbSpace.x2),
+          itemBuilder: (context, index) => _RenewalCard(
+            subscription: subscriptions[index],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RenewalCard extends StatelessWidget {
+  const _RenewalCard({required this.subscription});
+
+  final Subscription subscription;
+
+  @override
+  Widget build(BuildContext context) {
+    final remaining = subscription.timeUntilRenewal();
+    final urgent = remaining.inHours < 24;
+
+    return SizedBox(
+      width: 148,
+      child: SurfaceCard(
+        padding: const EdgeInsets.all(11),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                ToolTile(
+                  mark: subscription.monogram,
+                  brandColor: Color(subscription.brandColor),
+                  size: 28,
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        subscription.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: SbType.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10.5,
+                          color: SbColors.text,
+                        ),
+                      ),
+                      Text(
+                        'Renews ${formatRenewalDay(subscription.nextBillingDate)}',
+                        style: SbType.micro.copyWith(
+                          fontSize: 7.5,
+                          color: SbColors.textMuted,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              subscription.currency.format(subscription.amount),
+              style: SbType.moneyMd.copyWith(color: SbColors.text),
+            ),
+            StatusBadge(
+              formatCountdownLeft(remaining),
+              tone: urgent ? BadgeTone.warn : BadgeTone.neutral,
+              leadingDot: true,
+              pulse: urgent,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SubscriptionRow extends StatelessWidget {
+  const _SubscriptionRow({
+    super.key,
+    required this.subscription,
+    required this.currency,
+    required this.inrPerUsd,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  final Subscription subscription;
+  final CurrencyCode currency;
+  final double inrPerUsd;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dismissible(
+      key: ValueKey('dismiss-${subscription.id}'),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDelete(),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: SbSpace.x5),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(SbRadius.inner),
+          color: SbColors.danger.withValues(alpha: 0.12),
+          border: Border.all(color: SbColors.danger.withValues(alpha: 0.34)),
+        ),
+        child: const Icon(
+          Icons.delete_outline_rounded,
+          color: SbColors.danger,
+          size: 18,
+        ),
+      ),
+      child: Semantics(
+        button: true,
+        label:
+            '${subscription.name}, ${subscription.currency.format(subscription.amount)} per ${subscription.cycle.label.toLowerCase()}, '
+            '${subscription.guilt.label}. Opens detail.',
+        child: SurfaceCard(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
+          dashed: subscription.isGhost,
+          onTap: onTap,
+          child: Row(
+            children: [
+              Opacity(
+                opacity: subscription.isGhost ? 0.62 : 1,
+                child: ToolTile(
+                  mark: subscription.monogram,
+                  brandColor: Color(subscription.brandColor),
+                  size: 30,
+                ),
+              ),
+              const SizedBox(width: SbSpace.x2 + 2),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      subscription.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: SbType.body.copyWith(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: SbColors.text,
+                      ),
+                    ),
+                    Text(
+                      subscription.vendor.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: SbType.micro.copyWith(
+                        fontSize: 7.5,
+                        color: SbColors.textMuted,
+                        letterSpacing: 0.04,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: SbSpace.x2),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  MoneyText(
+                    subscription.monthlyIn(currency, inrPerUsd),
+                    style: SbType.moneySm.copyWith(fontSize: 12.5),
+                    color: SbColors.text,
+                    currency: currency,
+                  ),
+                  Text(
+                    subscription.isGhost ? 'GHOST' : 'DAILY USE',
+                    style: SbType.micro.copyWith(
+                      fontSize: 7.5,
+                      letterSpacing: 0.06,
+                      color: subscription.isGhost
+                          ? SbColors.warn
+                          : SbColors.safe,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GhostCallout extends StatelessWidget {
+  const _GhostCallout({
+    required this.percent,
+    required this.count,
+    required this.yearly,
+  });
+
+  final double percent;
+  final int count;
+  final String yearly;
+
+  @override
+  Widget build(BuildContext context) {
+    final whole = (percent - percent.roundToDouble()).abs() < 0.05;
+    final label = whole ? percent.round().toString() : percent.toStringAsFixed(1);
+
+    return SurfaceCard(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
+      tint: SbColors.warn,
+      child: Row(
+        children: [
+          Container(
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: SbColors.warn.withValues(alpha: 0.14),
+            ),
+            child: const Icon(
+              Icons.lightbulb_outline_rounded,
+              size: 14,
+              color: SbColors.warn,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$label% of your burn is ghost subs',
+                  style: SbType.caption.copyWith(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: SbColors.text,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$count tools · $yearly/yr you do not use',
+                  style: SbType.micro.copyWith(
+                    fontSize: 8,
+                    color: SbColors.textMuted,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            'REVIEW',
+            style: SbType.micro.copyWith(
+              fontSize: 8.5,
+              color: const Color(0xFFFBBF24),
+              letterSpacing: 0.05,
+            ),
+          ),
+          const Icon(
+            Icons.chevron_right_rounded,
+            size: 14,
+            color: Color(0xFFFBBF24),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.onAdd, required this.onOpenStudio});
+
+  final VoidCallback onAdd;
+  final VoidCallback onOpenStudio;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        SbSpace.page,
+        SbSpace.x8,
+        SbSpace.page,
+        SbSpace.x6,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  SbColors.accent.withValues(alpha: 0.22),
+                  SbColors.accent.withValues(alpha: 0),
+                ],
+              ),
+              border: Border.all(color: SbColors.border),
+            ),
+            child: const Icon(
+              Icons.local_fire_department_rounded,
+              color: SbColors.accentWarm,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: SbSpace.x4),
+          Text(
+            'Nothing burning yet',
+            style: SbType.h3.copyWith(color: SbColors.text),
+          ),
+          const SizedBox(height: SbSpace.x1),
+          Text(
+            'Add your first AI or SaaS subscription and SubBurn will show you '
+            'what it costs per year — and what it costs in regret.',
+            textAlign: TextAlign.center,
+            style: SbType.body.copyWith(color: SbColors.textSecondary),
+          ),
+          const SizedBox(height: SbSpace.x5),
+          SizedBox(
+            width: double.infinity,
+            child: PrimaryButton(
+              label: 'Add a subscription',
+              icon: Icons.add_rounded,
+              onPressed: onAdd,
+            ),
+          ),
+          const SizedBox(height: SbSpace.x3),
+          TextButton(
+            onPressed: onOpenStudio,
+            child: const Text('See a sample receipt first'),
+          ),
+        ],
+      ),
+    );
+  }
+}

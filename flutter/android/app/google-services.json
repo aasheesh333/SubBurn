@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "363613857398",
+    "project_id": "subburn-1b744",
+    "storage_bucket": "subburn-1b744.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:363613857398:android:1c8d083449784434276157",
+        "android_client_info": {
+          "package_name": "com.subburn.subburn"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDd83mPEdGs_1cQvpwH2eDOxKFxuwXXVVQ"
+        }
+      ],
+      "services": {
+        "appingite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

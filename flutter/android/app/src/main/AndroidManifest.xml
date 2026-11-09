@@ -1,0 +1,83 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Network is used only for the static preset catalogue, the FX rate and
+         broadcast config. No user data is ever uploaded. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Renewal reminders. Deliberately NO SCHEDULE_EXACT_ALARM and NO
+         USE_EXACT_ALARM: flutter_local_notifications schedules with
+         AndroidScheduleMode.inexactAllowWhileIdle, so Play Console does not
+         require the "alarms & reminders" special access declaration. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
+    <application
+        android:label="SubBurn"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <!-- One channel, created in NotificationService. FCM foreground pushes
+             fall back to it so Android never drops a notification silently. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="subburn_renewals" />
+
+        <!-- flutter_local_notifications: delivers scheduled alarms and re-arms
+             them after a reboot or an app update. -->
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- url_launcher: resolve the vendor's cancel page in a browser. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <!-- share_plus: share the exported PNG. -->
+        <intent>
+            <action android:name="android.intent.action.SEND"/>
+            <data android:mimeType="image/png"/>
+        </intent>
+    </queries>
+</manifest>

@@ -1,0 +1,84 @@
+name: subburn
+description: >-
+  SubBurn — an AI & SaaS subscription guilt tracker. Local-first Flutter app
+  with a shareable yearly-burn receipt, $0 backend (Hive + Cloudflare R2 +
+  Firebase Spark).
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State
+  flutter_riverpod: ^3.5.0
+
+  # Local-first storage — the only place user data lives
+  hive_ce: ^2.23.2
+  hive_ce_flutter: ^2.5.0
+  shared_preferences: ^2.5.6
+
+  # Edge CDN (Cloudflare R2) + static catalogue
+  http: ^1.6.0
+
+  # Firebase Spark plan
+  firebase_core: ^5.1.0
+  firebase_analytics: ^13.0.1
+  firebase_crashlytics: ^6.0.1
+  firebase_messaging: ^17.0.1
+  firebase_remote_config: ^7.0.1
+
+  # Push (broadcast only)
+  onesignal_flutter: ^5.7.3
+
+  # Local renewal reminders — inexact alarms, no special permission
+  flutter_local_notifications: ^23.0.0
+  timezone: ^0.11.2
+  flutter_timezone: ^5.1.1
+
+  # Sharing the receipt
+  share_plus: ^13.3.1
+  path_provider: ^2.1.6
+  url_launcher: ^6.3.3
+
+  # Presentation
+  google_fonts: ^9.0.0
+  intl: ^0.20.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  hive_ce_generator: ^1.12.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/json/
+    - assets/google_fonts/
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/pjs-400.ttf
+          weight: 400
+        - asset: assets/fonts/pjs-500.ttf
+          weight: 500
+        - asset: assets/fonts/pjs-600.ttf
+          weight: 600
+        - asset: assets/fonts/pjs-700.ttf
+          weight: 700
+        - asset: assets/fonts/pjs-800.ttf
+          weight: 800
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/jbm-400.ttf
+          weight: 400
+        - asset: assets/fonts/jbm-500.ttf
+          weight: 500
+        - asset: assets/fonts/jbm-600.ttf
+          weight: 600
+        - asset: assets/fonts/jbm-700.ttf
+          weight: 700
