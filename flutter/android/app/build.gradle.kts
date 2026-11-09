@@ -64,7 +64,10 @@ android {
             create("release") {
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = file(keystoreProperties["storeFile"] as String)
+                // Resolved against `android/`, not `android/app/`. `file()`
+                // here is module-relative and looked for the keystore in
+                // android/app/keystore, which is not where it lives.
+                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
                 // v2 is required by Play; v3 enables key rotation.
                 enableV1Signing = true
