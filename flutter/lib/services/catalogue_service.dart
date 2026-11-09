@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
+
+import '../core/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,6 +28,14 @@ class CatalogueService {
   final http.Client _client;
 
   static const cacheTtl = Duration(days: 7);
+
+  /// Live FX feed. No API key, USD base, updates daily; the app keeps a 24-hour
+  /// cache so a real user is never billed against a rate frozen at build time.
+  static const liveRatesUrl = 'https://open.er-api.com/v6/latest/USD';
+  static const liveRatesTtl = Duration(hours: 24);
+  static const _liveRatesKey = 'cache.fx.live.v1';
+  static const _liveRatesStampKey = 'cache.fx.liveAt';
+
   static const _presetsKey = 'cache.presets.v1';
   static const _presetsStampKey = 'cache.presets.fetchedAt';
   static const _ratesKey = 'cache.rates.v1';
@@ -101,15 +111,26 @@ class CatalogueService {
     );
   }
 
+  /// Real exchange rate, newest first:
+  /// live feed (≤24 h) → live fetch → CDN rate file → cached → bundled.
   Future<ExchangeRates> _loadRates(
     SharedPreferences prefs, {
     required bool preferCache,
   }) async {
-    final cached = prefs.getString(_ratesKey);
-    if (preferCache && cached != null) {
-      final parsed = _decodeRates(cached);
-      if (parsed != null) return parsed;
+    final stamp = DateTime.tryParse(prefs.getString(_liveRatesStampKey) ?? '');
+    final liveFresh = stamp != null &&
+        SbClock.now().difference(stamp) < liveRatesTtl &&
+        prefs.containsKey(_liveRatesKey);
+
+    if (liveFresh) {
+      final live = _decodeLiveRates(prefs.getString(_liveRatesKey));
+      if (live != null) return live;
     }
+
+    final fetched = await _fetchLiveRates(prefs);
+    if (fetched != null) return fetched;
+
+    // CDN file (refreshed by the cron worker) is the next best thing.
     try {
       final response = await _client
           .get(Uri.parse('$baseUrl/rates.json'))
@@ -120,13 +141,45 @@ class CatalogueService {
         return ExchangeRates.fromJson(json, fromCache: false);
       }
     } catch (_) {
-      // network failure — cached or bundled value wins
+      // offline — fall through
     }
+
+    final cached = prefs.getString(_ratesKey);
     if (cached != null) {
       final parsed = _decodeRates(cached);
       if (parsed != null) return parsed;
     }
-    return loadBundledRates();
+    final staleLive = _decodeLiveRates(prefs.getString(_liveRatesKey));
+    return staleLive ?? loadBundledRates();
+  }
+
+  Future<ExchangeRates?> _fetchLiveRates(SharedPreferences prefs) async {
+    try {
+      final response = await _client
+          .get(Uri.parse(liveRatesUrl))
+          .timeout(const Duration(seconds: 6));
+      if (response.statusCode != 200) return null;
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final rates = ExchangeRates.fromErApi(json);
+      if (rates == null) return null;
+      await prefs.setString(_liveRatesKey, response.body);
+      await prefs.setString(
+        _liveRatesStampKey,
+        SbClock.now().toIso8601String(),
+      );
+      return rates;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  ExchangeRates? _decodeLiveRates(String? raw) {
+    if (raw == null) return null;
+    try {
+      return ExchangeRates.fromErApi(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<PresetCatalogue?> _fetchCatalogue() async {

@@ -150,11 +150,22 @@ Sample ledgers exist only in `test/`, where they cannot reach a user.
 ## 5. Remote content
 
 ```
+open.er-api.com/v6/latest/USD      live USD→INR (cached 24 h in prefs)
 Cloudflare R2  subburn-cdn
 ├── presets_v1.json   124 tools: name, vendor, monogram, brandColor,
 │                     category, defaultPrice, currency, cycle, cancelUrl
-└── rates.json        { inrPerUsd, asOf }
+└── rates.json        { inrPerUsd, asOf }   fallback when the live feed fails
+bundled assets/json  offline copy of both
 ```
+
+Preset `defaultPrice` values are **suggestions**, not facts: Quick Add labels
+them as such and the user edits the field to match their invoice. Nothing in the
+app invents a price at runtime.
+
+The exchange rate is fetched live (24-hour cache) so a user is never converted
+against a rate frozen at build time. `ExchangeRates.fromErApi` rejects
+implausible values (outside 30–300 INR/USD) and falls back rather than showing a
+nonsense total.
 
 `CatalogueService.load()`:
 

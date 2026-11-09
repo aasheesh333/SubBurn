@@ -66,6 +66,7 @@ class SubBurnReceiptCard extends StatelessWidget {
     this.currency = CurrencyCode.inr,
     this.hiddenLineCount = 0,
     this.totalOverride,
+    this.workdays = 22,
   });
 
   final List<ReceiptLine> lines;
@@ -98,6 +99,9 @@ class SubBurnReceiptCard extends StatelessWidget {
   /// Authoritative yearly total. When null it is derived from [lines] — which
   /// is only correct when every line is shown.
   final num? totalOverride;
+
+  /// Weekdays in the current month, used for the per-workday figure.
+  final int workdays;
 
   num get _total =>
       totalOverride ?? lines.fold<num>(0, (sum, l) => sum + l.annual);
@@ -198,6 +202,7 @@ class SubBurnReceiptCard extends StatelessWidget {
                           total: _total,
                           toolCount: lines.length + hiddenLineCount,
                           currency: currency,
+                          workdays: workdays,
                         ),
                         const SizedBox(height: 9),
                         _TotalBlock(total: _total, currency: currency),
@@ -483,16 +488,18 @@ class _StatsStrip extends StatelessWidget {
     required this.total,
     required this.toolCount,
     required this.currency,
+    required this.workdays,
   });
 
   final num total;
   final int toolCount;
   final CurrencyCode currency;
+  final int workdays;
 
   @override
   Widget build(BuildContext context) {
     final monthly = total / 12;
-    final perWorkday = monthly / 22;
+    final perWorkday = monthly / (workdays <= 0 ? 22 : workdays);
 
     return Container(
       decoration: const BoxDecoration(

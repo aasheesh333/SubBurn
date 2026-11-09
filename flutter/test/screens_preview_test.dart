@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:subburn/app.dart';
 import 'package:subburn/core/theme/app_theme.dart';
 import 'package:subburn/core/clock.dart';
@@ -180,6 +181,13 @@ void main() {
     GoogleFonts.config.allowRuntimeFetching = false;
     // Freeze time so renewal countdowns in the goldens are deterministic.
     SbClock.freeze(DateTime(2026, 11, 9, 9, 41));
+    PackageInfo.setMockInitialValues(
+      appName: 'SubBurn',
+      packageName: 'com.subburn.subburn',
+      version: '1.0.0',
+      buildNumber: '1',
+      buildSignature: '',
+    );
     dir = await Directory.systemTemp.createTemp('subburn_preview_');
     repo = await SubscriptionRepository.openTest(dir.path);
     snapshot = _snapshot();

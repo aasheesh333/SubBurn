@@ -190,6 +190,25 @@ class ExchangeRates {
     fromCache: true,
   );
 
+  /// Parses open.er-api.com's USD-based payload (`rates.INR`).
+  ///
+  /// Returns null when the feed is missing or the rate is implausible, so the
+  /// caller falls back to the CDN file instead of showing a nonsense figure.
+  static ExchangeRates? fromErApi(Map<String, dynamic> json) {
+    final rates = json['rates'];
+    if (rates is! Map) return null;
+    final inr = (rates['INR'] as num?)?.toDouble();
+    if (inr == null || inr < 30 || inr > 300) return null;
+    final updated = (json['time_last_update_unix'] as num?)?.toInt();
+    return ExchangeRates(
+      inrPerUsd: inr,
+      asOf: updated == null
+          ? DateTime.now()
+          : DateTime.fromMillisecondsSinceEpoch(updated * 1000),
+      fromCache: false,
+    );
+  }
+
   factory ExchangeRates.fromJson(
     Map<String, dynamic> json, {
     required bool fromCache,

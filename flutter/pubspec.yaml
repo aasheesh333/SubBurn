@@ -47,6 +47,7 @@ dependencies:
   # Presentation
   google_fonts: ^9.0.0
   intl: ^0.20.3
+  package_info_plus: ^10.2.2
 
 dev_dependencies:
   flutter_test:

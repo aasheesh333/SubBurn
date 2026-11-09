@@ -78,7 +78,14 @@
     <tr>
       <td>Cloudflare R2 (static CDN)</td>
       <td>A plain HTTPS GET. No identifiers, no cookies, no subscription data.</td>
-      <td>Download the public preset catalogue and a USD→INR exchange rate, cached for 7 days.</td>
+      <td>Download the public preset catalogue, cached for 7 days.</td>
+    </tr>
+    <tr>
+      <td>open.er-api.com (exchange rates)</td>
+      <td>A plain HTTPS GET for USD-based rates. No identifiers, no cookies,
+      no subscription data.</td>
+      <td>Convert totals to the currency you choose. Cached for 24 hours, then
+      re-fetched; if unavailable the app falls back to the last cached rate.</td>
     </tr>
     <tr>
       <td>Firebase Analytics</td>

@@ -167,7 +167,10 @@ camera, microphone, or `QUERY_ALL_PACKAGES`.
 - [ ] App icon + feature graphic (512² and 1024×500)
 - [ ] iOS build (`GoogleService-Info.plist`, APNs key) — Android-only launch is fine
 - [ ] Screen-reader + 200 % text pass on a physical device
-- [ ] `flutter build appbundle` verified on a machine with the Android SDK
+- [x] `flutter build appbundle` verified by CI (signed AAB artifact)
+- [x] No demo/seed data; every ledger row is user-entered
+- [x] Live FX rate with a 24-hour cache
+- [ ] Real device pass on the signed artifact
 - [x] Release keystore wired and verified (`keytool -list` passes)
 - [x] Crashlytics mapping upload configured
 - [x] Backups disabled (`allowBackup=false`, data extraction rules)

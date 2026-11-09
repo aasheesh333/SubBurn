@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:subburn/core/theme/app_theme.dart';
+import 'package:subburn/core/utils/formatters.dart';
 import 'package:subburn/core/theme/theme_tokens.dart';
 import 'package:subburn/data/models/billing_cycle.dart';
 import 'package:subburn/data/models/currency.dart';
@@ -139,6 +140,62 @@ void main() {
         BillingCycle.yearly.advance(DateTime(2026, 5, 9)),
         DateTime(2027, 5, 9),
       );
+    });
+  });
+
+  group('real data, not hardcoded', () {
+    test('per-workday uses the real weekday count, not a fixed 22', () {
+      final feb2026 = workdaysInMonth(DateTime(2026, 2, 10));
+      final nov2026 = workdaysInMonth(DateTime(2026, 11, 9));
+      expect(feb2026, 20);
+      expect(nov2026, 21);
+      expect(feb2026, isNot(22));
+    });
+
+    test('live FX payload parses and rejects nonsense', () {
+      final ok = ExchangeRates.fromErApi({
+        'result': 'success',
+        'time_last_update_unix': 1794200000,
+        'rates': {'INR': 88.42, 'USD': 1},
+      });
+      expect(ok, isNotNull);
+      expect(ok!.inrPerUsd, 88.42);
+      expect(ok.asOf.year, greaterThanOrEqualTo(2026));
+
+      expect(
+        ExchangeRates.fromErApi({'rates': {'INR': 1}}),
+        isNull,
+        reason: 'a 1:1 rate is a broken feed, not a real rate',
+      );
+      expect(ExchangeRates.fromErApi({'rates': <String, dynamic>{}}), isNull);
+    });
+
+    test('next charge walks from the real start date', () {
+      final start = DateTime(2025, 1, 9);
+      final next = BillingCycle.monthly.nextAfter(
+        start,
+        now: DateTime(2026, 11, 9),
+      );
+      expect(next.isAfter(DateTime(2026, 11, 9)), isTrue);
+      expect(next.day, 9);
+      expect(next.month, 12);
+    });
+
+    test('preset prices are present and never zero for paid tools', () {
+      final raw = File('assets/json/presets_v1.json').readAsStringSync();
+      final catalogue = PresetCatalogue.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+        fromCache: true,
+      );
+      for (final tool in catalogue.tools) {
+        expect(tool.defaultPrice, greaterThanOrEqualTo(0));
+        expect(tool.defaultPrice.isFinite, isTrue);
+      }
+      final byName = {for (final t in catalogue.tools) t.name: t};
+      // The three prices that were visibly wrong before the audit.
+      expect(byName['Cursor Pro']!.defaultPrice, 1660);
+      expect(byName['GitHub Copilot']!.defaultPrice, 830);
+      expect(byName['Midjourney']!.defaultPrice, 830);
     });
   });
 

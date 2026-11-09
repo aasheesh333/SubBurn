@@ -24,6 +24,7 @@ device. No account, no Firestore, no per-user backend cost.
 | `flutter/` | **The app.** Riverpod + Hive, 4 screens, 58 tests, no TODOs. |
 | `index.html` | Design source of truth — all tokens + 4 frames in CSS |
 | `design-tokens.json` | Machine-readable tokens (colour, type, space, semantic rules) |
+| `site/` | Public landing page + Play-required privacy policy (InfinityFree + R2 mirror) |
 | `HANDOFF.md` | Design rationale, token tables, Figma layer map, export contract |
 | `renders/` | Pixel-exact PNGs generated from `index.html` |
 | `tools/` | Render, audit, font build, preset generation |
@@ -111,7 +112,7 @@ disagree, which is exactly what v1 got wrong.
 |---|---|---|
 | User data | **Hive CE**, on device | No reads/writes billed, works offline, private by default |
 | Static content | **Cloudflare R2** (`subburn-cdn`) | 10 GB storage + free egress, cached 7 days, bundled fallback |
-| FX rate | `rates.json` on the same bucket | One object, refreshed with the catalogue |
+| FX rate | **open.er-api.com**, cached 24 h | Live USD→INR, with the CDN/bundled rate as fallback |
 | Analytics / crashes | **Firebase Spark** | Free tier; only `sub_added` and `roast_card_shared` are logged |
 | Remote config | Firebase Remote Config | 12-hour minimum fetch; every key has an in-app default |
 | Push | **OneSignal** | Broadcast only, keyed to a random install id |

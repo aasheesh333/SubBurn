@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/clock.dart';
 import '../../core/theme/theme_tokens.dart';
+import '../../core/utils/formatters.dart';
 import '../../data/models/billing_cycle.dart';
 import '../../data/models/currency.dart';
 import '../../data/models/subscription.dart';
@@ -83,12 +84,13 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
                         roastLine: roast.line,
                         ghostShare: summary.ghostShare,
                         ghostAmount: summary.ghostYearly,
-                        receiptNo: 'No. ${_receiptNo(summary)}',
+                        receiptNo: 'No. ${_receiptNo(summary, settings.installId)}',
                         verdict: roast.verdict,
                         roastIntensity: roast.intensity,
                         currency: settings.displayCurrency,
                         hiddenLineCount: hidden,
                         totalOverride: summary.yearly,
+                        workdays: workdaysInMonth(SbClock.now()),
                         year: SbClock.now().year,
                       ),
               ),
@@ -199,9 +201,16 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
     }).toList(growable: false);
   }
 
-  String _receiptNo(BurnSummary summary) {
-    final value = (summary.yearly.round() * 7 + summary.count * 13) % 99999;
-    return value.toString().padLeft(5, '0');
+  /// A stable per-install receipt number. Deriving it from the amount alone
+  /// meant two users with the same ledger printed the same "No. 00412".
+  String _receiptNo(BurnSummary summary, String? installId) {
+    final seed = installId ?? 'subburn';
+    var hash = 0x811C9DC5;
+    for (final unit in '$seed|${summary.yearly.round()}|${summary.count}'.codeUnits) {
+      hash ^= unit;
+      hash = (hash * 0x01000193) & 0x7FFFFFFF;
+    }
+    return (hash % 90000 + 10000).toString();
   }
 
   Future<void> _share(BurnSummary summary, Roast roast, String method) async {

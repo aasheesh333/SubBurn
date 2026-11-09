@@ -8,6 +8,11 @@
 ///
 /// Storing the real charge and normalising on read means a ₹8,280/yr plan and
 /// a ₹690/mo plan are compared correctly without the UI inventing a discount.
+library;
+
+import '../../core/clock.dart';
+
+/// Billing cadence for a subscription.
 enum BillingCycle {
   weekly,
   monthly,
@@ -64,6 +69,19 @@ enum BillingCycle {
         BillingCycle.monthly => addMonths(next, -1),
         BillingCycle.yearly => addMonths(next, -12),
       };
+
+  /// The first billing date strictly after [now], starting from [start].
+  ///
+  /// A subscription added today may have started two years ago, so the next
+  /// charge is not simply `advance(now)` — it walks from the real start date.
+  DateTime nextAfter(DateTime start, {DateTime? now}) {
+    final clock = now ?? SbClock.now();
+    var date = start;
+    for (var i = 0; i <= 600 && !date.isAfter(clock); i++) {
+      date = advance(date);
+    }
+    return date;
+  }
 
   /// Adds [months] to [date], clamping the day to the target month's length.
   static DateTime addMonths(DateTime date, int months) {

@@ -53,6 +53,21 @@ String _weekday(DateTime date) {
   return '${weekdays[date.weekday - 1]} ${date.day} ${months[date.month - 1]}';
 }
 
+/// Actual Mon–Fri days in [month]'s calendar month.
+///
+/// The receipt's "per workday" figure used to divide by a hard-coded 22.
+/// February has 20 weekdays and August has 21, so a real user's number was
+/// wrong by up to 10%.
+int workdaysInMonth(DateTime month) {
+  final first = DateTime(month.year, month.month, 1);
+  final nextMonth = DateTime(month.year, month.month + 1, 1);
+  var count = 0;
+  for (var d = first; d.isBefore(nextMonth); d = d.add(const Duration(days: 1))) {
+    if (d.weekday <= DateTime.friday) count++;
+  }
+  return count;
+}
+
 /// `since Oct ’25`
 String formatSince(DateTime start) {
   const months = [

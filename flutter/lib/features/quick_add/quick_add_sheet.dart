@@ -55,6 +55,10 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
   String _query = '';
   bool _saving = false;
 
+  late DateTime _startDate = SbClock.now();
+  late DateTime _nextDate = _cycle.nextAfter(_startDate);
+  bool _nextDateEdited = false;
+
   /// True while the price in the field is `12 × monthly × 0.83` rather than a
   /// number the user typed. Makes the Yearly toggle reversible: switching back
   /// to monthly divides by the same factor instead of compounding the discount.
@@ -128,6 +132,44 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
     setState(() {
       _cycle = next;
       _priceController.text = formatPlainAmount(converted.roundToDouble());
+      if (!_nextDateEdited) {
+        _nextDate = next.nextAfter(_startDate);
+      }
+    });
+  }
+
+  Future<void> _pickStartDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate,
+      firstDate: DateTime(2000),
+      lastDate: SbClock.now(),
+      helpText: 'When did this subscription start?',
+    );
+    if (picked == null) return;
+    setState(() {
+      _startDate = picked;
+      if (!_nextDateEdited || !_nextDate.isAfter(SbClock.now())) {
+        _nextDate = _cycle.nextAfter(_startDate);
+        _nextDateEdited = false;
+      }
+    });
+  }
+
+  Future<void> _pickNextDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _nextDate.isAfter(SbClock.now())
+          ? _nextDate
+          : _cycle.nextAfter(_startDate),
+      firstDate: SbClock.now().add(const Duration(days: 1)),
+      lastDate: SbClock.now().add(const Duration(days: 365 * 3)),
+      helpText: 'When is the next charge?',
+    );
+    if (picked == null) return;
+    setState(() {
+      _nextDate = picked;
+      _nextDateEdited = true;
     });
   }
 
@@ -166,7 +208,6 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
     }
 
     setState(() => _saving = true);
-    final now = SbClock.now();
     final preset = _preset;
     final subscription = Subscription(
       id: SubscriptionRepository.newId(),
@@ -186,8 +227,8 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
       cycle: _cycle,
       guilt: _guilt,
       category: preset?.category ?? 'other',
-      startDate: now,
-      nextBillingDate: _cycle.advance(now),
+      startDate: _startDate,
+      nextBillingDate: _nextDate,
       cancelUrl: preset?.cancelUrl ?? '',
       presetId: preset?.id,
     );
@@ -363,6 +404,33 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                       ),
                     ),
                     const SizedBox(height: SbSpace.x3),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _Field(
+                            label: 'Started',
+                            child: _DateTile(
+                              date: _startDate,
+                              semanticLabel: 'Subscription start date',
+                              onTap: _pickStartDate,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: SbSpace.x2),
+                        Expanded(
+                          child: _Field(
+                            label: 'Next charge',
+                            child: _DateTile(
+                              date: _nextDate,
+                              semanticLabel: 'Next billing date',
+                              highlighted: true,
+                              onTap: _pickNextDate,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: SbSpace.x3),
                     _Field(
                       label: 'Billing cycle',
                       child: SegmentPills<BillingCycle>(
@@ -420,6 +488,19 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                         onChanged: (g) => setState(() => _guilt = g),
                       ),
                     ),
+                    if (_preset != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: SbSpace.x2),
+                        child: Text(
+                          'Suggested price for ${_preset!.name} — edit it to '
+                          'match your actual bill.',
+                          style: SbType.micro.copyWith(
+                            fontSize: 8,
+                            color: SbColors.textMuted,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: SbSpace.x2),
                     Text(
                       _guilt.isGhost
@@ -721,6 +802,65 @@ class _CurrencyToggle extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Tappable date row used for start / next-charge. Real dates, not derived
+/// display values: reminders and lifetime spend both hang off them.
+class _DateTile extends StatelessWidget {
+  const _DateTile({
+    required this.date,
+    required this.onTap,
+    required this.semanticLabel,
+    this.highlighted = false,
+  });
+
+  final DateTime date;
+  final VoidCallback onTap;
+  final String semanticLabel;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '$semanticLabel: ${formatChargeDate(date)}',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(SbRadius.button),
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
+          decoration: BoxDecoration(
+            color: SbColors.surfaceHi,
+            borderRadius: BorderRadius.circular(SbRadius.button),
+            border: Border.all(
+              color: highlighted ? SbColors.accent.withValues(alpha: 0.55) : SbColors.border,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  formatChargeDate(date),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: SbType.moneySm.copyWith(
+                    fontSize: 12,
+                    color: highlighted ? SbColors.accentWarm : SbColors.text,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.calendar_today_rounded,
+                size: 12,
+                color: SbColors.textMuted,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

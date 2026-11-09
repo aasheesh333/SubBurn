@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_links.dart';
-
 import '../../core/theme/theme_tokens.dart';
 import '../../data/models/currency.dart';
 import '../../services/catalogue_service.dart';
@@ -14,13 +14,36 @@ import '../../widgets/surface_card.dart';
 
 /// Controls: the handful of switches that change how the numbers read.
 /// Everything here acts immediately and is stored on the device.
-class ControlsScreen extends ConsumerWidget {
+class ControlsScreen extends ConsumerStatefulWidget {
   const ControlsScreen({super.key});
 
-  static const version = '1.0.0 (1)';
+  @override
+  ConsumerState<ControlsScreen> createState() => _ControlsScreenState();
+}
+
+class _ControlsScreenState extends ConsumerState<ControlsScreen> {
+  /// Read from the installed package, not typed into the source.
+  String _version = '';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    // Fails on a platform without the plugin (tests, desktop). The About row
+    // simply omits the version instead of throwing.
+    PackageInfo.fromPlatform().then((info) {
+      if (!mounted) return;
+      setState(() {
+        _version = info.buildNumber.isEmpty
+            ? info.version
+            : '${info.version} (${info.buildNumber})';
+      });
+    }).catchError((Object error) {
+      debugPrint('PackageInfo unavailable: $error');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final snapshot = ref.watch(catalogueProvider);
     final catalogue = snapshot.value?.catalogue;
@@ -48,7 +71,8 @@ class ControlsScreen extends ConsumerWidget {
               _SettingRow(
                 title: 'Currency',
                 subtitle:
-                    'Amounts are stored as charged; totals convert at the CDN rate.',
+                    'Amounts are stored as charged; totals convert at the live '
+                    'USD→INR rate, refreshed daily.',
                 child: SizedBox(
                   width: 168,
                   child: SegmentPills<CurrencyCode>(
@@ -179,7 +203,9 @@ class ControlsScreen extends ConsumerWidget {
             children: [
               _SettingRow(
                 title: 'SubBurn',
-                subtitle: 'Version $version · built for people with too many tabs.',
+                subtitle: _version.isEmpty
+                    ? 'Built for people with too many tabs.'
+                    : 'Version $_version · built for people with too many tabs.',
                 child: TextButton(
                   onPressed: () => _showPrivacy(context),
                   child: const Text('PRIVACY'),

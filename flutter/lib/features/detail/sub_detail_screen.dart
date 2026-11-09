@@ -84,6 +84,22 @@ class SubDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: SbSpace.x2),
                     _RowCard(
+                      title: 'Next charge',
+                      subtitle:
+                          '${formatChargeDate(subscription.nextBillingDate)} · tap to correct',
+                      trailing: const StatusBadge('EDIT', tone: BadgeTone.neutral),
+                      onTap: () => _pickNextCharge(context, ref, subscription!),
+                    ),
+                    const SizedBox(height: SbSpace.x2),
+                    _RowCard(
+                      title: 'Subscription start',
+                      subtitle:
+                          '${formatChargeDate(subscription.startDate)} · drives lifetime spend',
+                      trailing: const StatusBadge('EDIT', tone: BadgeTone.neutral),
+                      onTap: () => _pickStartDate(context, ref, subscription!),
+                    ),
+                    const SizedBox(height: SbSpace.x2),
+                    _RowCard(
                       title: 'Usage guilt',
                       subtitle: subscription.isGhost
                           ? 'Marked as barely used. Counted as ghost spend.'
@@ -142,6 +158,44 @@ class SubDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _pickNextCharge(
+    BuildContext context,
+    WidgetRef ref,
+    Subscription subscription,
+  ) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: subscription.nextBillingDate.isAfter(SbClock.now())
+          ? subscription.nextBillingDate
+          : subscription.cycle.nextAfter(subscription.startDate),
+      firstDate: SbClock.now().add(const Duration(days: 1)),
+      lastDate: SbClock.now().add(const Duration(days: 365 * 3)),
+      helpText: 'Next charge date',
+    );
+    if (picked == null) return;
+    await ref
+        .read(subscriptionsProvider.notifier)
+        .update(subscription.copyWith(nextBillingDate: picked));
+  }
+
+  Future<void> _pickStartDate(
+    BuildContext context,
+    WidgetRef ref,
+    Subscription subscription,
+  ) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: subscription.startDate,
+      firstDate: DateTime(2000),
+      lastDate: SbClock.now(),
+      helpText: 'When did this subscription start?',
+    );
+    if (picked == null) return;
+    await ref
+        .read(subscriptionsProvider.notifier)
+        .update(subscription.copyWith(startDate: picked));
   }
 
   Future<void> _openCancel(
