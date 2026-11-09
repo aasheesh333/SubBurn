@@ -1,12 +1,13 @@
-# Presentation
-*.png
-!.gitkeep
-# ...but keep the committed renders and goldens
+# Presentation scratch output. Committed renders and goldens are tracked below;
+# do not ignore *.png globally — that also dropped the Android launcher icons.
+/renders/_debug/
+/renders/audit/
 !/renders/*.png
 !/renders/*.json
 !/renders/svg/**
 !/renders/figma-png/**
 !/flutter/test/goldens/**
+!**/android/app/src/main/res/mipmap-*/**
 
 # Flutter / Dart
 flutter/.dart_tool/
@@ -45,3 +46,6 @@ serviceAccountKey.json
 # Cloudflare wrangler state
 .wrangler/
 site/.wrangler/
+
+# Golden-test failure output (regenerated locally on a diff)
+flutter/test/failures/
