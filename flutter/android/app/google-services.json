@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:363613857398:android:dd83bd3f6cb6b7e9276157",
+        "android_client_info": {
+          "package_name": "com.dhanuk.subburn"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDd83mPEdGs_1cQvpwH2eDOxKFxuwXXVVQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:363613857398:android:1c8d083449784434276157",
         "android_client_info": {
           "package_name": "com.subburn.subburn"
@@ -19,7 +38,7 @@
         }
       ],
       "services": {
-        "appingite_service": {
+        "appinvite_service": {
           "other_platform_oauth_client": []
         }
       }

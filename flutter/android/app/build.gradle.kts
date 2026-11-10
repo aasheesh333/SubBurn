@@ -29,7 +29,7 @@ if (hasReleaseKeystore) {
 }
 
 android {
-    namespace = "com.subburn.subburn"
+    namespace = "com.dhanuk.subburn"
     // flutter_local_notifications 23 and androidx.core 1.19 publish AARs built
     // against API 37, so the app must compile against 37 as well. targetSdk
     // stays at Flutter's default (36) — compiling against a newer SDK does not
@@ -47,7 +47,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.subburn.subburn"
+        applicationId = "com.dhanuk.subburn"
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

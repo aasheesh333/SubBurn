@@ -316,7 +316,7 @@ FNV-1a hash of the subscription id, so they survive reinstalls of the app data.
 Override at runtime through Remote Config key `cdn_base_url`.
 
 **Firebase project**: `subburn-1b744` (Spark), Android app
-`com.subburn.subburn`, config at `flutter/android/app/google-services.json`.
+`com.dhanuk.subburn`, config at `flutter/android/app/google-services.json`.
 
 Every network dependency degrades: no CDN → cached or bundled catalogue; no
 Firebase → analytics no-ops and the app opens anyway; no notification permission

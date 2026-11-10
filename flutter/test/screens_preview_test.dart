@@ -190,7 +190,7 @@ void main() {
     SbClock.freeze(DateTime(2026, 11, 9, 9, 41));
     PackageInfo.setMockInitialValues(
       appName: 'SubBurn',
-      packageName: 'com.subburn.subburn',
+      packageName: 'com.dhanuk.subburn',
       version: '1.0.0',
       buildNumber: '1',
       buildSignature: '',

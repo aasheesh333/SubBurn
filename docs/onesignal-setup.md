@@ -23,7 +23,7 @@ account.
 ## 2. Point it at Firebase
 
 The Firebase project already exists: **`subburn-1b744`** (Spark plan), with the
-Android app `com.subburn.subburn` registered.
+Android app `com.dhanuk.subburn` registered.
 
 1. In the Firebase console → ⚙️ **Project settings** → **Service accounts** →
    **Generate new private key**. Keep the JSON local; never commit it.

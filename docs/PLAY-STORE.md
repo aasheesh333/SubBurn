@@ -1,7 +1,13 @@
 # Play Store submission — SubBurn
 
 Everything Play Console asks for, with the exact answers for this app.
-Package: `com.subburn.subburn` · Version: `1.0.0 (1)`.
+Package: `com.dhanuk.subburn` · Version: `1.0.0 (1)`.
+
+> The application id changed from `com.subburn.subburn` before first release.
+> The Firebase Android app for the new id is registered
+> (`1:363613857398:android:dd83bd3f6cb6b7e9276157`) and
+> `android/app/google-services.json` contains both ids, so an old test build
+> still resolves its config. The upload key is unchanged.
 
 ---
 
