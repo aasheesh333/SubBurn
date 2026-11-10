@@ -57,24 +57,24 @@ class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStat
 
   ({Color fg, Color bg, Color border}) get _palette => switch (widget.tone) {
         BadgeTone.safe => (
-            fg: const Color(0xFF34D399),
-            bg: SbColors.safe.withValues(alpha: 0.10),
-            border: SbColors.safe.withValues(alpha: 0.28),
+            fg: context.sb.safe,
+            bg: context.sb.safe.withValues(alpha: 0.10),
+            border: context.sb.safe.withValues(alpha: 0.28),
           ),
         BadgeTone.warn => (
-            fg: const Color(0xFFFBBF24),
-            bg: SbColors.warn.withValues(alpha: 0.11),
-            border: SbColors.warn.withValues(alpha: 0.30),
+            fg: context.sb.warn,
+            bg: context.sb.warn.withValues(alpha: 0.11),
+            border: context.sb.warn.withValues(alpha: 0.30),
           ),
         BadgeTone.danger => (
-            fg: const Color(0xFFF87171),
-            bg: SbColors.danger.withValues(alpha: 0.10),
-            border: SbColors.danger.withValues(alpha: 0.26),
+            fg: context.sb.danger,
+            bg: context.sb.danger.withValues(alpha: 0.10),
+            border: context.sb.danger.withValues(alpha: 0.26),
           ),
         BadgeTone.neutral => (
-            fg: SbColors.textSecondary,
-            bg: const Color(0xFF0C0C0F),
-            border: SbColors.border,
+            fg: context.sb.textSecondary,
+            bg: context.sb.segmentSurface,
+            border: context.sb.border,
           ),
       };
 

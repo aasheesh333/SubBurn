@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/app_links.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../data/models/currency.dart';
+import '../../data/models/theme_preference.dart';
 import '../../services/catalogue_service.dart';
 import '../../state/providers.dart';
 import '../../widgets/segment_pills.dart';
@@ -47,6 +48,7 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
     final settings = ref.watch(settingsProvider);
     final snapshot = ref.watch(catalogueProvider);
     final catalogue = snapshot.value?.catalogue;
+    final refreshing = ref.watch(catalogueRefreshingProvider);
 
     return SafeArea(
       bottom: false,
@@ -58,13 +60,35 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
           96,
         ),
         children: [
-          Text('Controls', style: SbType.h2.copyWith(color: SbColors.text)),
+          Text('Controls', style: SbType.h2.copyWith(color: context.sb.text)),
           const SizedBox(height: SbSpace.x1),
           Text(
             'Local-first by design. No account, no sync, no server holding your list.',
-            style: SbType.body.copyWith(color: SbColors.textSecondary),
+            style: SbType.body.copyWith(color: context.sb.textSecondary),
           ),
           const SizedBox(height: SbSpace.x4),
+          _Group(
+            title: 'Appearance',
+            children: [
+              _SettingRow(
+                title: 'Theme',
+                subtitle:
+                    'Device follows your phone\'s light or dark setting. '
+                    'A manual choice is remembered on this device.',
+                child: SizedBox(
+                  width: 190,
+                  child: SegmentPills<ThemePreference>(
+                    values: ThemePreference.values,
+                    selected: settings.themePreference,
+                    labelOf: (p) => p.label,
+                    onChanged: (p) =>
+                        ref.read(settingsProvider.notifier).setTheme(p),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: SbSpace.x3),
           _Group(
             title: 'Display',
             children: [
@@ -112,7 +136,7 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                     ? 'Loading the catalogue…'
                     : 'Source: ${_sourceLabel(snapshot.value!.source)} · '
                         'refreshed ${_relative(snapshot.value!.catalogue.fetchedAt)}',
-                child: snapshot.isLoading
+                child: (snapshot.isLoading || refreshing)
                     ? const SizedBox(
                         width: 18,
                         height: 18,
@@ -133,10 +157,10 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.cloud_done_outlined,
                       size: 12,
-                      color: SbColors.safe,
+                      color: context.sb.safe,
                     ),
                     const SizedBox(width: 6),
                     Expanded(
@@ -145,7 +169,7 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                         'bundled copy as an offline fallback.',
                         style: SbType.micro.copyWith(
                           fontSize: 7.5,
-                          color: SbColors.textMuted,
+                          color: context.sb.textMuted,
                           letterSpacing: 0,
                           height: 1.5,
                         ),
@@ -179,9 +203,9 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                       child: OutlinedButton(
                         onPressed: () => _confirmClear(context, ref),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: SbColors.danger,
+                          foregroundColor: context.sb.danger,
                           side: BorderSide(
-                            color: SbColors.danger.withValues(alpha: 0.4),
+                            color: context.sb.danger.withValues(alpha: 0.4),
                           ),
                           minimumSize: const Size.fromHeight(44),
                           shape: RoundedRectangleBorder(
@@ -231,7 +255,7 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
             textAlign: TextAlign.center,
             style: SbType.micro.copyWith(
               fontSize: 7.5,
-              color: SbColors.textMuted,
+              color: context.sb.textMuted,
               letterSpacing: 0,
               height: 1.6,
             ),
@@ -259,11 +283,11 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: SbColors.surfaceHi,
+        backgroundColor: context.sb.surfaceHi,
         title: const Text('Delete all subscriptions?', style: SbType.h3),
         content: Text(
           'This clears the local database. Cancelling with vendors is up to you.',
-          style: SbType.body.copyWith(color: SbColors.textSecondary),
+          style: SbType.body.copyWith(color: context.sb.textSecondary),
         ),
         actions: [
           TextButton(
@@ -286,7 +310,7 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: SbColors.surfaceHi,
+        backgroundColor: context.sb.surfaceHi,
         title: const Text('Privacy', style: SbType.h3),
         content: SingleChildScrollView(
           child: Text(
@@ -302,7 +326,7 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
             'random install id.\n\n'
             'Deleting the app deletes everything SubBurn knows about you.',
             style: SbType.body.copyWith(
-              color: SbColors.textSecondary,
+              color: context.sb.textSecondary,
               height: 1.6,
             ),
           ),
@@ -342,7 +366,7 @@ class _Group extends StatelessWidget {
           padding: const EdgeInsets.only(left: 2, bottom: SbSpace.x2),
           child: Text(
             title.toUpperCase(),
-            style: SbType.label.copyWith(color: SbColors.textMuted, fontSize: 9),
+            style: SbType.label.copyWith(color: context.sb.textMuted, fontSize: 9),
           ),
         ),
         SurfaceCard(
@@ -352,7 +376,7 @@ class _Group extends StatelessWidget {
               for (var i = 0; i < children.length; i++) ...[
                 children[i],
                 if (i != children.length - 1)
-                  const Divider(height: 1, color: SbColors.border),
+                  Divider(height: 1, color: context.sb.border),
               ],
             ],
           ),
@@ -388,7 +412,7 @@ class _SettingRow extends StatelessWidget {
                   style: SbType.body.copyWith(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: SbColors.text,
+                    color: context.sb.text,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -396,7 +420,7 @@ class _SettingRow extends StatelessWidget {
                   subtitle,
                   style: SbType.micro.copyWith(
                     fontSize: 8,
-                    color: SbColors.textMuted,
+                    color: context.sb.textMuted,
                     letterSpacing: 0,
                     height: 1.45,
                   ),

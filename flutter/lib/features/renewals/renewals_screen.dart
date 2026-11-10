@@ -48,7 +48,7 @@ class RenewalsScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text('Renewals', style: SbType.h2.copyWith(color: SbColors.text)),
+              Text('Renewals', style: SbType.h2.copyWith(color: context.sb.text)),
               const Spacer(),
               StatusBadge('$thisMonth THIS MONTH'),
             ],
@@ -56,7 +56,7 @@ class RenewalsScreen extends ConsumerWidget {
           const SizedBox(height: SbSpace.x1),
           Text(
             'Every charge on the horizon, in the order your card will feel it.',
-            style: SbType.body.copyWith(color: SbColors.textSecondary),
+            style: SbType.body.copyWith(color: context.sb.textSecondary),
           ),
           const SizedBox(height: SbSpace.x4),
           // Neutral surface: the green icon and switch carry the state. A full
@@ -69,7 +69,7 @@ class RenewalsScreen extends ConsumerWidget {
                       ? Icons.notifications_active_outlined
                       : Icons.notifications_off_outlined,
                   size: 16,
-                  color: remindersOn ? SbColors.safe : SbColors.warn,
+                  color: remindersOn ? context.sb.safe : context.sb.warn,
                 ),
                 const SizedBox(width: SbSpace.x2),
                 Expanded(
@@ -82,14 +82,14 @@ class RenewalsScreen extends ConsumerWidget {
                             : 'Reminders are off',
                         style: SbType.body.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: SbColors.text,
+                          color: context.sb.text,
                         ),
                       ),
                       Text(
                         '48 hours and 24 hours before every charge.',
                         style: SbType.micro.copyWith(
                           fontSize: 8,
-                          color: SbColors.textMuted,
+                          color: context.sb.textMuted,
                           letterSpacing: 0,
                         ),
                       ),
@@ -110,15 +110,15 @@ class RenewalsScreen extends ConsumerWidget {
               padding: const EdgeInsets.only(top: SbSpace.x8),
               child: Column(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.event_available_rounded,
                     size: 28,
-                    color: SbColors.textMuted,
+                    color: context.sb.textMuted,
                   ),
                   const SizedBox(height: SbSpace.x2),
                   Text(
                     'No renewals to worry about.',
-                    style: SbType.body.copyWith(color: SbColors.textSecondary),
+                    style: SbType.body.copyWith(color: context.sb.textSecondary),
                   ),
                 ],
               ),
@@ -181,14 +181,14 @@ class _RenewalRow extends StatelessWidget {
                   style: SbType.body.copyWith(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: SbColors.text,
+                    color: context.sb.text,
                   ),
                 ),
                 Text(
                   '${formatChargeDate(subscription.nextBillingDate)} · ${formatCountdownLeft(remaining)}',
                   style: SbType.micro.copyWith(
                     fontSize: 8,
-                    color: urgent ? const Color(0xFFFBBF24) : SbColors.textMuted,
+                    color: urgent ? context.sb.warn : context.sb.textMuted,
                     letterSpacing: 0,
                   ),
                 ),
@@ -207,7 +207,7 @@ class _RenewalRow extends StatelessWidget {
                 '/mo',
                 style: SbType.micro.copyWith(
                   fontSize: 7,
-                  color: SbColors.textMuted,
+                  color: context.sb.textMuted,
                   letterSpacing: 0.06,
                 ),
               ),
@@ -222,8 +222,8 @@ class _RenewalRow extends StatelessWidget {
                   : Icons.notifications_off_rounded,
               size: 13,
               color: subscription.remindersEnabled
-                  ? SbColors.safe
-                  : SbColors.textMuted,
+                  ? context.sb.safe
+                  : context.sb.textMuted,
             ),
           ),
         ],

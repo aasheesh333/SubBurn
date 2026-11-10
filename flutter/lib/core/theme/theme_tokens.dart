@@ -267,3 +267,228 @@ abstract final class SbMotion {
   static const pulse = Duration(milliseconds: 2400);
   static const quick = Duration(milliseconds: 180);
 }
+
+/// Resolved colour set for one [Brightness].
+///
+/// `SbColors` holds the *dark* constants (kept because gradients, shadows and
+/// tests reference them directly). Widgets must never read `SbColors` for
+/// surfaces or text — they read `context.sb`, which resolves to this palette
+/// from the active theme. That is what makes light mode possible without a
+/// second copy of every widget.
+@immutable
+class SbPalette extends ThemeExtension<SbPalette> {
+  const SbPalette({
+    required this.bg,
+    required this.surface,
+    required this.surfaceHi,
+    required this.border,
+    required this.borderHi,
+    required this.accent,
+    required this.accentAlt,
+    required this.accentWarm,
+    required this.safe,
+    required this.warn,
+    required this.danger,
+    required this.text,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.mutedDeco,
+    required this.onAccent,
+    required this.heroSurface,
+    required this.heroBorder,
+    required this.heroAmount,
+    required this.segmentSurface,
+    required this.segmentSelected,
+    required this.cardShadow,
+    required this.isDark,
+  });
+
+  final Color bg;
+  final Color surface;
+  final Color surfaceHi;
+  final Color border;
+  final Color borderHi;
+  final Color accent;
+  final Color accentAlt;
+  final Color accentWarm;
+  final Color safe;
+  final Color warn;
+  final Color danger;
+  final Color text;
+  final Color textSecondary;
+  final Color textMuted;
+  final Color mutedDeco;
+
+  /// Foreground on an accent-filled surface (button label, FAB glyph).
+  final Color onAccent;
+
+  /// Hero card background gradient stops.
+  final List<Color> heroSurface;
+
+  final Color heroBorder;
+
+  /// Segmented control track and selected-segment fill.
+  final Color segmentSurface;
+  final List<Color> segmentSelected;
+
+  /// Gradient applied to the hero amount.
+  final Gradient heroAmount;
+
+  final List<BoxShadow> cardShadow;
+  final bool isDark;
+
+  static const dark = SbPalette(
+    bg: SbColors.bg,
+    surface: SbColors.surface,
+    surfaceHi: SbColors.surfaceHi,
+    border: SbColors.border,
+    borderHi: SbColors.borderHi,
+    accent: SbColors.accent,
+    accentAlt: SbColors.accentAlt,
+    accentWarm: SbColors.accentWarm,
+    safe: SbColors.safe,
+    warn: SbColors.warn,
+    danger: SbColors.danger,
+    text: SbColors.text,
+    textSecondary: SbColors.textSecondary,
+    textMuted: SbColors.textMuted,
+    mutedDeco: SbColors.mutedDeco,
+    onAccent: Color(0xFF1A0800),
+    heroSurface: [Color(0xFF1B1214), Color(0xFF131316), Color(0xFF111114)],
+    heroBorder: Color(0xFF33271F),
+    heroAmount: SbGradients.heroAmount,
+    segmentSurface: Color(0xFF0B0B0E),
+    segmentSelected: [Color(0xFF231A16), Color(0xFF1B1512)],
+    cardShadow: [SbShadow.cardInner],
+    isDark: true,
+  );
+
+  /// Light theme.
+  ///
+  /// Not a naive inversion: the accent stays electric, but text tones are
+  /// re-picked so every caption still clears WCAG AA on white (the dark
+  /// palette's muted grey measures 2.6:1 there), and the hero gradient starts
+  /// at a mid orange instead of white, which would vanish on white.
+  static const light = SbPalette(
+    bg: Color(0xFFFAFAF9),
+    surface: Color(0xFFFFFFFF),
+    surfaceHi: Color(0xFFF2F2F4),
+    border: Color(0xFFE4E4E7),
+    borderHi: Color(0xFFD4D4D8),
+    accent: Color(0xFFE63E00),
+    accentAlt: Color(0xFFEA7A00),
+    accentWarm: Color(0xFFB4340A),
+    safe: Color(0xFF047857),
+    warn: Color(0xFFA35A05),
+    danger: Color(0xFFB01E17),
+    text: Color(0xFF0B0B0E),
+    textSecondary: Color(0xFF4B4B55),
+    textMuted: Color(0xFF6B6B76),
+    mutedDeco: Color(0xFFA1A1AA),
+    onAccent: Color(0xFFFFFFFF),
+    heroSurface: [Color(0xFFFFFFFF), Color(0xFFFDF8F5), Color(0xFFFBF3EC)],
+    heroBorder: Color(0xFFF0D9C7),
+    segmentSurface: Color(0xFFF4F4F6),
+    segmentSelected: [Color(0xFFFFF1E8), Color(0xFFFFE7D8)],
+    heroAmount: LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [Color(0xFFF0600A), Color(0xFFE04000)],
+    ),
+    cardShadow: [
+      BoxShadow(color: Color(0x0F000000), offset: Offset(0, 1), blurRadius: 2),
+      BoxShadow(color: Color(0x0A000000), offset: Offset(0, 8), blurRadius: 24),
+    ],
+    isDark: false,
+  );
+
+  @override
+  SbPalette copyWith({
+    Color? bg,
+    Color? surface,
+    Color? surfaceHi,
+    Color? border,
+    Color? borderHi,
+    Color? accent,
+    Color? accentAlt,
+    Color? accentWarm,
+    Color? safe,
+    Color? warn,
+    Color? danger,
+    Color? text,
+    Color? textSecondary,
+    Color? textMuted,
+    Color? mutedDeco,
+    Color? onAccent,
+    List<Color>? heroSurface,
+    Color? heroBorder,
+    List<Color>? segmentSelected,
+    Color? segmentSurface,
+    Gradient? heroAmount,
+    List<BoxShadow>? cardShadow,
+    bool? isDark,
+  }) {
+    return SbPalette(
+      bg: bg ?? this.bg,
+      surface: surface ?? this.surface,
+      surfaceHi: surfaceHi ?? this.surfaceHi,
+      border: border ?? this.border,
+      borderHi: borderHi ?? this.borderHi,
+      accent: accent ?? this.accent,
+      accentAlt: accentAlt ?? this.accentAlt,
+      accentWarm: accentWarm ?? this.accentWarm,
+      safe: safe ?? this.safe,
+      warn: warn ?? this.warn,
+      danger: danger ?? this.danger,
+      text: text ?? this.text,
+      textSecondary: textSecondary ?? this.textSecondary,
+      textMuted: textMuted ?? this.textMuted,
+      mutedDeco: mutedDeco ?? this.mutedDeco,
+      onAccent: onAccent ?? this.onAccent,
+      heroSurface: heroSurface ?? this.heroSurface,
+      heroBorder: heroBorder ?? this.heroBorder,
+      segmentSurface: segmentSurface ?? this.segmentSurface,
+      segmentSelected: segmentSelected ?? this.segmentSelected,
+      heroAmount: heroAmount ?? this.heroAmount,
+      cardShadow: cardShadow ?? this.cardShadow,
+      isDark: isDark ?? this.isDark,
+    );
+  }
+
+  @override
+  SbPalette lerp(covariant SbPalette? other, double t) {
+    if (other == null) return this;
+    Color mix(Color a, Color b) => Color.lerp(a, b, t)!;
+    return SbPalette(
+      bg: mix(bg, other.bg),
+      surface: mix(surface, other.surface),
+      surfaceHi: mix(surfaceHi, other.surfaceHi),
+      border: mix(border, other.border),
+      borderHi: mix(borderHi, other.borderHi),
+      accent: mix(accent, other.accent),
+      accentAlt: mix(accentAlt, other.accentAlt),
+      accentWarm: mix(accentWarm, other.accentWarm),
+      safe: mix(safe, other.safe),
+      warn: mix(warn, other.warn),
+      danger: mix(danger, other.danger),
+      text: mix(text, other.text),
+      textSecondary: mix(textSecondary, other.textSecondary),
+      textMuted: mix(textMuted, other.textMuted),
+      mutedDeco: mix(mutedDeco, other.mutedDeco),
+      onAccent: mix(onAccent, other.onAccent),
+      heroSurface: t < 0.5 ? heroSurface : other.heroSurface,
+      heroBorder: mix(heroBorder, other.heroBorder),
+      segmentSurface: mix(segmentSurface, other.segmentSurface),
+      segmentSelected: t < 0.5 ? segmentSelected : other.segmentSelected,
+      heroAmount: t < 0.5 ? heroAmount : other.heroAmount,
+      cardShadow: t < 0.5 ? cardShadow : other.cardShadow,
+      isDark: t < 0.5 ? isDark : other.isDark,
+    );
+  }
+}
+
+/// `context.sb.text` — the only way a widget should read a semantic colour.
+extension SbThemeContext on BuildContext {
+  SbPalette get sb =>
+      Theme.of(this).extension<SbPalette>() ?? SbPalette.dark;
+}

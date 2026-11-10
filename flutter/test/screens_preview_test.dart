@@ -152,6 +152,7 @@ Widget _harness({
   required Widget child,
   required SubscriptionRepository repo,
   required CatalogueSnapshot snapshot,
+  ThemeMode themeMode = ThemeMode.dark,
 }) {
   return ProviderScope(
     overrides: [
@@ -162,11 +163,17 @@ Widget _harness({
     ],
     child: MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
-      home: Scaffold(
-        backgroundColor: SbColors.bg,
-        body: child,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
+      // The builder runs *inside* MaterialApp, so context.sb resolves to the
+      // active theme. A Builder outside MaterialApp fell back to the dark
+      // palette, which is why a "light" golden still had a black page.
+      builder: (context, inner) => ColoredBox(
+        color: context.sb.bg,
+        child: inner ?? const SizedBox.shrink(),
       ),
+      home: Scaffold(backgroundColor: Colors.transparent, body: child),
     ),
   );
 }
@@ -203,16 +210,69 @@ void main() {
     await dir.delete(recursive: true);
   });
 
-  Future<void> pump(WidgetTester tester, Widget child) async {
+  Future<void> pump(
+    WidgetTester tester,
+    Widget child, {
+    ThemeMode themeMode = ThemeMode.dark,
+  }) async {
     tester.view.physicalSize = const Size(393 * 2, 852 * 2);
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
-      _harness(child: child, repo: repo, snapshot: snapshot),
+      _harness(
+        child: child,
+        repo: repo,
+        snapshot: snapshot,
+        themeMode: themeMode,
+      ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
   }
+
+  testWidgets('dashboard · light', (tester) async {
+    await pump(
+      tester,
+      BurnDashboardScreen(onAddSubscription: () {}),
+      themeMode: ThemeMode.light,
+    );
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/09-dashboard-light.png'),
+    );
+  });
+
+  testWidgets('studio · light', (tester) async {
+    await pump(
+      tester,
+      const ViralReceiptScreen(),
+      themeMode: ThemeMode.light,
+    );
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/10-studio-light.png'),
+    );
+  });
+
+  testWidgets('detail · light', (tester) async {
+    await pump(
+      tester,
+      const SubDetailScreen(subscriptionId: 'preview_0'),
+      themeMode: ThemeMode.light,
+    );
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/12-detail-light.png'),
+    );
+  });
+
+  testWidgets('controls · light', (tester) async {
+    await pump(tester, const ControlsScreen(), themeMode: ThemeMode.light);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/11-controls-light.png'),
+    );
+  });
 
   testWidgets('dashboard · first run (empty)', (tester) async {
     final empty = SubscriptionRepository.inMemory();
@@ -242,6 +302,50 @@ void main() {
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/08-first-run.png'),
+    );
+  });
+
+  testWidgets('dashboard · light', (tester) async {
+    await pump(
+      tester,
+      BurnDashboardScreen(onAddSubscription: () {}),
+      themeMode: ThemeMode.light,
+    );
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/09-dashboard-light.png'),
+    );
+  });
+
+  testWidgets('studio · light', (tester) async {
+    await pump(
+      tester,
+      const ViralReceiptScreen(),
+      themeMode: ThemeMode.light,
+    );
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/10-studio-light.png'),
+    );
+  });
+
+  testWidgets('detail · light', (tester) async {
+    await pump(
+      tester,
+      const SubDetailScreen(subscriptionId: 'preview_0'),
+      themeMode: ThemeMode.light,
+    );
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/12-detail-light.png'),
+    );
+  });
+
+  testWidgets('controls · light', (tester) async {
+    await pump(tester, const ControlsScreen(), themeMode: ThemeMode.light);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/11-controls-light.png'),
     );
   });
 

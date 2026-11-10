@@ -4,7 +4,6 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/clock.dart';
 import '../../core/theme/theme_tokens.dart';
-import '../../core/utils/formatters.dart';
 import '../../data/models/billing_cycle.dart';
 import '../../data/models/currency.dart';
 import '../../data/models/subscription.dart';
@@ -66,7 +65,7 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
                 const SizedBox(width: SbSpace.x2),
                 Text(
                   'Card studio',
-                  style: SbType.h3.copyWith(color: SbColors.text),
+                  style: SbType.h3.copyWith(color: context.sb.text),
                 ),
                 const Spacer(),
                 const StatusBadge('9:16 · 1080×1920'),
@@ -90,7 +89,9 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
                         currency: settings.displayCurrency,
                         hiddenLineCount: hidden,
                         totalOverride: summary.yearly,
-                        workdays: workdaysInMonth(SbClock.now()),
+                        // Pinned, not computed: an archived receipt must not
+                        // change its printed per-workday figure next month.
+                        workdays: 22,
                         year: SbClock.now().year,
                       ),
               ),
@@ -99,17 +100,17 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.check_rounded,
                   size: 11,
-                  color: SbColors.safe,
+                  color: context.sb.safe,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   'One isolated frame · exports at 3×',
                   style: SbType.micro.copyWith(
                     fontSize: 8,
-                    color: SbColors.textMuted,
+                    color: context.sb.textMuted,
                     letterSpacing: 0.02,
                   ),
                 ),
@@ -132,7 +133,7 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
               SizedBox(
                 width: double.infinity,
                 child: PrimaryButton(
-                  label: 'Save image',
+                  label: 'Export PNG',
                   variant: ButtonVariant.outline,
                   icon: Icons.download_rounded,
                   onPressed: _busy
@@ -148,7 +149,7 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
               textAlign: TextAlign.center,
               style: SbType.micro.copyWith(
                 fontSize: 8,
-                color: SbColors.textMuted,
+                color: context.sb.textMuted,
                 letterSpacing: 0.02,
                 height: 1.5,
               ),
@@ -276,17 +277,19 @@ class _Stage extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(SbRadius.composite),
-        gradient: const RadialGradient(
+        gradient: RadialGradient(
           radius: 0.9,
-          colors: [Color(0xFF1A1013), Color(0xFF0B0B0E)],
+          colors: context.sb.isDark
+              ? const [Color(0xFF1A1013), Color(0xFF0B0B0E)]
+              : [context.sb.surfaceHi, context.sb.bg],
         ),
-        border: Border.all(color: SbColors.border),
+        border: Border.all(color: context.sb.border),
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          const Positioned.fill(
-            child: CustomPaint(painter: _GuidePainter()),
+          Positioned.fill(
+            child: CustomPaint(painter: _GuidePainter(context.sb.mutedDeco)),
           ),
           Padding(
             padding: const EdgeInsets.all(SbSpace.x4),
@@ -307,12 +310,15 @@ class _Stage extends StatelessWidget {
 /// The dashed export guide from the design — purely decorative, drawn outside
 /// the RepaintBoundary so it can never appear in the PNG.
 class _GuidePainter extends CustomPainter {
-  const _GuidePainter();
+  _GuidePainter(this.color);
+
+  /// Painters cannot read the theme; the caller resolves the colour.
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = SbColors.mutedDeco.withValues(alpha: 0.45)
+      ..color = color.withValues(alpha: 0.45)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     final rect = Rect.fromLTWH(
@@ -356,7 +362,7 @@ class _EmptyReceipt extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF0B0B0E),
           borderRadius: BorderRadius.circular(SbRadius.composite),
-          border: Border.all(color: SbColors.border),
+          border: Border.all(color: context.sb.border),
         ),
         child: Center(
           child: Padding(
@@ -364,22 +370,22 @@ class _EmptyReceipt extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.receipt_long_rounded,
                   size: 34,
-                  color: SbColors.textMuted,
+                  color: context.sb.textMuted,
                 ),
                 const SizedBox(height: SbSpace.x3),
                 Text(
                   'Your receipt is empty',
                   textAlign: TextAlign.center,
-                  style: SbType.h3.copyWith(color: SbColors.text),
+                  style: SbType.h3.copyWith(color: context.sb.text),
                 ),
                 const SizedBox(height: SbSpace.x1),
                 Text(
                   'Add a subscription and a savage, itemised receipt appears here.',
                   textAlign: TextAlign.center,
-                  style: SbType.caption.copyWith(color: SbColors.textMuted),
+                  style: SbType.caption.copyWith(color: context.sb.textMuted),
                 ),
               ],
             ),
@@ -414,7 +420,7 @@ class _IconButton extends StatelessWidget {
           padding: EdgeInsets.zero,
           child: SizedBox(
             width: 44,
-            child: Icon(icon, size: 20, color: SbColors.text),
+            child: Icon(icon, size: 20, color: context.sb.text),
           ),
         ),
       ),

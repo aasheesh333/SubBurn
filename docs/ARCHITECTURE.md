@@ -249,6 +249,22 @@ is reported rather than swallowed.
 
 ---
 
+## 8b. Theming
+
+`SbPalette` (a `ThemeExtension`) holds every semantic colour for one
+brightness; `AppTheme.light` and `AppTheme.dark` are built by one function, so a
+token cannot exist in one theme and be missing from the other.
+
+- Widgets read `context.sb.text`, never `SbColors.text`. `SbColors` survives
+  only for gradients, shadows and tests.
+- Custom painters have no context, so the resolved colour is passed in.
+- The default is `ThemePreference.system`: a new install follows the phone.
+- Contrast is enforced by `test/theme_contrast_test.dart`, which measures every
+  text/surface pairing in both palettes at 4.5:1 (3:1 for large text and UI
+  glyphs). It caught amber-on-white at 2.15:1 during the light-theme port.
+- The receipt always uses the dark palette: it is a dark artefact exported as a
+  PNG, so it must look identical whatever the app theme is.
+
 ## 9. Why the cost stays at zero
 
 | Scaling pressure | Why it does not apply |

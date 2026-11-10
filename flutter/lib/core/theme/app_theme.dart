@@ -11,8 +11,17 @@ import 'theme_tokens.dart';
 /// paint is instant and the app works offline. The bundled JetBrains Mono
 /// carries a transplanted ₹ glyph (U+20B9).
 abstract final class AppTheme {
-  static ThemeData get dark {
-    final base = ThemeData(useMaterial3: true, brightness: Brightness.dark);
+  static ThemeData get dark => _build(SbPalette.dark);
+
+  static ThemeData get light => _build(SbPalette.light);
+
+  /// One builder for both brightnesses. Every colour comes from [p], so a token
+  /// can only drift if it is missing from the palette.
+  static ThemeData _build(SbPalette p) {
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: p.isDark ? Brightness.dark : Brightness.light,
+    );
 
     TextStyle ui(
       TextStyle? style, {
@@ -50,18 +59,19 @@ abstract final class AppTheme {
       );
     }
 
-    const scheme = ColorScheme.dark(
-      primary: SbColors.accent,
-      onPrimary: Color(0xFF180900),
-      secondary: SbColors.accentAlt,
-      onSecondary: Color(0xFF180900),
-      surface: SbColors.surface,
-      onSurface: SbColors.text,
-      surfaceContainerHighest: SbColors.surfaceHi,
-      error: SbColors.danger,
-      onError: SbColors.text,
-      outline: SbColors.border,
-      outlineVariant: SbColors.borderHi,
+    final scheme = ColorScheme(
+      brightness: p.isDark ? Brightness.dark : Brightness.light,
+      primary: p.accent,
+      onPrimary: p.onAccent,
+      secondary: p.accentAlt,
+      onSecondary: p.onAccent,
+      surface: p.surface,
+      onSurface: p.text,
+      surfaceContainerHighest: p.surfaceHi,
+      error: p.danger,
+      onError: p.isDark ? p.text : const Color(0xFFFFFFFF),
+      outline: p.border,
+      outlineVariant: p.borderHi,
     );
 
     final textTheme = TextTheme(
@@ -71,7 +81,7 @@ abstract final class AppTheme {
         weight: FontWeight.w600,
         height: 1,
         spacing: -0.055 * 58,
-        color: SbColors.text,
+        color: p.text,
       ),
       headlineLarge: ui(
         base.textTheme.headlineLarge,
@@ -79,7 +89,7 @@ abstract final class AppTheme {
         weight: FontWeight.w800,
         height: 26 / 25,
         spacing: -0.035 * 25,
-        color: SbColors.text,
+        color: p.text,
       ),
       headlineMedium: ui(
         base.textTheme.headlineMedium,
@@ -87,7 +97,7 @@ abstract final class AppTheme {
         weight: FontWeight.w800,
         height: 24 / 22,
         spacing: -0.035 * 22,
-        color: SbColors.text,
+        color: p.text,
       ),
       headlineSmall: ui(
         base.textTheme.headlineSmall,
@@ -95,7 +105,7 @@ abstract final class AppTheme {
         weight: FontWeight.w800,
         height: 20 / 16,
         spacing: -0.03 * 16,
-        color: SbColors.text,
+        color: p.text,
       ),
       titleMedium: ui(
         base.textTheme.titleMedium,
@@ -103,78 +113,79 @@ abstract final class AppTheme {
         weight: FontWeight.w700,
         height: 16 / 13,
         spacing: -0.015 * 13,
-        color: SbColors.text,
+        color: p.text,
       ),
       bodyLarge: ui(
         base.textTheme.bodyLarge,
         size: 14,
-        color: SbColors.text,
+        color: p.text,
       ),
       bodyMedium: ui(
         base.textTheme.bodyMedium,
         size: 12,
         weight: FontWeight.w500,
         height: 16 / 12,
-        color: SbColors.textSecondary,
+        color: p.textSecondary,
       ),
       bodySmall: ui(
         base.textTheme.bodySmall,
         size: 10,
         height: 14 / 10,
-        color: SbColors.textMuted,
+        color: p.textMuted,
       ),
       labelSmall: ui(
         base.textTheme.labelSmall,
         size: 10,
         weight: FontWeight.w700,
         spacing: 0.115 * 10,
-        color: SbColors.textMuted,
+        color: p.textMuted,
       ),
       labelLarge: ui(
         base.textTheme.labelLarge,
         size: 13,
         weight: FontWeight.w700,
-        color: SbColors.text,
+        color: p.text,
       ),
     );
 
     return base.copyWith(
       colorScheme: scheme,
-      scaffoldBackgroundColor: SbColors.bg,
-      canvasColor: SbColors.bg,
+      scaffoldBackgroundColor: p.bg,
+      canvasColor: p.bg,
+      extensions: <ThemeExtension<dynamic>>[p],
       splashFactory: NoSplash.splashFactory,
       highlightColor: const Color(0x14FF4500),
       textTheme: textTheme,
       primaryTextTheme: textTheme,
-      dividerTheme: const DividerThemeData(
-        color: SbColors.border,
+      dividerTheme: DividerThemeData(
+        color: p.border,
         thickness: SbSize.hairline,
         space: SbSize.hairline,
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: SbColors.bg,
+      appBarTheme: AppBarTheme(
+        backgroundColor: p.bg,
         surfaceTintColor: Colors.transparent,
-        foregroundColor: SbColors.text,
+        foregroundColor: p.text,
         elevation: 0,
         centerTitle: false,
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: SbColors.surface,
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: p.surface,
         surfaceTintColor: Colors.transparent,
-        modalBackgroundColor: SbColors.surface,
-        shape: RoundedRectangleBorder(
+        modalBackgroundColor: p.surface,
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(SbRadius.sheet),
           ),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: SbColors.surfaceHi,
+        backgroundColor: p.surfaceHi,
         contentTextStyle: GoogleFonts.plusJakartaSans(
           fontSize: 12,
-          color: SbColors.text,
+          color: p.text,
         ),
-        actionTextColor: SbColors.accentWarm,
+        actionTextColor: p.accentWarm,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(SbRadius.inner),
@@ -182,9 +193,9 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: SbColors.surfaceHi,
+        fillColor: p.surfaceHi,
         hintStyle: GoogleFonts.plusJakartaSans(
-          color: SbColors.textMuted,
+          color: p.textMuted,
           fontSize: 13,
         ),
         contentPadding: const EdgeInsets.symmetric(
@@ -193,37 +204,37 @@ abstract final class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SbRadius.button),
-          borderSide: const BorderSide(color: SbColors.border),
+          borderSide: BorderSide(color: p.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SbRadius.button),
-          borderSide: const BorderSide(color: SbColors.border),
+          borderSide: BorderSide(color: p.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SbRadius.button),
-          borderSide: const BorderSide(color: SbColors.accent, width: 1.2),
+          borderSide: BorderSide(color: p.accent, width: 1.2),
         ),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
-              ? SbColors.accent
-              : SbColors.textMuted,
+              ? p.accent
+              : p.textMuted,
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
-              ? SbColors.accent.withValues(alpha: 0.32)
-              : SbColors.border,
+              ? p.accent.withValues(alpha: 0.32)
+              : p.border,
         ),
-        trackOutlineColor: WidgetStateProperty.all(SbColors.borderHi),
+        trackOutlineColor: WidgetStateProperty.all(p.borderHi),
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: SbColors.accent,
-        linearTrackColor: SbColors.border,
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: p.accent,
+        linearTrackColor: p.border,
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: SbColors.accentWarm,
+          foregroundColor: p.accentWarm,
           textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 12,
             fontWeight: FontWeight.w700,

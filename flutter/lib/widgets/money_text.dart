@@ -35,7 +35,7 @@ class MoneyText extends StatelessWidget {
     this.amount, {
     super.key,
     this.style,
-    this.color = SbColors.text,
+    this.color,
     this.suffix,
     this.gradient,
     this.semanticLabel,
@@ -47,7 +47,7 @@ class MoneyText extends StatelessWidget {
     String value, {
     super.key,
     this.style,
-    this.color = SbColors.text,
+    this.color,
     this.suffix,
     this.gradient,
     this.semanticLabel,
@@ -58,7 +58,8 @@ class MoneyText extends StatelessWidget {
   final num? amount;
   final String? rawValue;
   final TextStyle? style;
-  final Color color;
+  /// Defaults to the theme's primary text colour when null.
+  final Color? color;
   final String? suffix;
   final Gradient? gradient;
   final String? semanticLabel;
@@ -75,7 +76,8 @@ class MoneyText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = (style ?? SbType.moneyMd).copyWith(color: gradient == null ? color : null);
+    final base = (style ?? SbType.moneyMd)
+        .copyWith(color: gradient == null ? (color ?? context.sb.text) : null);
 
     Widget text = Text(
       _text,
@@ -114,7 +116,7 @@ class MoneyText extends StatelessWidget {
         const SizedBox(width: 3),
         Text(
           suffix!,
-          style: SbType.micro.copyWith(color: SbColors.textMuted, fontSize: 8.5, letterSpacing: 0),
+          style: SbType.micro.copyWith(color: context.sb.textMuted, fontSize: 8.5, letterSpacing: 0),
           textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
         ),
       ],

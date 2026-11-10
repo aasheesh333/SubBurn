@@ -37,8 +37,8 @@ class BurnDashboardScreen extends ConsumerWidget {
     return SafeArea(
       bottom: false,
       child: RefreshIndicator(
-        color: SbColors.accent,
-        backgroundColor: SbColors.surfaceHi,
+        color: context.sb.accent,
+        backgroundColor: context.sb.surfaceHi,
         onRefresh: () => ref.read(catalogueProvider.notifier).refresh(),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -223,10 +223,10 @@ class _TopBar extends StatelessWidget {
             gradient: SbGradients.burn,
             boxShadow: const [SbShadow.cardInner],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.local_fire_department_rounded,
             size: 18,
-            color: Color(0xFF1A0800),
+            color: context.sb.onAccent,
           ),
         ),
         const SizedBox(width: SbSpace.x2),
@@ -249,8 +249,8 @@ class _TopBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 9),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(SbRadius.pill),
-                color: SbColors.surface,
-                border: Border.all(color: SbColors.border),
+                color: context.sb.surface,
+                border: Border.all(color: context.sb.border),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -261,15 +261,15 @@ class _TopBar extends StatelessWidget {
                     '${currency.code} · BURN',
                     style: SbType.micro.copyWith(
                       fontSize: 8,
-                      color: SbColors.textSecondary,
+                      color: context.sb.textSecondary,
                       letterSpacing: 0.08,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Icons.unfold_more_rounded,
                     size: 11,
-                    color: SbColors.textMuted,
+                    color: context.sb.textMuted,
                   ),
                 ],
               ),
@@ -290,11 +290,11 @@ class _LiveDot extends StatelessWidget {
       width: 5,
       height: 5,
       decoration: BoxDecoration(
-        color: SbColors.accent,
+        color: context.sb.accent,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: SbColors.accent.withValues(alpha: 0.35),
+            color: context.sb.accent.withValues(alpha: 0.35),
             blurRadius: 0,
             spreadRadius: 3,
           ),
@@ -315,7 +315,7 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(title, style: SbType.section.copyWith(color: SbColors.text)),
+        Text(title, style: SbType.section.copyWith(color: context.sb.text)),
         const Spacer(),
         if (badge != null) badge!,
       ],
@@ -337,16 +337,16 @@ class _RenewingRail extends StatelessWidget {
           height: 64,
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.check_circle_outline_rounded,
                 size: 16,
-                color: SbColors.safe,
+                color: context.sb.safe,
               ),
               const SizedBox(width: SbSpace.x2),
               Expanded(
                 child: Text(
                   'Nothing renews in the next ${SbWindow.renewingHours} hours.',
-                  style: SbType.caption.copyWith(color: SbColors.textSecondary),
+                  style: SbType.caption.copyWith(color: context.sb.textSecondary),
                 ),
               ),
             ],
@@ -422,7 +422,7 @@ class _RenewalCard extends StatelessWidget {
                         style: SbType.caption.copyWith(
                           fontWeight: FontWeight.w700,
                           fontSize: 10.5,
-                          color: SbColors.text,
+                          color: context.sb.text,
                         ),
                       ),
                       Text(
@@ -432,7 +432,7 @@ class _RenewalCard extends StatelessWidget {
                         softWrap: false,
                         style: SbType.micro.copyWith(
                           fontSize: 7.5,
-                          color: SbColors.textMuted,
+                          color: context.sb.textMuted,
                           letterSpacing: 0,
                         ),
                       ),
@@ -443,7 +443,7 @@ class _RenewalCard extends StatelessWidget {
             ),
             Text(
               subscription.currency.format(subscription.amount),
-              style: SbType.moneyMd.copyWith(color: SbColors.text),
+              style: SbType.moneyMd.copyWith(color: context.sb.text),
             ),
             FittedBox(
               fit: BoxFit.scaleDown,
@@ -489,12 +489,12 @@ class _SubscriptionRow extends StatelessWidget {
         padding: const EdgeInsets.only(right: SbSpace.x5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(SbRadius.inner),
-          color: SbColors.danger.withValues(alpha: 0.12),
-          border: Border.all(color: SbColors.danger.withValues(alpha: 0.34)),
+          color: context.sb.danger.withValues(alpha: 0.12),
+          border: Border.all(color: context.sb.danger.withValues(alpha: 0.34)),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.delete_outline_rounded,
-          color: SbColors.danger,
+          color: context.sb.danger,
           size: 18,
         ),
       ),
@@ -531,7 +531,7 @@ class _SubscriptionRow extends StatelessWidget {
                       style: SbType.body.copyWith(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
-                        color: SbColors.text,
+                        color: context.sb.text,
                       ),
                     ),
                     Text(
@@ -540,7 +540,7 @@ class _SubscriptionRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: SbType.micro.copyWith(
                         fontSize: 7.5,
-                        color: SbColors.textMuted,
+                        color: context.sb.textMuted,
                         letterSpacing: 0.04,
                       ),
                     ),
@@ -555,7 +555,7 @@ class _SubscriptionRow extends StatelessWidget {
                   MoneyText(
                     subscription.monthlyIn(currency, inrPerUsd),
                     style: SbType.moneySm.copyWith(fontSize: 12.5),
-                    color: SbColors.text,
+                    color: context.sb.text,
                     currency: currency,
                   ),
                   Text(
@@ -564,8 +564,8 @@ class _SubscriptionRow extends StatelessWidget {
                       fontSize: 7.5,
                       letterSpacing: 0.06,
                       color: subscription.isGhost
-                          ? SbColors.warn
-                          : SbColors.safe,
+                          ? context.sb.warn
+                          : context.sb.safe,
                     ),
                   ),
                 ],
@@ -597,7 +597,7 @@ class _GhostCallout extends StatelessWidget {
     return SurfaceCard(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
-      tint: SbColors.warn,
+      tint: context.sb.warn,
       child: Row(
         children: [
           Container(
@@ -605,12 +605,12 @@ class _GhostCallout extends StatelessWidget {
             height: 26,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: SbColors.warn.withValues(alpha: 0.14),
+              color: context.sb.warn.withValues(alpha: 0.14),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.lightbulb_outline_rounded,
               size: 14,
-              color: SbColors.warn,
+              color: context.sb.warn,
             ),
           ),
           const SizedBox(width: 10),
@@ -624,7 +624,7 @@ class _GhostCallout extends StatelessWidget {
                   style: SbType.caption.copyWith(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
-                    color: SbColors.text,
+                    color: context.sb.text,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -632,7 +632,7 @@ class _GhostCallout extends StatelessWidget {
                   '$count tools · $yearly/yr you do not use',
                   style: SbType.micro.copyWith(
                     fontSize: 8,
-                    color: SbColors.textMuted,
+                    color: context.sb.textMuted,
                     letterSpacing: 0,
                   ),
                 ),
@@ -643,14 +643,14 @@ class _GhostCallout extends StatelessWidget {
             'REVIEW',
             style: SbType.micro.copyWith(
               fontSize: 8.5,
-              color: const Color(0xFFFBBF24),
+              color: context.sb.warn,
               letterSpacing: 0.05,
             ),
           ),
-          const Icon(
+          Icon(
             Icons.chevron_right_rounded,
             size: 14,
-            color: Color(0xFFFBBF24),
+            color: context.sb.warn,
           ),
         ],
       ),
@@ -681,29 +681,29 @@ class _EmptyState extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  SbColors.accent.withValues(alpha: 0.22),
-                  SbColors.accent.withValues(alpha: 0),
+                  context.sb.accent.withValues(alpha: 0.22),
+                  context.sb.accent.withValues(alpha: 0),
                 ],
               ),
-              border: Border.all(color: SbColors.border),
+              border: Border.all(color: context.sb.border),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.local_fire_department_rounded,
-              color: SbColors.accentWarm,
+              color: context.sb.accentWarm,
               size: 28,
             ),
           ),
           const SizedBox(height: SbSpace.x4),
           Text(
             'Nothing burning yet',
-            style: SbType.h3.copyWith(color: SbColors.text),
+            style: SbType.h3.copyWith(color: context.sb.text),
           ),
           const SizedBox(height: SbSpace.x1),
           Text(
             'Add your first AI or SaaS subscription and SubBurn will show you '
             'what it costs per year — and what it costs in regret.',
             textAlign: TextAlign.center,
-            style: SbType.body.copyWith(color: SbColors.textSecondary),
+            style: SbType.body.copyWith(color: context.sb.textSecondary),
           ),
           const SizedBox(height: SbSpace.x5),
           SizedBox(
@@ -718,10 +718,10 @@ class _EmptyState extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.lock_outline_rounded,
                 size: 11,
-                color: SbColors.textMuted,
+                color: context.sb.textMuted,
               ),
               const SizedBox(width: 5),
               Flexible(
@@ -729,7 +729,7 @@ class _EmptyState extends StatelessWidget {
                   'Stored on this device. No account needed.',
                   style: SbType.micro.copyWith(
                     fontSize: 8,
-                    color: SbColors.textMuted,
+                    color: context.sb.textMuted,
                     letterSpacing: 0.02,
                   ),
                 ),

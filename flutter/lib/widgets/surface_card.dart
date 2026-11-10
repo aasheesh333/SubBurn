@@ -35,12 +35,12 @@ class SurfaceCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            if (tint != null) tint!.withValues(alpha: 0.07) else SbColors.surfaceHi,
-            SbColors.surface,
+            if (tint != null) tint!.withValues(alpha: 0.07) else context.sb.surfaceHi,
+            context.sb.surface,
           ],
         ),
         border: Border.all(
-          color: tint?.withValues(alpha: 0.22) ?? SbColors.border,
+          color: tint?.withValues(alpha: 0.22) ?? context.sb.border,
           width: SbSize.hairline,
         ),
         boxShadow: const [SbShadow.cardInner],
@@ -53,7 +53,7 @@ class SurfaceCard extends StatelessWidget {
     final outlined = dashed
         ? CustomPaint(
             painter: _DashedBorderPainter(
-              color: SbColors.border.withValues(alpha: 0.9),
+              color: context.sb.border.withValues(alpha: 0.9),
               radius: radius,
             ),
             child: body,
@@ -77,7 +77,7 @@ class SurfaceCard extends StatelessWidget {
 }
 
 class _DashedBorderPainter extends CustomPainter {
-  const _DashedBorderPainter({required this.color, required this.radius});
+  _DashedBorderPainter({required this.color, required this.radius});
 
   final Color color;
   final double radius;

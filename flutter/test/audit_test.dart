@@ -11,6 +11,7 @@ import 'package:subburn/core/utils/formatters.dart';
 import 'package:subburn/core/theme/theme_tokens.dart';
 import 'package:subburn/data/models/billing_cycle.dart';
 import 'package:subburn/data/models/currency.dart';
+import 'package:subburn/data/models/cycle_conversion.dart';
 import 'package:subburn/data/models/preset_tool.dart';
 import 'package:subburn/data/models/subscription.dart';
 import 'package:subburn/data/models/usage_guilt.dart';
@@ -532,6 +533,139 @@ void main() {
     });
   });
 
+  group('workflow', () {
+    test('withStartDate never inverts the timeline', () {
+      final next = DateTime.now().add(const Duration(days: 5));
+      final sub = _sub(next: next, start: DateTime(2025, 1, 9));
+
+      final earlier = sub.withStartDate(DateTime(2024, 6, 1));
+      expect(earlier.nextBillingDate, next);
+
+      // A charge can never precede the subscription start.
+      final later = sub.withStartDate(next.add(const Duration(days: 30)));
+      expect(
+        later.nextBillingDate.isBefore(later.startDate),
+        isFalse,
+        reason: 'next charge must not be before the start date',
+      );
+      expect(later.lifetimeIn(CurrencyCode.inr, 83), greaterThanOrEqualTo(0));
+    });
+
+    test('a denied notification permission is recorded, not pretended', () async {
+      final repo = SubscriptionRepository.inMemory();
+      final container = ProviderContainer(
+        overrides: [
+          repositoryProvider.overrideWithValue(repo),
+          catalogueProvider.overrideWith(() => _FixedCatalogue(_snapshot)),
+          analyticsProvider.overrideWithValue(AnalyticsService(null)),
+          notificationServiceProvider.overrideWithValue(NotificationService()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(subscriptionsProvider.notifier).add(_sub());
+
+      final settings = container.read(settingsProvider);
+      expect(settings.notificationsPermissionAsked, isTrue);
+      // The plugin is not initialised in tests, i.e. permission denied: the
+      // app must not claim reminders are on.
+      expect(settings.notificationsEnabled, isFalse);
+      expect(repo.length, 1);
+    });
+
+    test('a failed refresh keeps the previous catalogue and rate', () async {
+      final repo = SubscriptionRepository.inMemory();
+      final service = _FlakyCatalogue();
+      final container = ProviderContainer(
+        overrides: [
+          repositoryProvider.overrideWithValue(repo),
+          catalogueServiceProvider.overrideWithValue(service),
+          analyticsProvider.overrideWithValue(AnalyticsService(null)),
+          notificationServiceProvider.overrideWithValue(NotificationService()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final first = await container.read(catalogueProvider.future);
+      expect(first.catalogue.tools, isNotEmpty);
+
+      await container.read(catalogueProvider.notifier).refresh();
+
+      final after = container.read(catalogueProvider);
+      expect(after.hasValue, isTrue, reason: 'a failed refresh must not blank data');
+      expect(after.value!.catalogue.tools.length, first.catalogue.tools.length);
+      expect(container.read(catalogueRefreshingProvider), isFalse);
+      expect(container.read(ratesProvider).inrPerUsd, first.rates.inrPerUsd);
+    });
+
+    test('the -17% chip applies on every path into yearly', () {
+      // monthly -> yearly
+      final fromMonthly = CycleConversion.convert(
+        amount: 1660,
+        from: BillingCycle.monthly,
+        to: BillingCycle.yearly,
+        discountApplied: false,
+      );
+      expect(fromMonthly.amount, 16534);
+      expect(fromMonthly.discountApplied, isTrue);
+
+      // weekly -> yearly: the path that silently skipped the discount before.
+      final fromWeekly = CycleConversion.convert(
+        amount: 100,
+        from: BillingCycle.weekly,
+        to: BillingCycle.yearly,
+        discountApplied: false,
+      );
+      expect(fromWeekly.amount, 4316);
+      expect(fromWeekly.discountApplied, isTrue);
+    });
+
+    test('a yearly round trip returns the original amount', () {
+      const original = 1660.0;
+      final yearly = CycleConversion.convert(
+        amount: original,
+        from: BillingCycle.monthly,
+        to: BillingCycle.yearly,
+        discountApplied: false,
+      );
+      final back = CycleConversion.convert(
+        amount: yearly.amount,
+        from: BillingCycle.yearly,
+        to: BillingCycle.monthly,
+        discountApplied: yearly.discountApplied,
+      );
+      expect(back.amount, closeTo(original, 1));
+      expect(back.discountApplied, isFalse);
+    });
+
+    test('leaving yearly without having discounted does not invent one', () {
+      final result = CycleConversion.convert(
+        amount: 12000,
+        from: BillingCycle.yearly,
+        to: BillingCycle.monthly,
+        discountApplied: false,
+      );
+      expect(result.amount, 1000);
+    });
+
+    test('weekly <-> monthly keeps the monthly equivalent', () {
+      final monthly = CycleConversion.convert(
+        amount: 100,
+        from: BillingCycle.weekly,
+        to: BillingCycle.monthly,
+        discountApplied: false,
+      );
+      expect(monthly.amount, 433);
+      final weekly = CycleConversion.convert(
+        amount: monthly.amount,
+        from: BillingCycle.monthly,
+        to: BillingCycle.weekly,
+        discountApplied: false,
+      );
+      expect(weekly.amount, closeTo(100, 1));
+    });
+  });
+
   group('providers', () {
     test('catalogue build does not mutate another provider', () async {
       final repo = SubscriptionRepository.inMemory();
@@ -563,6 +697,18 @@ class _StubCatalogueService extends CatalogueService {
 
   @override
   Future<CatalogueSnapshot> load({bool forceRefresh = false}) async => _snapshot;
+}
+
+class _FlakyCatalogue extends CatalogueService {
+  _FlakyCatalogue() : super(baseUrl: 'https://example.invalid');
+
+  @override
+  Future<CatalogueSnapshot> load({bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      throw const SocketException('offline');
+    }
+    return _snapshot;
+  }
 }
 
 class _FixedCatalogue extends CatalogueNotifier {

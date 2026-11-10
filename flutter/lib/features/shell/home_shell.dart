@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/theme_tokens.dart';
+import '../../core/utils/formatters.dart';
 import '../dashboard/burn_dashboard_screen.dart';
 import '../controls/controls_screen.dart';
 import '../quick_add/quick_add_sheet.dart';
@@ -22,13 +23,32 @@ class HomeShell extends ConsumerStatefulWidget {
 class _HomeShellState extends ConsumerState<HomeShell> {
   int _index = 0;
 
+  /// Opens Quick Add and confirms the save, so the user is never left guessing
+  /// whether their row landed.
+  Future<void> _openQuickAdd() async {
+    // Grab the messenger before the await: using a BuildContext across an
+    // async gap is a lint error and a real crash risk if the shell unmounts.
+    final messenger = ScaffoldMessenger.of(context);
+    final added = await QuickAddSheet.show(context);
+    if (added == null) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            '${added.name} added · next charge ${formatChargeDate(added.nextBillingDate)}',
+          ),
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     final snapshot = ref.watch(catalogueProvider);
     final source = snapshot.value?.source;
 
     return Scaffold(
-      backgroundColor: SbColors.bg,
+      backgroundColor: context.sb.bg,
       body: Column(
         children: [
           Expanded(
@@ -36,10 +56,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               index: _index,
               children: [
                 BurnDashboardScreen(
-                  onAddSubscription: () => QuickAddSheet.show(context),
+                  onAddSubscription: _openQuickAdd,
                 ),
                 ViralReceiptScreen(
-                  onAddSubscription: () => QuickAddSheet.show(context),
+                  onAddSubscription: _openQuickAdd,
                 ),
                 const RenewalsScreen(),
                 const ControlsScreen(),
@@ -53,7 +73,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       bottomNavigationBar: _BottomBar(
         index: _index,
         onSelect: (i) => setState(() => _index = i),
-        onAdd: () => QuickAddSheet.show(context),
+        onAdd: _openQuickAdd,
       ),
     );
   }
@@ -73,9 +93,9 @@ class _BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: SbColors.bg,
-        border: Border(top: BorderSide(color: SbColors.border)),
+      decoration: BoxDecoration(
+        color: context.sb.bg,
+        border: Border(top: BorderSide(color: context.sb.border)),
       ),
       padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
       child: SizedBox(
@@ -115,10 +135,10 @@ class _BottomBar extends StatelessWidget {
                         gradient: SbGradients.burn,
                         boxShadow: [SbShadow.ctaGlow],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.add_rounded,
                         size: 24,
-                        color: Color(0xFF1A0800),
+                        color: context.sb.onAccent,
                       ),
                     ),
                   ),
@@ -163,7 +183,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? SbColors.accent : SbColors.textMuted;
+    final color = selected ? context.sb.accent : context.sb.textMuted;
     return Semantics(
       button: true,
       selected: selected,
@@ -197,13 +217,13 @@ class _OfflineStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 22,
-      color: SbColors.surfaceHi,
+      color: context.sb.surfaceHi,
       alignment: Alignment.center,
       child: Text(
         'Offline · using bundled presets',
         style: SbType.micro.copyWith(
           fontSize: 7.5,
-          color: SbColors.textMuted,
+          color: context.sb.textMuted,
           letterSpacing: 0.04,
         ),
       ),

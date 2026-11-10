@@ -59,6 +59,20 @@ Future<void> main() async {
         debugPrint('Notifications unavailable: $error');
       }
 
+      // Reminders are scheduled against billing dates that move: an overdue
+      // row is rolled forward on read, and a reboot can drop alarms. Re-arming
+      // every enabled subscription at startup keeps the two alarms honest
+      // without any user action.
+      if (repository.settings.notificationsEnabled) {
+        for (final sub in repository.all()) {
+          try {
+            await notifications.scheduleFor(sub, enabled: true);
+          } catch (error) {
+            debugPrint('reschedule ${sub.id} failed: $error');
+          }
+        }
+      }
+
       runApp(
         ProviderScope(
           overrides: [

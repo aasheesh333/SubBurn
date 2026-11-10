@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/models/currency.dart';
+import '../core/theme/theme_tokens.dart';
 import '../theme/subburn_tokens.dart';
 import '../widgets/money_text.dart';
 
@@ -108,7 +109,10 @@ class SubBurnReceiptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Hard-locked to the export box. No MediaQuery, no Theme.
+    // Hard-locked to the export box, and hard-locked to the dark palette: the
+    // receipt is a dark artefact that gets exported as a PNG, so it must look
+    // identical in light mode. Reading the ambient theme here made the title
+    // white-on-white.
     return SizedBox(
       width: SbSize.shareCard.width,
       height: SbSize.shareCard.height,
@@ -256,7 +260,7 @@ class _BrandRow extends StatelessWidget {
           'SUBBURN · WRAPPED $year',
           style: SbType.micro.copyWith(
             fontSize: 8,
-            color: SbColors.accentAlt,
+            color: SbPalette.dark.accentAlt,
             letterSpacing: 0.17 * 8,
           ),
         ),
@@ -290,7 +294,7 @@ class _Title extends StatelessWidget {
           TextSpan(children: [
             TextSpan(
               text: '$headline\n',
-              style: SbType.h1.copyWith(color: SbColors.text),
+              style: SbType.h1.copyWith(color: SbPalette.dark.text),
             ),
             TextSpan(
               text: accent,
@@ -391,7 +395,7 @@ class _LineRow extends StatelessWidget {
           style: SbType.micro.copyWith(
             fontSize: 10.5,
             fontWeight: FontWeight.w600,
-            color: SbColors.text,
+            color: SbPalette.dark.text,
           ),
         ),
       ],
@@ -422,9 +426,9 @@ class _GhostStrip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
       decoration: BoxDecoration(
-        color: SbColors.warn.withValues(alpha: 0.07),
+        color: SbPalette.dark.warn.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: SbColors.warn.withValues(alpha: 0.20)),
+        border: Border.all(color: SbPalette.dark.warn.withValues(alpha: 0.20)),
       ),
       child: Column(
         children: [
@@ -460,9 +464,9 @@ class _GhostStrip extends StatelessWidget {
                   Expanded(
                     flex: (share * 1000).round().clamp(1, 1000),
                     child: Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [SbColors.warn, SbColors.accent],
+                          colors: [SbPalette.dark.warn, SbPalette.dark.accent],
                         ),
                       ),
                     ),
@@ -602,11 +606,11 @@ class _TotalBlock extends StatelessWidget {
           MoneyText(
             total,
             style: SbType.display.copyWith(fontSize: 40, letterSpacing: -0.055 * 40),
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFFFA03A), SbColors.accent],
-              stops: [0, 0.78],
+              colors: [const Color(0xFFFFA03A), SbPalette.dark.accent],
+              stops: const [0, 0.78],
             ),
             suffix: '/yr',
             semanticLabel: '${currency.format(total)} per year',
@@ -639,7 +643,7 @@ class _RoastBlock extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [Color(0x24FF4500), Color(0x08FF8C00)],
         ),
-        border: Border.all(color: SbColors.accent.withValues(alpha: 0.38)),
+        border: Border.all(color: SbPalette.dark.accent.withValues(alpha: 0.38)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -650,7 +654,7 @@ class _RoastBlock extends StatelessWidget {
                 'TIER: ',
                 style: SbType.micro.copyWith(
                   fontSize: 7.5,
-                  color: SbColors.accentWarm,
+                  color: SbPalette.dark.accentWarm,
                   letterSpacing: 0.1 * 7.5,
                 ),
               ),
@@ -662,7 +666,7 @@ class _RoastBlock extends StatelessWidget {
                   style: SbType.micro.copyWith(
                     fontSize: 7.5,
                     fontWeight: FontWeight.w700,
-                    color: SbColors.accent,
+                    color: SbPalette.dark.accent,
                     letterSpacing: 0.1 * 7.5,
                   ),
                 ),
@@ -674,7 +678,7 @@ class _RoastBlock extends StatelessWidget {
                   height: 3,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(1),
-                    color: i < intensity ? SbColors.accent : const Color(0xFF3A2A22),
+                    color: i < intensity ? SbPalette.dark.accent : const Color(0xFF3A2A22),
                     gradient: i < intensity ? SbGradients.burn : null,
                   ),
                 ),
@@ -761,7 +765,7 @@ class _Barcode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const widths = [1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 1.0, 2.0, 1.0, 1.0, 2.0, 3.0];
+    final widths = [1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 1.0, 2.0, 1.0, 1.0, 2.0, 3.0];
     return Opacity(
       opacity: 0.62,
       child: SizedBox(
@@ -809,7 +813,7 @@ class _ReceiptFooter extends StatelessWidget {
               mainAxisSpacing: 2,
               crossAxisSpacing: 2,
               children: List.generate(25, (i) {
-                const on = {0, 1, 2, 5, 6, 7, 10, 12, 14, 17, 18, 19, 20, 22, 24};
+                final on = {0, 1, 2, 5, 6, 7, 10, 12, 14, 17, 18, 19, 20, 22, 24};
                 return ColoredBox(
                   color: on.contains(i)
                       ? const Color(0xFF6E6E78)

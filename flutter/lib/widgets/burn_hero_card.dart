@@ -52,14 +52,17 @@ class BurnHeroCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(SbRadius.hero),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1B1214), Color(0xFF131316), Color(0xFF111114)],
-          stops: [0, 0.52, 1],
+          colors: context.sb.heroSurface,
+          stops: const [0, 0.52, 1],
         ),
-        border: Border.all(color: const Color(0xFF33271F)),
-        boxShadow: const [SbShadow.cardInner, SbShadow.heroGlow],
+        border: Border.all(color: context.sb.heroBorder),
+        boxShadow: [
+          ...context.sb.cardShadow,
+          if (context.sb.isDark) SbShadow.heroGlow,
+        ],
       ),
       child: Stack(
         children: [
@@ -92,7 +95,7 @@ class BurnHeroCard extends StatelessWidget {
                   children: [
                     Text(
                       'MONTHLY BURN',
-                      style: SbType.label.copyWith(color: SbColors.textMuted),
+                      style: SbType.label.copyWith(color: context.sb.textMuted),
                     ),
                     const Spacer(),
                     if (delta != null)
@@ -114,7 +117,7 @@ class BurnHeroCard extends StatelessWidget {
                   Text(
                     'Nothing tracked yet',
                     style: SbType.caption.copyWith(
-                      color: SbColors.textSecondary,
+                      color: context.sb.textSecondary,
                     ),
                   )
                 else
@@ -126,18 +129,18 @@ class BurnHeroCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: SbType.caption
-                              .copyWith(color: SbColors.textSecondary),
+                              .copyWith(color: context.sb.textSecondary),
                         ),
                       ),
                       MoneyText(
                         ghostAmount,
                         style: SbType.micro.copyWith(fontSize: 9.5),
-                        color: SbColors.accentWarm,
+                        color: context.sb.accentWarm,
                       ),
                       Text(
                         ' is ghost spend',
                         style: SbType.caption
-                            .copyWith(color: SbColors.textSecondary),
+                            .copyWith(color: context.sb.textSecondary),
                       ),
                     ],
                   ),
@@ -150,13 +153,13 @@ class BurnHeroCard extends StatelessWidget {
                   Row(
                     children: [
                       _Legend(
-                        color: SbColors.accent,
+                        color: context.sb.accent,
                         label: 'Active use',
                         value: pct,
                       ),
                       const Spacer(),
                       _Legend(
-                        color: const Color(0xFF7A7A86),
+                        color: context.sb.mutedDeco,
                         label: 'Ghost subs',
                         value: ghostPct,
                       ),
@@ -192,16 +195,16 @@ class _Delta extends StatelessWidget {
     return Row(
       children: [
         // Drawn, not an icon font glyph, so it can never render as tofu.
-        const CustomPaint(
-          size: Size(6, 6),
-          painter: _CaretPainter(),
+        CustomPaint(
+          size: const Size(6, 6),
+          painter: _CaretPainter(context.sb.accentWarm),
         ),
         const SizedBox(width: 3),
         Text(
           '${currency.format(delta)} added this month',
           style: SbType.micro.copyWith(
             fontSize: 8,
-            color: SbColors.accentWarm,
+            color: context.sb.accentWarm,
             letterSpacing: 0.02,
           ),
         ),
@@ -211,12 +214,15 @@ class _Delta extends StatelessWidget {
 }
 
 class _CaretPainter extends CustomPainter {
-  const _CaretPainter();
+  _CaretPainter(this.color);
+
+  /// Painters have no BuildContext, so the resolved colour is passed in.
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = SbColors.accentWarm
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.3
       ..strokeCap = StrokeCap.round
@@ -254,7 +260,7 @@ class _SplitBar extends StatelessWidget {
             const SizedBox(width: 2),
             Expanded(
               flex: ((1 - activeFraction) * 1000).round().clamp(1, 1000),
-              child: Container(color: const Color(0xFF7A7A86)),
+              child: Container(color: context.sb.mutedDeco),
             ),
           ],
         ),
@@ -280,18 +286,18 @@ class _Legend extends StatelessWidget {
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(2),
-            gradient: color == SbColors.accent ? SbGradients.burn : null,
+            gradient: color == context.sb.accent ? SbGradients.burn : null,
           ),
         ),
         const SizedBox(width: 5),
         Text(
           label,
-          style: SbType.caption.copyWith(fontSize: 9.5, color: SbColors.textSecondary),
+          style: SbType.caption.copyWith(fontSize: 9.5, color: context.sb.textSecondary),
         ),
         const SizedBox(width: 3),
         Text(
           value,
-          style: SbType.micro.copyWith(fontSize: 9, color: SbColors.textMuted),
+          style: SbType.micro.copyWith(fontSize: 9, color: context.sb.textMuted),
         ),
       ],
     );
@@ -328,12 +334,12 @@ class RenewalCard extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(SbSpace.x3, 11, SbSpace.x3, 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(SbRadius.inner),
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [SbColors.surfaceHi, SbColors.surface],
+            colors: [context.sb.surfaceHi, context.sb.surface],
           ),
-          border: Border.all(color: SbColors.border),
+          border: Border.all(color: context.sb.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,7 +367,7 @@ class RenewalCard extends StatelessWidget {
                         urgency == RenewalUrgency.later ? 'Renews tomorrow' : 'Renews today',
                         style: SbType.micro.copyWith(
                           fontSize: 7.5,
-                          color: SbColors.textMuted,
+                          color: context.sb.textMuted,
                           letterSpacing: 0.01,
                         ),
                       ),

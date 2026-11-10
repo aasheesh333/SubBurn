@@ -1,7 +1,14 @@
 # SubBurn — Design & Build Handoff
 
-**AI & SaaS subscription guilt tracker.** Dark-mode-only, 393 × 852, 8 px grid,
-built around one shareable artefact: the yearly burn receipt.
+**AI & SaaS subscription guilt tracker.** 393 × 852, 8 px grid, built around one
+shareable artefact: the yearly burn receipt.
+
+**Theming:** the original design was dark-only. The app now ships **light and
+dark**, defaulting to the device setting (`ThemePreference.system`) with a manual
+override in Controls → Appearance. `SbPalette` is a `ThemeExtension`; widgets
+read `context.sb.<token>` and never hardcode a colour. The receipt is the one
+deliberate exception — it is a dark artefact that exports as a PNG, so it always
+resolves the dark palette, in both themes.
 
 Two deliverables live side by side here:
 

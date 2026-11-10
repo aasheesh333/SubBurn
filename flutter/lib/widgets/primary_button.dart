@@ -34,7 +34,7 @@ class PrimaryButton extends StatelessWidget {
       child: Opacity(
         opacity: enabled ? 1 : 0.45,
         child: Material(
-          color: variant == ButtonVariant.primary ? Colors.transparent : SbColors.surface,
+          color: variant == ButtonVariant.primary ? Colors.transparent : context.sb.surface,
           borderRadius: BorderRadius.circular(SbRadius.button),
           child: InkWell(
             onTap: onPressed,
@@ -48,11 +48,16 @@ class PrimaryButton extends StatelessWidget {
                     ? null
                     : Border.all(
                         color: variant == ButtonVariant.danger
-                            ? SbColors.danger.withValues(alpha: 0.34)
-                            : SbColors.border,
+                            ? context.sb.danger.withValues(alpha: 0.34)
+                            : context.sb.border,
                       ),
                 boxShadow: variant == ButtonVariant.primary
-                    ? const [SbShadow.cardInner, SbShadow.ctaGlow]
+                    ? [
+                        SbShadow.cardInner,
+                        // The bloom is a dark-UI device; on white it reads as a
+                        // dirty smudge and costs contrast.
+                        if (context.sb.isDark) SbShadow.ctaGlow,
+                      ]
                     : null,
               ),
               child: Row(
@@ -63,10 +68,10 @@ class PrimaryButton extends StatelessWidget {
                       icon,
                       size: 15,
                       color: variant == ButtonVariant.primary
-                          ? const Color(0xFF180900)
+                          ? context.sb.onAccent
                           : variant == ButtonVariant.danger
-                              ? const Color(0xFFF87171)
-                              : SbColors.text,
+                              ? context.sb.danger
+                              : context.sb.text,
                     ),
                     const SizedBox(width: SbSpace.x2),
                   ],
@@ -77,9 +82,9 @@ class PrimaryButton extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.015 * 13,
                       color: switch (variant) {
-                        ButtonVariant.primary => const Color(0xFF180900),
-                        ButtonVariant.danger => const Color(0xFFF87171),
-                        ButtonVariant.outline => SbColors.text,
+                        ButtonVariant.primary => context.sb.onAccent,
+                        ButtonVariant.danger => context.sb.danger,
+                        ButtonVariant.outline => context.sb.text,
                       },
                     ),
                   ),
@@ -96,7 +101,7 @@ class PrimaryButton extends StatelessWidget {
                         trailing!,
                         style: SbType.micro.copyWith(
                           fontSize: 10.5,
-                          color: const Color(0xFF180900).withValues(alpha: 0.7),
+                          color: context.sb.onAccent.withValues(alpha: 0.7),
                           letterSpacing: -0.02,
                         ),
                       ),

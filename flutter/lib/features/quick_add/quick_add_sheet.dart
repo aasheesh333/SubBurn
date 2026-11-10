@@ -7,6 +7,7 @@ import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/billing_cycle.dart';
 import '../../data/models/currency.dart';
+import '../../data/models/cycle_conversion.dart';
 import '../../data/models/preset_tool.dart';
 import '../../data/models/subscription.dart';
 import '../../data/models/usage_guilt.dart';
@@ -28,8 +29,12 @@ class QuickAddSheet extends ConsumerStatefulWidget {
 
   final PresetTool? initialPreset;
 
-  static Future<void> show(BuildContext context, {PresetTool? initialPreset}) {
-    return showModalBottomSheet<void>(
+  /// Returns the saved subscription, or null when the sheet was dismissed.
+  static Future<Subscription?> show(
+    BuildContext context, {
+    PresetTool? initialPreset,
+  }) {
+    return showModalBottomSheet<Subscription?>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -115,23 +120,17 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
   void _switchCycle(BillingCycle next) {
     if (next == _cycle) return;
     final current = parseAmount(_priceController.text) ?? 0;
-    double converted;
-
-    if (next == BillingCycle.yearly && _cycle == BillingCycle.monthly) {
-      converted = current * 12 * (1 - annualDiscount);
-      _yearlyDiscountApplied = true;
-    } else if (next == BillingCycle.monthly && _cycle == BillingCycle.yearly) {
-      converted = current / 12 / (_yearlyDiscountApplied ? (1 - annualDiscount) : 1);
-      _yearlyDiscountApplied = false;
-    } else {
-      final monthly = current * _cycle.monthlyFactor;
-      converted = monthly / next.monthlyFactor;
-      _yearlyDiscountApplied = false;
-    }
+    final result = CycleConversion.convert(
+      amount: current,
+      from: _cycle,
+      to: next,
+      discountApplied: _yearlyDiscountApplied,
+    );
 
     setState(() {
       _cycle = next;
-      _priceController.text = formatPlainAmount(converted.roundToDouble());
+      _priceController.text = formatPlainAmount(result.amount);
+      _yearlyDiscountApplied = result.discountApplied;
       if (!_nextDateEdited) {
         _nextDate = next.nextAfter(_startDate);
       }
@@ -172,8 +171,6 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
       _nextDateEdited = true;
     });
   }
-
-  static const annualDiscount = 0.17;
 
   void _switchCurrency(CurrencyCode next, double inrPerUsd) {
     if (next == _currency) return;
@@ -238,7 +235,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
         .add(subscription, fromPreset: preset != null);
 
     if (!mounted) return;
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(subscription);
   }
 
   @override
@@ -246,13 +243,14 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
     final snapshot = ref.watch(catalogueProvider);
     final rates = ref.watch(ratesProvider);
     final catalogue = snapshot.value?.catalogue;
-    final all = catalogue?.search(_query) ?? const <PresetTool>[];
+    final all = catalogue?.search(_query) ?? <PresetTool>[];
     // The sheet shows a 3-row preview by default; search reveals more. A
     // 124-tile wall pushes the form off-screen and reads as a directory.
     final results = _query.isEmpty
         ? all.take(12).toList(growable: false)
         : all.take(24).toList(growable: false);
     final hidden = all.length - results.length;
+    final refreshing = ref.watch(catalogueRefreshingProvider);
     final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
 
     return Padding(
@@ -261,12 +259,12 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.92,
         ),
-        decoration: const BoxDecoration(
-          color: SbColors.surface,
-          borderRadius: BorderRadius.vertical(
+        decoration: BoxDecoration(
+          color: context.sb.surface,
+          borderRadius: const BorderRadius.vertical(
             top: Radius.circular(SbRadius.sheet),
           ),
-          border: Border(top: BorderSide(color: SbColors.border)),
+          border: Border(top: BorderSide(color: context.sb.border)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -276,7 +274,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: SbColors.borderHi,
+                color: context.sb.borderHi,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -296,13 +294,13 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                       children: [
                         Text(
                           'Add subscription',
-                          style: SbType.h2.copyWith(color: SbColors.text),
+                          style: SbType.h2.copyWith(color: context.sb.text),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'Pick a tool, set the burn, log the guilt.',
                           style: SbType.body.copyWith(
-                            color: SbColors.textSecondary,
+                            color: context.sb.textSecondary,
                           ),
                         ),
                       ],
@@ -314,7 +312,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                     child: IconButton(
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.close_rounded, size: 18),
-                      color: SbColors.textSecondary,
+                      color: context.sb.textSecondary,
                     ),
                   ),
                 ],
@@ -345,12 +343,12 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                               ? 'POPULAR · ${catalogue?.tools.length ?? 0} TOOLS'
                               : '${results.length} MATCHES',
                           style: SbType.label.copyWith(
-                            color: SbColors.textMuted,
+                            color: context.sb.textMuted,
                             fontSize: 9,
                           ),
                         ),
                         const Spacer(),
-                        if (snapshot.isLoading)
+                        if (snapshot.isLoading || refreshing)
                           const SizedBox(
                             width: 10,
                             height: 10,
@@ -382,7 +380,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                           '$hidden more tools.',
                           style: SbType.micro.copyWith(
                             fontSize: 8,
-                            color: SbColors.textMuted,
+                            color: context.sb.textMuted,
                             letterSpacing: 0,
                           ),
                         ),
@@ -395,7 +393,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                         textCapitalization: TextCapitalization.words,
                         style: SbType.body.copyWith(
                           fontSize: 13,
-                          color: SbColors.text,
+                          color: context.sb.text,
                         ),
                         decoration: const InputDecoration(
                           hintText: 'e.g. ChatGPT Plus',
@@ -465,7 +463,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                               ],
                               style: SbType.moneyLg.copyWith(
                                 fontSize: 22,
-                                color: SbColors.text,
+                                color: context.sb.text,
                               ),
                               decoration: const InputDecoration(
                                 hintText: '0',
@@ -496,7 +494,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                           'match your actual bill.',
                           style: SbType.micro.copyWith(
                             fontSize: 8,
-                            color: SbColors.textMuted,
+                            color: context.sb.textMuted,
                             letterSpacing: 0,
                           ),
                         ),
@@ -506,7 +504,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                       _guilt.isGhost
                           ? 'This one will be counted as ghost spend on your receipt.'
                           : 'Counted as active use. Ghost spend stays honest.',
-                      style: SbType.caption.copyWith(color: SbColors.textMuted),
+                      style: SbType.caption.copyWith(color: context.sb.textMuted),
                     ),
                     const SizedBox(height: SbSpace.x3),
                   ],
@@ -523,9 +521,9 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                 SbSpace.page,
                 SbSpace.x3,
               ),
-              decoration: const BoxDecoration(
-                color: SbColors.surface,
-                border: Border(top: BorderSide(color: SbColors.border)),
+              decoration: BoxDecoration(
+                color: context.sb.surface,
+                border: Border(top: BorderSide(color: context.sb.border)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -544,7 +542,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                     'Stored on this device only. No account, no upload.',
                     style: SbType.micro.copyWith(
                       fontSize: 8,
-                      color: SbColors.textMuted,
+                      color: context.sb.textMuted,
                       letterSpacing: 0.02,
                     ),
                   ),
@@ -594,21 +592,21 @@ class _SearchField extends StatelessWidget {
       focusNode: focusNode,
       onChanged: onChanged,
       textInputAction: TextInputAction.search,
-      style: SbType.body.copyWith(fontSize: 13, color: SbColors.text),
+      style: SbType.body.copyWith(fontSize: 13, color: context.sb.text),
       decoration: InputDecoration(
         hintText: toolCount > 0
             ? 'Search $toolCount tools — ChatGPT, Netflix, Figma…'
             : 'Search the catalogue…',
-        prefixIcon: const Icon(
+        prefixIcon: Icon(
           Icons.search_rounded,
           size: 18,
-          color: SbColors.textMuted,
+          color: context.sb.textMuted,
         ),
         suffixIcon: controller.text.isEmpty
             ? null
             : IconButton(
                 icon: const Icon(Icons.close_rounded, size: 16),
-                color: SbColors.textMuted,
+                color: context.sb.textMuted,
                 onPressed: () {
                   controller.clear();
                   onChanged('');
@@ -641,7 +639,7 @@ class _ToolGrid extends StatelessWidget {
           child: Text(
             'No preset matches that. Type a name below and add it manually.',
             textAlign: TextAlign.center,
-            style: SbType.caption.copyWith(color: SbColors.textMuted),
+            style: SbType.caption.copyWith(color: context.sb.textMuted),
           ),
         ),
       );
@@ -696,10 +694,10 @@ class _ToolCell extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(SbRadius.inner),
             color: selected
-                ? SbColors.accent.withValues(alpha: 0.10)
-                : SbColors.surfaceHi,
+                ? context.sb.accent.withValues(alpha: 0.10)
+                : context.sb.surfaceHi,
             border: Border.all(
-              color: selected ? SbColors.accent : SbColors.border,
+              color: selected ? context.sb.accent : context.sb.border,
               width: selected ? 1.4 : 1,
             ),
           ),
@@ -721,14 +719,14 @@ class _ToolCell extends StatelessWidget {
                       child: Container(
                         width: 13,
                         height: 13,
-                        decoration: const BoxDecoration(
-                          color: SbColors.accent,
+                        decoration: BoxDecoration(
+                          color: context.sb.accent,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.check_rounded,
                           size: 9,
-                          color: Color(0xFF160800),
+                          color: context.sb.onAccent,
                         ),
                       ),
                     ),
@@ -742,7 +740,7 @@ class _ToolCell extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: SbType.micro.copyWith(
                   fontSize: 7.5,
-                  color: selected ? SbColors.accentWarm : SbColors.textSecondary,
+                  color: selected ? context.sb.accentWarm : context.sb.textSecondary,
                   letterSpacing: 0,
                   height: 1.25,
                 ),
@@ -766,9 +764,9 @@ class _CurrencyToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: SbColors.surfaceHi,
+        color: context.sb.surfaceHi,
         borderRadius: BorderRadius.circular(SbRadius.button),
-        border: Border.all(color: SbColors.border),
+        border: Border.all(color: context.sb.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -794,8 +792,8 @@ class _CurrencyToggle extends StatelessWidget {
                     style: SbType.moneyMd.copyWith(
                       fontSize: 15,
                       color: value == code
-                          ? const Color(0xFF1A0800)
-                          : SbColors.textSecondary,
+                          ? context.sb.onAccent
+                          : context.sb.textSecondary,
                     ),
                   ),
                 ),
@@ -834,10 +832,10 @@ class _DateTile extends StatelessWidget {
           height: 48,
           padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
           decoration: BoxDecoration(
-            color: SbColors.surfaceHi,
+            color: context.sb.surfaceHi,
             borderRadius: BorderRadius.circular(SbRadius.button),
             border: Border.all(
-              color: highlighted ? SbColors.accent.withValues(alpha: 0.55) : SbColors.border,
+              color: highlighted ? context.sb.accent.withValues(alpha: 0.55) : context.sb.border,
             ),
           ),
           child: Row(
@@ -849,14 +847,14 @@ class _DateTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: SbType.moneySm.copyWith(
                     fontSize: 12,
-                    color: highlighted ? SbColors.accentWarm : SbColors.text,
+                    color: highlighted ? context.sb.accentWarm : context.sb.text,
                   ),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.calendar_today_rounded,
                 size: 12,
-                color: SbColors.textMuted,
+                color: context.sb.textMuted,
               ),
             ],
           ),
@@ -879,7 +877,7 @@ class _Field extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: SbType.label.copyWith(color: SbColors.textMuted, fontSize: 9),
+          style: SbType.label.copyWith(color: context.sb.textMuted, fontSize: 9),
         ),
         const SizedBox(height: SbSpace.x2),
         child,

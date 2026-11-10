@@ -8,7 +8,7 @@
     "outerPadding": 16,
     "spatialGrid": 8,
     "frameGap": 48,
-    "mode": "dark-only",
+    "mode": "light + dark (system default)",
     "notes": [
       "Every spacing value in the app is a multiple of 8, except 1px hairline borders.",
       "All currency, countdown timers and price tags use the mono family with tabular figures.",

@@ -32,9 +32,9 @@ class SegmentPills<T> extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(SbSpace.x1),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B0B0E),
+        color: context.sb.segmentSurface,
         borderRadius: BorderRadius.circular(SbRadius.inner),
-        border: Border.all(color: SbColors.border),
+        border: Border.all(color: context.sb.border),
       ),
       child: Row(
         children: [
@@ -71,7 +71,7 @@ class _Segment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final glowDot = selected && dot != null && dot == SbColors.safe;
+    final glowDot = selected && dot != null && dot == context.sb.safe;
     final dotShadow = glowDot
         ? <BoxShadow>[
             BoxShadow(color: dot!.withValues(alpha: 0.9), blurRadius: 7),
@@ -91,18 +91,18 @@ class _Segment extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(9),
             gradient: selected
-                ? const LinearGradient(
+                ? LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0xFF231A16), Color(0xFF1B1512)],
+                    colors: context.sb.segmentSelected,
                   )
                 : null,
             border: Border.all(
-              color: selected ? SbColors.accentAlt.withValues(alpha: 0.36) : Colors.transparent,
+              color: selected ? context.sb.accentAlt.withValues(alpha: 0.36) : Colors.transparent,
             ),
             boxShadow: selected
-                ? const [
-                    BoxShadow(
+                ? [
+                    const BoxShadow(
                       color: Color(0x4DFF4500),
                       offset: Offset(0, 4),
                       blurRadius: 14,
@@ -133,7 +133,7 @@ class _Segment extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.01 * 11,
-                  color: selected ? SbColors.text : SbColors.textMuted,
+                  color: selected ? context.sb.text : context.sb.textMuted,
                 ),
               ),
               if (trailing != null) ...[
@@ -143,7 +143,7 @@ class _Segment extends StatelessWidget {
                   style: SbType.micro.copyWith(
                     fontSize: 8,
                     letterSpacing: 0.02,
-                    color: selected ? SbColors.accentWarm : SbColors.textMuted,
+                    color: selected ? context.sb.accentWarm : context.sb.textMuted,
                   ),
                 ),
               ],

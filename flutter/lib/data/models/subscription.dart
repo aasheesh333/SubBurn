@@ -162,6 +162,20 @@ class Subscription {
   /// The next charge after [from], walking the billing cycle forward.
   DateTime followingCharge(DateTime from) => cycle.advance(from);
 
+  /// Returns a copy with a new [startDate], keeping the ledger coherent: a
+  /// start date after the stored next charge would make lifetime spend
+  /// negative, so the charge rolls forward to the first period after it.
+  Subscription withStartDate(DateTime startDate) {
+    // Invariant: a charge can never precede the subscription's own start.
+    if (!nextBillingDate.isBefore(startDate)) {
+      return copyWith(startDate: startDate);
+    }
+    return copyWith(
+      startDate: startDate,
+      nextBillingDate: cycle.nextAfter(startDate),
+    );
+  }
+
   Subscription copyWith({
     String? name,
     String? vendor,

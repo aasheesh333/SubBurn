@@ -6,7 +6,8 @@
 **An AI & SaaS subscription guilt tracker that turns a year of burn into a
 shareable roast receipt.**
 
-Dark-mode-only Flutter app. Local-first: every subscription lives in Hive on the
+Flutter app with **light and dark themes that follow your device** (a manual
+choice overrides it). Local-first: every subscription lives in Hive on the
 device. No account, no Firestore, no per-user backend cost.
 
 <p align="center">

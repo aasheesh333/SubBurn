@@ -4,6 +4,7 @@ import '../data/hive/local_adapters.dart';
 import '../data/models/currency.dart';
 import '../data/models/preset_tool.dart';
 import '../data/models/subscription.dart';
+import '../data/models/theme_preference.dart';
 import '../data/repositories/subscription_repository.dart';
 import '../services/analytics_service.dart';
 import '../services/catalogue_service.dart';
@@ -43,6 +44,7 @@ class SubscriptionsNotifier extends Notifier<List<Subscription>> {
 
   Future<void> add(Subscription subscription, {bool fromPreset = false}) async {
     final repo = ref.read(repositoryProvider);
+    await _ensureNotificationPermission();
     // Optimistic first, then persist: the UI never waits on disk, and a
     // Dismissible is never left in the tree after its row is gone.
     state = _sorted([...state, subscription]);
@@ -115,6 +117,21 @@ class SubscriptionsNotifier extends Notifier<List<Subscription>> {
     state = ref.read(repositoryProvider).all();
   }
 
+  /// Android 13+ needs a runtime grant. Asking on the first save (when the
+  /// user has just said "remind me about money") beats asking at boot, and a
+  /// denial is recorded so we never ask twice or pretend reminders work.
+  Future<void> _ensureNotificationPermission() async {
+    final settings = ref.read(settingsProvider);
+    if (!settings.notificationsEnabled || settings.notificationsPermissionAsked) {
+      return;
+    }
+    final granted = await ref.read(notificationServiceProvider).requestPermission();
+    await ref.read(settingsProvider.notifier).setPermissionAsked(true);
+    if (!granted) {
+      await ref.read(settingsProvider.notifier).setNotifications(false);
+    }
+  }
+
   Future<void> _scheduleReminder(Subscription subscription) async {
     final settings = ref.read(settingsProvider);
     if (!settings.notificationsEnabled) return;
@@ -134,6 +151,13 @@ class SettingsNotifier extends Notifier<AppSettings> {
   @override
   AppSettings build() => ref.watch(repositoryProvider).settings;
 
+  Future<void> setTheme(ThemePreference preference) async {
+    final repo = ref.read(repositoryProvider);
+    final next = repo.settings.copyWith(themePreference: preference);
+    await repo.saveSettings(next);
+    state = next;
+  }
+
   Future<void> setCurrency(CurrencyCode currency) async {
     final repo = ref.read(repositoryProvider);
     final next = repo.settings.copyWith(displayCurrency: currency);
@@ -142,20 +166,40 @@ class SettingsNotifier extends Notifier<AppSettings> {
     await ref.read(analyticsProvider).setDisplayCurrency(currency.code);
   }
 
-  Future<void> setNotifications(bool enabled) async {
+  /// Returns whether reminders actually ended up enabled. Asking for the OS
+  /// permission is part of turning them on: claiming "on" after a denial left
+  /// the switch green while nothing could ever be delivered.
+  Future<bool> setNotifications(bool enabled) async {
     final repo = ref.read(repositoryProvider);
-    final next = repo.settings.copyWith(notificationsEnabled: enabled);
-    await repo.saveSettings(next);
-    state = next;
     final service = ref.read(notificationServiceProvider);
+
     if (enabled) {
-      await service.requestPermission();
+      final granted = await service.requestPermission();
+      final next = repo.settings.copyWith(
+        notificationsEnabled: granted,
+        notificationsPermissionAsked: true,
+      );
+      await repo.saveSettings(next);
+      state = next;
+      if (!granted) return false;
       for (final sub in ref.read(subscriptionsProvider)) {
         await service.scheduleFor(sub, enabled: true);
       }
-    } else {
-      await service.cancelAll();
+      return true;
     }
+
+    final next = repo.settings.copyWith(notificationsEnabled: false);
+    await repo.saveSettings(next);
+    state = next;
+    await service.cancelAll();
+    return false;
+  }
+
+  Future<void> setPermissionAsked(bool asked) async {
+    final repo = ref.read(repositoryProvider);
+    final next = repo.settings.copyWith(notificationsPermissionAsked: asked);
+    await repo.saveSettings(next);
+    state = next;
   }
 
   /// One anonymous id per install, created lazily and reused forever.
@@ -177,6 +221,21 @@ class SettingsNotifier extends Notifier<AppSettings> {
   }
 }
 
+/// True while a manual refresh is in flight. Kept separate from the
+/// [AsyncValue] so a refresh never blanks the FX rate: totals would otherwise
+/// flicker to the fallback rate for the duration of the request.
+final catalogueRefreshingProvider =
+    NotifierProvider<CatalogueRefreshingNotifier, bool>(
+  CatalogueRefreshingNotifier.new,
+);
+
+class CatalogueRefreshingNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+}
+
 /// Presets + FX rate. Refreshes at most once every 7 days; `refresh()` is the
 /// pull-to-refresh path and bypasses the cache.
 final catalogueProvider =
@@ -194,10 +253,18 @@ class CatalogueNotifier extends AsyncNotifier<CatalogueSnapshot> {
   }
 
   Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(catalogueServiceProvider).load(forceRefresh: true),
-    );
+    final refreshing = ref.read(catalogueRefreshingProvider.notifier);
+    refreshing.set(true);
+    try {
+      final next = await AsyncValue.guard(
+        () => ref.read(catalogueServiceProvider).load(forceRefresh: true),
+      );
+      // On failure keep the previous snapshot; a failed refresh must not
+      // change any number on screen.
+      if (next.hasValue) state = next;
+    } finally {
+      refreshing.set(false);
+    }
   }
 }
 

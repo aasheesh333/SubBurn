@@ -36,12 +36,12 @@ class SubDetailScreen extends ConsumerWidget {
     }
 
     if (subscription == null) {
-      return const Scaffold(
-        backgroundColor: SbColors.bg,
+      return Scaffold(
+        backgroundColor: context.sb.bg,
         body: Center(
           child: Text(
             'This subscription is gone.',
-            style: TextStyle(color: SbColors.textSecondary),
+            style: TextStyle(color: context.sb.textSecondary),
           ),
         ),
       );
@@ -52,7 +52,7 @@ class SubDetailScreen extends ConsumerWidget {
     final currency = settings.displayCurrency;
 
     return Scaffold(
-      backgroundColor: SbColors.bg,
+      backgroundColor: context.sb.bg,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -193,9 +193,11 @@ class SubDetailScreen extends ConsumerWidget {
       helpText: 'When did this subscription start?',
     );
     if (picked == null) return;
+    // A start date after the stored next charge would invert the timeline and
+    // make lifetime spend negative; withStartDate rolls the charge forward.
     await ref
         .read(subscriptionsProvider.notifier)
-        .update(subscription.copyWith(startDate: picked));
+        .update(subscription.withStartDate(picked));
   }
 
   Future<void> _openCancel(
@@ -245,12 +247,12 @@ class SubDetailScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: SbColors.surfaceHi,
+        backgroundColor: context.sb.surfaceHi,
         title: Text('Delete ${subscription.name}?', style: SbType.h3),
         content: Text(
           'This removes it from your burn on this device. It does not cancel '
           'the subscription with the vendor.',
-          style: SbType.body.copyWith(color: SbColors.textSecondary),
+          style: SbType.body.copyWith(color: context.sb.textSecondary),
         ),
         actions: [
           TextButton(
@@ -288,34 +290,34 @@ class _DetailHeader extends StatelessWidget {
             height: 44,
             padding: EdgeInsets.zero,
             onTap: () => Navigator.of(context).maybePop(),
-            child: const SizedBox(
+            child: SizedBox(
               width: 44,
               child: Icon(
                 Icons.chevron_left_rounded,
                 size: 20,
-                color: SbColors.text,
+                color: context.sb.text,
               ),
             ),
           ),
         ),
         const SizedBox(width: SbSpace.x2),
-        Text(title, style: SbType.h3.copyWith(color: SbColors.text)),
+        Text(title, style: SbType.h3.copyWith(color: context.sb.text)),
         const Spacer(),
         PopupMenuButton<String>(
-          color: SbColors.surfaceHi,
-          icon: const Icon(
+          color: context.sb.surfaceHi,
+          icon: Icon(
             Icons.more_horiz_rounded,
-            color: SbColors.textSecondary,
+            color: context.sb.textSecondary,
           ),
           onSelected: (value) {
             if (value == 'delete') onDelete();
           },
-          itemBuilder: (context) => const [
+          itemBuilder: (context) => [
             PopupMenuItem(
               value: 'delete',
               child: Text(
                 'Delete subscription',
-                style: TextStyle(color: SbColors.danger, fontSize: 13),
+                style: TextStyle(color: context.sb.danger, fontSize: 13),
               ),
             ),
           ],
@@ -351,7 +353,7 @@ class _IdentityCard extends StatelessWidget {
                   style: SbType.body.copyWith(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: SbColors.text,
+                    color: context.sb.text,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -359,7 +361,7 @@ class _IdentityCard extends StatelessWidget {
                   '${subscription.vendor} · ${subscription.cycle.label.toLowerCase()} · ${formatSince(subscription.startDate)}',
                   style: SbType.micro.copyWith(
                     fontSize: 8.5,
-                    color: SbColors.textMuted,
+                    color: context.sb.textMuted,
                     letterSpacing: 0.02,
                   ),
                 ),
@@ -390,7 +392,7 @@ class _RenewalAlert extends StatelessWidget {
 
     return SurfaceCard(
       padding: const EdgeInsets.all(SbSpace.x4),
-      tint: urgent ? SbColors.warn : null,
+      tint: urgent ? context.sb.warn : null,
       child: Row(
         children: [
           Expanded(
@@ -400,7 +402,7 @@ class _RenewalAlert extends StatelessWidget {
                 Text(
                   'RENEWS IN',
                   style: SbType.label.copyWith(
-                    color: urgent ? SbColors.warn : SbColors.textMuted,
+                    color: urgent ? context.sb.warn : context.sb.textMuted,
                     fontSize: 9,
                   ),
                 ),
@@ -408,15 +410,15 @@ class _RenewalAlert extends StatelessWidget {
                 MoneyText.raw(
                   formatCountdown(remaining),
                   style: SbType.moneyLg.copyWith(fontSize: 30),
-                  color: urgent ? const Color(0xFFFBBF24) : SbColors.text,
+                  color: urgent ? context.sb.warn : context.sb.text,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${subscription.currency.format(subscription.amount)} on '
-                  '${formatChargeDate(subscription.nextBillingDate)} · auto-pay',
+                  '${subscription.currency.format(subscription.amount)} charged on '
+                  '${formatChargeDate(subscription.nextBillingDate)}',
                   style: SbType.caption.copyWith(
                     fontSize: 9,
-                    color: SbColors.textSecondary,
+                    color: context.sb.textSecondary,
                   ),
                 ),
               ],
@@ -428,7 +430,8 @@ class _RenewalAlert extends StatelessWidget {
             child: CustomPaint(
               painter: _RingPainter(
                 progress: progress,
-                color: urgent ? SbColors.warn : SbColors.safe,
+                color: urgent ? context.sb.warn : context.sb.safe,
+                trackColor: context.sb.border,
               ),
               child: Center(
                 child: Column(
@@ -438,14 +441,14 @@ class _RenewalAlert extends StatelessWidget {
                       '${(progress * 100).round()}%',
                       style: SbType.micro.copyWith(
                         fontSize: 11,
-                        color: SbColors.text,
+                        color: context.sb.text,
                       ),
                     ),
                     Text(
                       'left',
                       style: SbType.micro.copyWith(
                         fontSize: 6.5,
-                        color: SbColors.textMuted,
+                        color: context.sb.textMuted,
                         letterSpacing: 0.08,
                       ),
                     ),
@@ -461,17 +464,22 @@ class _RenewalAlert extends StatelessWidget {
 }
 
 class _RingPainter extends CustomPainter {
-  const _RingPainter({required this.progress, required this.color});
+  const _RingPainter({
+    required this.progress,
+    required this.color,
+    required this.trackColor,
+  });
 
   final double progress;
   final Color color;
+  final Color trackColor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final radius = size.width / 2 - 3;
     final track = Paint()
-      ..color = const Color(0xFF2A2419)
+      ..color = trackColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.5;
     final arc = Paint()
@@ -520,7 +528,7 @@ class _SpendCard extends StatelessWidget {
           Text(
             'TOTAL SPENT SINCE SIGNUP',
             style: SbType.label.copyWith(
-              color: SbColors.textMuted,
+              color: context.sb.textMuted,
               fontSize: 9,
             ),
           ),
@@ -541,7 +549,7 @@ class _SpendCard extends StatelessWidget {
                 charges == 1 ? '1 charge' : '$charges charges',
                 style: SbType.micro.copyWith(
                   fontSize: 9,
-                  color: SbColors.textMuted,
+                  color: context.sb.textMuted,
                   letterSpacing: 0.02,
                 ),
               ),
@@ -554,13 +562,13 @@ class _SpendCard extends StatelessWidget {
             '${subscription.periodNoun}',
             style: SbType.caption.copyWith(
               fontSize: 9,
-              color: SbColors.textSecondary,
+              color: context.sb.textSecondary,
             ),
           ),
           const SizedBox(height: SbSpace.x3),
           _SpendBars(
             charges: charges,
-            color: subscription.isGhost ? SbColors.warn : SbColors.accent,
+            color: subscription.isGhost ? context.sb.warn : context.sb.accent,
           ),
         ],
       ),
@@ -576,7 +584,7 @@ class _SpendBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bars = charges.clamp(3, 14);
+    final bars = charges.clamp(1, 14);
     return SizedBox(
       height: 44,
       child: Row(
@@ -639,7 +647,7 @@ class _RowCard extends StatelessWidget {
                   style: SbType.body.copyWith(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: SbColors.text,
+                    color: context.sb.text,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -647,7 +655,7 @@ class _RowCard extends StatelessWidget {
                   subtitle,
                   style: SbType.micro.copyWith(
                     fontSize: 8,
-                    color: SbColors.textMuted,
+                    color: context.sb.textMuted,
                     letterSpacing: 0,
                     height: 1.4,
                   ),
@@ -698,7 +706,7 @@ class _CancelTimeline extends StatelessWidget {
                     Text(
                       'IF YOU CANCEL TODAY',
                       style: SbType.label.copyWith(
-                        color: const Color(0xFF5FC9A3),
+                        color: context.sb.safe,
                         fontSize: 9,
                       ),
                     ),
@@ -711,20 +719,20 @@ class _CancelTimeline extends StatelessWidget {
                           'Keep ',
                           style: SbType.body.copyWith(
                             fontSize: 12,
-                            color: SbColors.textSecondary,
+                            color: context.sb.textSecondary,
                           ),
                         ),
                         const SizedBox(width: 4),
                         MoneyText(
                           keep,
                           style: SbType.moneyMd.copyWith(fontSize: 17),
-                          color: const Color(0xFF6EE7B7),
+                          color: context.sb.safe,
                           currency: currency,
                         ),
                         Text(
                           ' / yr',
                           style: SbType.caption.copyWith(
-                            color: SbColors.textSecondary,
+                            color: context.sb.textSecondary,
                           ),
                         ),
                       ],
@@ -786,9 +794,9 @@ class _TimelinePoint extends StatelessWidget {
               margin: const EdgeInsets.only(top: 3),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: done ? SbColors.safe : SbColors.borderHi,
+                color: done ? context.sb.safe : context.sb.borderHi,
                 border: Border.all(
-                  color: done ? SbColors.safe : SbColors.borderHi,
+                  color: done ? context.sb.safe : context.sb.borderHi,
                 ),
               ),
             ),
@@ -796,7 +804,7 @@ class _TimelinePoint extends StatelessWidget {
               Container(
                 width: 1,
                 height: 30,
-                color: SbColors.border,
+                color: context.sb.border,
               ),
           ],
         ),
@@ -811,7 +819,7 @@ class _TimelinePoint extends StatelessWidget {
                   title,
                   style: SbType.micro.copyWith(
                     fontSize: 8.5,
-                    color: muted ? SbColors.textMuted : SbColors.text,
+                    color: muted ? context.sb.textMuted : context.sb.text,
                     letterSpacing: 0.05,
                   ),
                 ),
@@ -819,7 +827,7 @@ class _TimelinePoint extends StatelessWidget {
                   detail,
                   style: SbType.micro.copyWith(
                     fontSize: 8,
-                    color: SbColors.textMuted,
+                    color: context.sb.textMuted,
                     letterSpacing: 0,
                     height: 1.5,
                   ),
@@ -848,9 +856,9 @@ class _BottomDock extends StatelessWidget {
         SbSpace.page,
         SbSpace.x2 + MediaQuery.paddingOf(context).bottom,
       ),
-      decoration: const BoxDecoration(
-        color: SbColors.bg,
-        border: Border(top: BorderSide(color: SbColors.border)),
+      decoration: BoxDecoration(
+        color: context.sb.bg,
+        border: Border(top: BorderSide(color: context.sb.border)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -869,10 +877,10 @@ class _BottomDock extends StatelessWidget {
           const SizedBox(height: SbSpace.x2),
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.shield_outlined,
                 size: 10,
-                color: SbColors.textMuted,
+                color: context.sb.textMuted,
               ),
               const SizedBox(width: 5),
               Expanded(
@@ -881,7 +889,7 @@ class _BottomDock extends StatelessWidget {
                   'SubBurn never touches your credentials.',
                   style: SbType.micro.copyWith(
                     fontSize: 7.5,
-                    color: SbColors.textMuted,
+                    color: context.sb.textMuted,
                     letterSpacing: 0,
                     height: 1.4,
                   ),
