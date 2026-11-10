@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/brand_icons.dart';
 import '../../core/clock.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
@@ -12,6 +13,7 @@ import '../../state/providers.dart';
 import '../../widgets/money_text.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/sb_header.dart';
 import '../../widgets/surface_card.dart';
 import '../../widgets/tool_tile.dart';
 
@@ -68,9 +70,14 @@ class SubDetailScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _DetailHeader(
+                    SbHeader(
                       title: 'Subscription',
-                      onDelete: () => _confirmDelete(context, ref, subscription!),
+                      subtitle: subscription.name,
+                      onBack: () => Navigator.of(context).maybePop(),
+                      trailing: _DetailMenu(
+                        onDelete: () =>
+                            _confirmDelete(context, ref, subscription!),
+                      ),
                     ),
                     const SizedBox(height: SbSpace.x2),
                     _IdentityCard(subscription: subscription),
@@ -273,54 +280,31 @@ class SubDetailScreen extends ConsumerWidget {
   }
 }
 
-class _DetailHeader extends StatelessWidget {
-  const _DetailHeader({required this.title, required this.onDelete});
+/// Overflow menu in the detail header.
+class _DetailMenu extends StatelessWidget {
+  const _DetailMenu({required this.onDelete});
 
-  final String title;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Semantics(
-          button: true,
-          label: 'Back',
-          child: SurfaceCard(
-            height: 44,
-            padding: EdgeInsets.zero,
-            onTap: () => Navigator.of(context).maybePop(),
-            child: SizedBox(
-              width: 44,
-              child: Icon(
-                Icons.chevron_left_rounded,
-                size: 20,
-                color: context.sb.text,
-              ),
-            ),
+    return PopupMenuButton<String>(
+      color: context.sb.surfaceHi,
+      tooltip: 'More actions',
+      icon: Icon(
+        Icons.more_horiz_rounded,
+        color: context.sb.textSecondary,
+      ),
+      onSelected: (value) {
+        if (value == 'delete') onDelete();
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'delete',
+          child: Text(
+            'Delete subscription',
+            style: TextStyle(color: context.sb.danger, fontSize: 13),
           ),
-        ),
-        const SizedBox(width: SbSpace.x2),
-        Text(title, style: SbType.h3.copyWith(color: context.sb.text)),
-        const Spacer(),
-        PopupMenuButton<String>(
-          color: context.sb.surfaceHi,
-          icon: Icon(
-            Icons.more_horiz_rounded,
-            color: context.sb.textSecondary,
-          ),
-          onSelected: (value) {
-            if (value == 'delete') onDelete();
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'delete',
-              child: Text(
-                'Delete subscription',
-                style: TextStyle(color: context.sb.danger, fontSize: 13),
-              ),
-            ),
-          ],
         ),
       ],
     );
@@ -340,6 +324,12 @@ class _IdentityCard extends StatelessWidget {
         children: [
           ToolTile(
             mark: subscription.monogram,
+            icon: BrandIcons.resolve(
+                  presetId: subscription.presetId,
+                  name: subscription.name,
+                  category: subscription.category,
+                ),
+            platform: subscription.name,
             brandColor: Color(subscription.brandColor),
             size: 42,
           ),

@@ -136,6 +136,7 @@ class BurnHeroCard extends StatelessWidget {
                         ghostAmount,
                         style: SbType.micro.copyWith(fontSize: 9.5),
                         color: context.sb.accentWarm,
+                        currency: currency,
                       ),
                       Text(
                         ' is ghost spend',

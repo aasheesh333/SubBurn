@@ -11,6 +11,8 @@ import '../../widgets/burn_hero_card.dart';
 import '../../widgets/money_text.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/status_badge.dart';
+import '../../core/brand_icons.dart';
+import '../../widgets/sb_header.dart';
 import '../../widgets/surface_card.dart';
 import '../../widgets/tool_tile.dart';
 import '../detail/sub_detail_screen.dart';
@@ -51,14 +53,18 @@ class BurnDashboardScreen extends ConsumerWidget {
                 0,
               ),
               sliver: SliverToBoxAdapter(
-                child: _TopBar(
-                  currency: settings.displayCurrency,
+                child: SbHeader(
+                  title: '',
+                  showLogo: true,
+                  trailing: _CurrencyChip(
+                    currency: settings.displayCurrency,
                   onToggleCurrency: () {
                     final next = settings.displayCurrency == CurrencyCode.inr
                         ? CurrencyCode.usd
                         : CurrencyCode.inr;
-                    ref.read(settingsProvider.notifier).setCurrency(next);
-                  },
+                      ref.read(settingsProvider.notifier).setCurrency(next);
+                    },
+                  ),
                 ),
               ),
             ),
@@ -75,6 +81,7 @@ class BurnDashboardScreen extends ConsumerWidget {
                   activeAmount: summary.activeMonthly,
                   ghostAmount: summary.ghostMonthly,
                   toolCount: summary.count,
+                  currency: settings.displayCurrency,
                   delta: _monthDelta(
                     subscriptions,
                     settings.displayCurrency,
@@ -108,7 +115,11 @@ class BurnDashboardScreen extends ConsumerWidget {
               ),
               const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x2)),
               SliverToBoxAdapter(
-                child: _RenewingRail(subscriptions: summary.dueSoon),
+                child: _RenewingRail(
+                  subscriptions: summary.dueSoon,
+                  currency: settings.displayCurrency,
+                  inrPerUsd: ref.watch(ratesProvider).inrPerUsd,
+                ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x4)),
               SliverPadding(
@@ -205,78 +216,52 @@ class BurnDashboardScreen extends ConsumerWidget {
   }
 }
 
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.currency, required this.onToggleCurrency});
+/// Currency chip: the dashboard's only header affordance.
+class _CurrencyChip extends StatelessWidget {
+  const _CurrencyChip({required this.currency, required this.onToggleCurrency});
 
   final CurrencyCode currency;
   final VoidCallback onToggleCurrency;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 32,
+    return Semantics(
+      button: true,
+      label: 'Display currency: ${currency.code}. Tap to switch.',
+      child: InkWell(
+        onTap: onToggleCurrency,
+        borderRadius: BorderRadius.circular(SbRadius.pill),
+        child: Container(
           height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(SbRadius.tile),
-            gradient: SbGradients.burn,
-            boxShadow: const [SbShadow.cardInner],
-          ),
-          child: Icon(
-            Icons.local_fire_department_rounded,
-            size: 18,
-            color: context.sb.onAccent,
-          ),
-        ),
-        const SizedBox(width: SbSpace.x2),
-        Text(
-          'SUBBURN',
-          style: SbType.section.copyWith(
-            letterSpacing: 0.15 * 13,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const Spacer(),
-        Semantics(
-          button: true,
-          label: 'Display currency: ${currency.code}. Tap to switch.',
-          child: InkWell(
-            onTap: onToggleCurrency,
             borderRadius: BorderRadius.circular(SbRadius.pill),
-            child: Container(
-              height: 28,
-              padding: const EdgeInsets.symmetric(horizontal: 9),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(SbRadius.pill),
-                color: context.sb.surface,
-                border: Border.all(color: context.sb.border),
+            color: context.sb.surface,
+            border: Border.all(color: context.sb.border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const _LiveDot(),
+              const SizedBox(width: 5),
+              Text(
+                '${currency.code} · BURN',
+                style: SbType.micro.copyWith(
+                  fontSize: 8,
+                  color: context.sb.textSecondary,
+                  letterSpacing: 0.08,
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const _LiveDot(),
-                  const SizedBox(width: 5),
-                  Text(
-                    '${currency.code} · BURN',
-                    style: SbType.micro.copyWith(
-                      fontSize: 8,
-                      color: context.sb.textSecondary,
-                      letterSpacing: 0.08,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.unfold_more_rounded,
-                    size: 11,
-                    color: context.sb.textMuted,
-                  ),
-                ],
+              const SizedBox(width: 4),
+              Icon(
+                Icons.unfold_more_rounded,
+                size: 11,
+                color: context.sb.textMuted,
               ),
-            ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -324,9 +309,15 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _RenewingRail extends StatelessWidget {
-  const _RenewingRail({required this.subscriptions});
+  const _RenewingRail({
+    required this.subscriptions,
+    required this.currency,
+    required this.inrPerUsd,
+  });
 
   final List<Subscription> subscriptions;
+  final CurrencyCode currency;
+  final double inrPerUsd;
 
   @override
   Widget build(BuildContext context) {
@@ -378,6 +369,8 @@ class _RenewingRail extends StatelessWidget {
           separatorBuilder: (_, __) => const SizedBox(width: SbSpace.x2),
           itemBuilder: (context, index) => _RenewalCard(
             subscription: subscriptions[index],
+            currency: currency,
+            inrPerUsd: inrPerUsd,
           ),
         ),
       ),
@@ -386,9 +379,15 @@ class _RenewingRail extends StatelessWidget {
 }
 
 class _RenewalCard extends StatelessWidget {
-  const _RenewalCard({required this.subscription});
+  const _RenewalCard({
+    required this.subscription,
+    required this.currency,
+    required this.inrPerUsd,
+  });
 
   final Subscription subscription;
+  final CurrencyCode currency;
+  final double inrPerUsd;
 
   @override
   Widget build(BuildContext context) {
@@ -407,6 +406,12 @@ class _RenewalCard extends StatelessWidget {
               children: [
                 ToolTile(
                   mark: subscription.monogram,
+                  icon: BrandIcons.resolve(
+                  presetId: subscription.presetId,
+                  name: subscription.name,
+                  category: subscription.category,
+                ),
+                  platform: subscription.name,
                   brandColor: Color(subscription.brandColor),
                   size: 28,
                 ),
@@ -442,7 +447,7 @@ class _RenewalCard extends StatelessWidget {
               ],
             ),
             Text(
-              subscription.currency.format(subscription.amount),
+              currency.format(subscription.monthlyIn(currency, inrPerUsd)),
               style: SbType.moneyMd.copyWith(color: context.sb.text),
             ),
             FittedBox(
@@ -514,6 +519,12 @@ class _SubscriptionRow extends StatelessWidget {
                 opacity: subscription.isGhost ? 0.62 : 1,
                 child: ToolTile(
                   mark: subscription.monogram,
+                  icon: BrandIcons.resolve(
+                  presetId: subscription.presetId,
+                  name: subscription.name,
+                  category: subscription.category,
+                ),
+                  platform: subscription.name,
                   brandColor: Color(subscription.brandColor),
                   size: 30,
                 ),

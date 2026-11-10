@@ -13,11 +13,19 @@ class ToolTile extends StatelessWidget {
     required this.mark,
     required this.brandColor,
     this.size = 30,
+    this.icon,
+    this.platform,
   });
 
   final String mark;
   final Color brandColor;
   final double size;
+
+  /// Real brand glyph when the vendor has one; falls back to [mark].
+  final IconData? icon;
+
+  /// Platform name, used for the semantic label ("ChatGPT, OpenAI").
+  final String? platform;
 
   /// Mixes [brandColor] toward white — keeps the hue, fixes contrast.
   static Color _lift(Color c, [double amount = 0.52]) =>
@@ -43,18 +51,20 @@ class ToolTile extends StatelessWidget {
         border: Border.all(color: brandColor.withValues(alpha: 0.18)),
       ),
       alignment: Alignment.center,
-      child: Text(
-        mark,
-        style: TextStyle(
-          fontFamily: SbFonts.mono,
-          fontSize: size * 0.32,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.03 * size * 0.32,
-          height: 1,
-          color: _lift(brandColor),
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
-      ),
+      child: icon == null
+          ? Text(
+              mark,
+              style: TextStyle(
+                fontFamily: SbFonts.mono,
+                fontSize: size * 0.32,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.03 * size * 0.32,
+                height: 1,
+                color: _lift(brandColor),
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            )
+          : Icon(icon, size: size * 0.46, color: _lift(brandColor)),
     );
   }
 }

@@ -4,12 +4,15 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_links.dart';
+import '../legal/legal_page.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../data/models/currency.dart';
 import '../../data/models/theme_preference.dart';
+import '../../services/ads_service.dart';
 import '../../services/catalogue_service.dart';
 import '../../state/providers.dart';
 import '../../widgets/segment_pills.dart';
+import '../../widgets/sb_header.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/surface_card.dart';
 
@@ -49,6 +52,8 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
     final snapshot = ref.watch(catalogueProvider);
     final catalogue = snapshot.value?.catalogue;
     final refreshing = ref.watch(catalogueRefreshingProvider);
+    final health = ref.watch(reminderHealthProvider);
+    final ads = ref.watch(adsServiceProvider);
 
     return SafeArea(
       bottom: false,
@@ -60,11 +65,10 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
           96,
         ),
         children: [
-          Text('Controls', style: SbType.h2.copyWith(color: context.sb.text)),
-          const SizedBox(height: SbSpace.x1),
-          Text(
-            'Local-first by design. No account, no sync, no server holding your list.',
-            style: SbType.body.copyWith(color: context.sb.textSecondary),
+          SbHeader(
+            title: 'Controls',
+            subtitle: 'Local-first · no account, no sync',
+            trailing: StatusBadge(_version.isEmpty ? 'LOCAL' : 'v$_version'),
           ),
           const SizedBox(height: SbSpace.x4),
           _Group(
@@ -117,12 +121,74 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
               _SettingRow(
                 title: 'Renewal reminders',
                 subtitle:
-                    'Local notifications at 48h and 24h. Inexact alarms only — no special access requested.',
+                    'Alerts 48 h and 24 h before a charge. Scheduled on this '
+                    'device; no special alarm access requested.',
                 child: Switch.adaptive(
                   value: settings.notificationsEnabled,
-                  onChanged: (value) =>
-                      ref.read(settingsProvider.notifier).setNotifications(value),
+                  onChanged: (value) async {
+                    final ok = await ref
+                        .read(settingsProvider.notifier)
+                        .setNotifications(value);
+                    if (!context.mounted) return;
+                    if (value && !ok) {
+                      ScaffoldMessenger.of(context)
+                        ..hideCurrentSnackBar()
+                        ..showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Android is blocking notifications. Allow SubBurn '
+                              'in system settings, then turn this on again.',
+                            ),
+                          ),
+                        );
+                    }
+                  },
                 ),
+              ),
+              _ReminderDiagnostics(
+                health: health,
+                onTest: () async {
+                  final service = ref.read(notificationServiceProvider);
+                  final ok = await service.sendTestNotification();
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          ok
+                              ? 'Test reminder scheduled — it fires in a few seconds.'
+                              : service.lastError ??
+                                  'Could not schedule a test reminder.',
+                        ),
+                      ),
+                    );
+                  ref.invalidate(reminderHealthProvider);
+                },
+                onGrant: () async {
+                  await ref
+                      .read(settingsProvider.notifier)
+                      .setNotifications(true);
+                  await ref.read(subscriptionsProvider.notifier).rescheduleAll();
+                },
+                onReschedule: () async {
+                  final armed = await ref
+                      .read(subscriptionsProvider.notifier)
+                      .rescheduleAll();
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          armed == 0
+                              ? 'No reminders were armed. Check the permission above.'
+                              : 'Re-armed reminders for $armed subscription'
+                                  '${armed == 1 ? '' : 's'}.',
+                        ),
+                      ),
+                    );
+                },
               ),
             ],
           ),
@@ -165,8 +231,8 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Served from Cloudflare R2, cached for 7 days, with the '
-                        'bundled copy as an offline fallback.',
+                        'Fetched from our server and cached for 7 days. The '
+                        'bundled copy covers you offline.',
                         style: SbType.micro.copyWith(
                           fontSize: 7.5,
                           color: context.sb.textMuted,
@@ -176,6 +242,24 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: SbSpace.x3),
+          _Group(
+            title: 'Ads',
+            children: [
+              _SettingRow(
+                title: ads.enabled ? 'Ads enabled' : 'No ads',
+                subtitle: ads.enabled
+                    ? 'A single banner may appear on the dashboard. Ad identifiers '
+                        'are declared in the Play data safety form.'
+                    : 'This build shows no advertising and contains no ad SDK.',
+                child: StatusBadge(
+                  ads.enabled ? 'ON' : 'OFF',
+                  tone: ads.enabled ? BadgeTone.warn : BadgeTone.safe,
+                  leadingDot: true,
                 ),
               ),
             ],
@@ -226,13 +310,37 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
             title: 'About',
             children: [
               _SettingRow(
-                title: 'SubBurn',
+                title: 'About SubBurn',
                 subtitle: _version.isEmpty
                     ? 'Built for people with too many tabs.'
-                    : 'Version $_version · built for people with too many tabs.',
+                    : 'Version $_version · ${AppLinks.publisher}',
                 child: TextButton(
-                  onPressed: () => _showPrivacy(context),
-                  child: const Text('PRIVACY'),
+                  onPressed: () => _openLegal(context, LegalDoc.about),
+                  child: const Text('OPEN'),
+                ),
+              ),
+              _SettingRow(
+                title: 'Privacy',
+                subtitle: 'What is stored on device and what is sent',
+                child: TextButton(
+                  onPressed: () => _openLegal(context, LegalDoc.privacy),
+                  child: const Text('READ'),
+                ),
+              ),
+              _SettingRow(
+                title: 'Terms of use',
+                subtitle: 'Licence, cancellation links, no financial advice',
+                child: TextButton(
+                  onPressed: () => _openLegal(context, LegalDoc.terms),
+                  child: const Text('READ'),
+                ),
+              ),
+              _SettingRow(
+                title: 'Licences',
+                subtitle: 'Open-source packages, fonts and brand marks',
+                child: TextButton(
+                  onPressed: () => _openLegal(context, LegalDoc.licenses),
+                  child: const Text('VIEW'),
                 ),
               ),
               _SettingRow(
@@ -266,9 +374,9 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
   }
 
   static String _sourceLabel(CatalogueSource source) => switch (source) {
-        CatalogueSource.cdn => 'live CDN',
-        CatalogueSource.cache => '7-day cache',
-        CatalogueSource.bundled => 'bundled offline copy',
+        CatalogueSource.cdn => 'server',
+        CatalogueSource.cache => 'cached copy',
+        CatalogueSource.bundled => 'offline copy',
       };
 
   static String _relative(DateTime when) {
@@ -306,47 +414,105 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
     }
   }
 
-  void _showPrivacy(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: context.sb.surfaceHi,
-        title: const Text('Privacy', style: SbType.h3),
-        content: SingleChildScrollView(
-          child: Text(
-            'SubBurn stores your subscriptions in a local database on this '
-            'device. It does not create an account, and it does not upload your '
-            'list.\n\n'
-            'The app fetches a static preset catalogue and an exchange rate '
-            'from a CDN. Those requests contain no subscription data.\n\n'
-            'Firebase Crashlytics receives crash reports if the app fails, and '
-            'analytics records two product events: "sub_added" and '
-            '"roast_card_shared", with no names, prices or vendors.\n\n'
-            'Push notifications are broadcast-only via OneSignal, keyed to a '
-            'random install id.\n\n'
-            'Deleting the app deletes everything SubBurn knows about you.',
-            style: SbType.body.copyWith(
-              color: context.sb.textSecondary,
-              height: 1.6,
-            ),
+  static void _openLegal(BuildContext context, LegalDoc doc) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => LegalPage(doc: doc)),
+    );
+  }
+
+}
+
+/// Honest reminder state: is the OS allowed to deliver, and how many alarms are
+/// actually queued. Without this the only symptom of a blocked permission was
+/// "reminders don't work".
+class _ReminderDiagnostics extends StatelessWidget {
+  const _ReminderDiagnostics({
+    required this.health,
+    required this.onTest,
+    required this.onGrant,
+    required this.onReschedule,
+  });
+
+  final AsyncValue<ReminderHealth> health;
+  final VoidCallback onTest;
+  final VoidCallback onGrant;
+  final VoidCallback onReschedule;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = health.value;
+    final blocked = value?.blockedByOs ?? false;
+    final pending = value?.pending ?? 0;
+    final status = value == null
+        ? 'Checking…'
+        : blocked
+            ? 'Blocked by Android'
+            : pending > 0
+                ? '$pending reminder${pending == 1 ? '' : 's'} queued'
+                : 'Ready · none queued yet';
+
+    return Column(
+      children: [
+        _SettingRow(
+          title: 'Status',
+          subtitle: status,
+          child: StatusBadge(
+            blocked ? 'BLOCKED' : (pending > 0 ? 'ACTIVE' : 'IDLE'),
+            tone: blocked
+                ? BadgeTone.danger
+                : (pending > 0 ? BadgeTone.safe : BadgeTone.neutral),
+            leadingDot: true,
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              launchUrl(
-                AppLinks.privacyPolicyUri,
-                mode: LaunchMode.externalApplication,
-              );
-            },
-            child: const Text('READ ONLINE'),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            SbSpace.x3,
+            0,
+            SbSpace.x3,
+            SbSpace.x3,
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('CLOSE'),
+          child: Row(
+            children: [
+              if (blocked)
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onGrant,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.sb.danger,
+                      side: BorderSide(color: context.sb.danger.withValues(alpha: 0.4)),
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                    child: const Text('ALLOW'),
+                  ),
+                )
+              else
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onTest,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.sb.text,
+                      side: BorderSide(color: context.sb.border),
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                    child: const Text('SEND TEST'),
+                  ),
+                ),
+              const SizedBox(width: SbSpace.x2),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onReschedule,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.sb.text,
+                    side: BorderSide(color: context.sb.border),
+                    minimumSize: const Size.fromHeight(44),
+                  ),
+                  child: const Text('RE-ARM'),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

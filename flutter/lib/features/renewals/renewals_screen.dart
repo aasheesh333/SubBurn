@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/brand_icons.dart';
 import '../../core/clock.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
@@ -8,6 +9,7 @@ import '../../data/models/currency.dart';
 import '../../data/models/subscription.dart';
 import '../../state/providers.dart';
 import '../../widgets/money_text.dart';
+import '../../widgets/sb_header.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/surface_card.dart';
 import '../../widgets/tool_tile.dart';
@@ -46,17 +48,10 @@ class RenewalsScreen extends ConsumerWidget {
           96,
         ),
         children: [
-          Row(
-            children: [
-              Text('Renewals', style: SbType.h2.copyWith(color: context.sb.text)),
-              const Spacer(),
-              StatusBadge('$thisMonth THIS MONTH'),
-            ],
-          ),
-          const SizedBox(height: SbSpace.x1),
-          Text(
-            'Every charge on the horizon, in the order your card will feel it.',
-            style: SbType.body.copyWith(color: context.sb.textSecondary),
+          SbHeader(
+            title: 'Renewals',
+            subtitle: 'Every charge on the horizon',
+            trailing: StatusBadge('$thisMonth THIS MONTH'),
           ),
           const SizedBox(height: SbSpace.x4),
           // Neutral surface: the green icon and switch carry the state. A full
@@ -168,6 +163,12 @@ class _RenewalRow extends StatelessWidget {
         children: [
           ToolTile(
             mark: subscription.monogram,
+            icon: BrandIcons.resolve(
+                  presetId: subscription.presetId,
+                  name: subscription.name,
+                  category: subscription.category,
+                ),
+            platform: subscription.name,
             brandColor: Color(subscription.brandColor),
             size: 32,
           ),

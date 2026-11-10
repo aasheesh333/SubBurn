@@ -22,8 +22,8 @@ class CatalogueService {
     http.Client? client,
   }) : _client = client ?? http.Client();
 
-  /// Cloudflare R2 public bucket, overridable from Remote Config so the
-  /// endpoint can move without shipping a release.
+  /// Public content endpoint, overridable from Remote Config so the host can
+  /// move without shipping a release.
   final String baseUrl;
   final http.Client _client;
 

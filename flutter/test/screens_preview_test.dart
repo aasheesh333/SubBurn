@@ -51,6 +51,32 @@ Future<void> _loadFonts() async {
     await loader.load();
   }
 
+  // Font Awesome (brand + solid) comes from the pub cache; without it the
+  // catalogue tiles render as tofu boxes.
+  final faRoot = Directory(
+    '${Platform.environment['HOME'] ?? '/root'}/.pub-cache/hosted/pub.dev/'
+    'font_awesome_flutter-11.0.0/lib/fonts',
+  );
+  // Family names must match what FaIconData declares, package prefix and all.
+  const faFamilies = {
+    'packages/font_awesome_flutter/FontAwesomeBrands':
+        'Font-Awesome-7-Brands-Regular-400.otf',
+    'packages/font_awesome_flutter/FontAwesomeSolid':
+        'Font-Awesome-7-Free-Solid-900.otf',
+    'packages/font_awesome_flutter/FontAwesomeRegular':
+        'Font-Awesome-7-Free-Regular-400.otf',
+  };
+  for (final entry in faFamilies.entries) {
+    final file = File('${faRoot.path}/${entry.value}');
+    if (!file.existsSync()) continue;
+    final loader = FontLoader(entry.key);
+    final bytes = file.readAsBytesSync();
+    loader.addFont(
+      Future.value(ByteData.view(Uint8List.fromList(bytes).buffer)),
+    );
+    await loader.load();
+  }
+
   // Material Icons ships with the Flutter SDK and is required for `Icons.*`
   // glyphs. The SDK path differs per machine (and on CI), so resolve it
   // instead of hard-coding one user's home directory.
@@ -160,6 +186,12 @@ Widget _harness({
       catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
       analyticsProvider.overrideWithValue(AnalyticsService(null)),
       notificationServiceProvider.overrideWithValue(NotificationService()),
+      reminderHealthProvider.overrideWith((ref) async => const ReminderHealth(
+            wantsReminders: true,
+            status: ReminderStatus.ready,
+            pending: 4,
+            lastError: null,
+          )),
     ],
     child: MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -286,6 +318,12 @@ void main() {
           catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
           analyticsProvider.overrideWithValue(AnalyticsService(null)),
           notificationServiceProvider.overrideWithValue(NotificationService()),
+      reminderHealthProvider.overrideWith((ref) async => const ReminderHealth(
+            wantsReminders: true,
+            status: ReminderStatus.ready,
+            pending: 4,
+            lastError: null,
+          )),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -393,6 +431,12 @@ void main() {
           catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
           analyticsProvider.overrideWithValue(AnalyticsService(null)),
           notificationServiceProvider.overrideWithValue(NotificationService()),
+      reminderHealthProvider.overrideWith((ref) async => const ReminderHealth(
+            wantsReminders: true,
+            status: ReminderStatus.ready,
+            pending: 4,
+            lastError: null,
+          )),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -466,6 +510,12 @@ void main() {
           catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
           analyticsProvider.overrideWithValue(AnalyticsService(null)),
           notificationServiceProvider.overrideWithValue(NotificationService()),
+      reminderHealthProvider.overrideWith((ref) async => const ReminderHealth(
+            wantsReminders: true,
+            status: ReminderStatus.ready,
+            pending: 4,
+            lastError: null,
+          )),
         ],
         child: MediaQuery(
           data: const MediaQueryData(
@@ -504,6 +554,12 @@ void main() {
           catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
           analyticsProvider.overrideWithValue(AnalyticsService(null)),
           notificationServiceProvider.overrideWithValue(NotificationService()),
+      reminderHealthProvider.overrideWith((ref) async => const ReminderHealth(
+            wantsReminders: true,
+            status: ReminderStatus.ready,
+            pending: 4,
+            lastError: null,
+          )),
         ],
         child: const SubBurnApp(),
       ),

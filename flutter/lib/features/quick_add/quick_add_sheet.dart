@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/brand_icons.dart';
 import '../../core/clock.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
@@ -709,6 +710,8 @@ class _ToolCell extends StatelessWidget {
                 children: [
                   ToolTile(
                     mark: tool.monogram,
+                    icon: BrandIcons.forName(tool.name, category: tool.category),
+                    platform: tool.name,
                     brandColor: Color(tool.brandColor),
                     size: 34,
                   ),

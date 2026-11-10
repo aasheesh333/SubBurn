@@ -1,7 +1,7 @@
 import 'billing_cycle.dart';
 import 'currency.dart';
 
-/// A catalogue entry served from Cloudflare R2 (`presets_v1.json`).
+/// A catalogue entry served from our content server (`presets_v1.json`).
 ///
 /// The catalogue is static content: 100+ tools with a sensible default price,
 /// brand colour, monogram and a direct cancellation URL. It is cached for seven

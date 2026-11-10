@@ -551,7 +551,7 @@ void main() {
       expect(later.lifetimeIn(CurrencyCode.inr, 83), greaterThanOrEqualTo(0));
     });
 
-    test('a denied notification permission is recorded, not pretended', () async {
+    test('reminder health tells the truth when the OS blocks delivery', () async {
       final repo = SubscriptionRepository.inMemory();
       final container = ProviderContainer(
         overrides: [
@@ -564,13 +564,32 @@ void main() {
       addTearDown(container.dispose);
 
       await container.read(subscriptionsProvider.notifier).add(_sub());
+      expect(repo.length, 1, reason: 'saving must work without notifications');
 
-      final settings = container.read(settingsProvider);
-      expect(settings.notificationsPermissionAsked, isTrue);
-      // The plugin is not initialised in tests, i.e. permission denied: the
-      // app must not claim reminders are on.
-      expect(settings.notificationsEnabled, isFalse);
-      expect(repo.length, 1);
+      // The plugin is not initialised in tests, which is exactly what a device
+      // with a broken channel looks like. The UI must be able to say so.
+      final health = await container.read(reminderHealthProvider.future);
+      expect(health.status, ReminderStatus.notInitialized);
+      expect(health.isWorking, isFalse);
+      expect(health.pending, 0);
+    });
+
+    test('switching reminders on reports failure instead of faking success', () async {
+      final repo = SubscriptionRepository.inMemory();
+      final container = ProviderContainer(
+        overrides: [
+          repositoryProvider.overrideWithValue(repo),
+          catalogueProvider.overrideWith(() => _FixedCatalogue(_snapshot)),
+          analyticsProvider.overrideWithValue(AnalyticsService(null)),
+          notificationServiceProvider.overrideWithValue(NotificationService()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final enabled =
+          await container.read(settingsProvider.notifier).setNotifications(true);
+      expect(enabled, isFalse, reason: 'no plugin, so it cannot be true');
+      expect(container.read(settingsProvider).notificationsEnabled, isFalse);
     });
 
     test('a failed refresh keeps the previous catalogue and rate', () async {
@@ -722,3 +741,21 @@ class _FixedCatalogue extends CatalogueNotifier {
   @override
   Future<void> refresh() async {}
 }
+
+
+/// Shared fixture for probe tests.
+Subscription subFixture() => Subscription(
+      id: 'probe',
+      name: 'ChatGPT Plus',
+      vendor: '[OI]',
+      monogram: 'AI',
+      brandColor: 0xFF10A37F,
+      amount: 1660,
+      currency: CurrencyCode.inr,
+      cycle: BillingCycle.monthly,
+      guilt: UsageGuilt.dailyDriver,
+      category: 'ai',
+      startDate: DateTime(2025, 1, 9),
+      nextBillingDate: DateTime.now().add(const Duration(hours: 14)),
+      cancelUrl: 'https://example.com',
+    );

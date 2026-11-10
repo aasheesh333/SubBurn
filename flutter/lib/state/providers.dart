@@ -120,25 +120,38 @@ class SubscriptionsNotifier extends Notifier<List<Subscription>> {
   /// Android 13+ needs a runtime grant. Asking on the first save (when the
   /// user has just said "remind me about money") beats asking at boot, and a
   /// denial is recorded so we never ask twice or pretend reminders work.
+  /// Asks for the notification permission exactly once, from the moment the
+  /// user has just saved a subscription ("remind me about this").
   Future<void> _ensureNotificationPermission() async {
     final settings = ref.read(settingsProvider);
-    if (!settings.notificationsEnabled || settings.notificationsPermissionAsked) {
-      return;
+    if (settings.notificationsPermissionAsked) return;
+    final service = ref.read(notificationServiceProvider);
+    if (!service.isInitialized) return; // cannot prompt yet; try next time
+    await ref.read(settingsProvider.notifier).requestNotificationPermission();
+  }
+
+  /// Re-arms every enabled subscription. Called after the user grants
+  /// permission, when the app returns to the foreground, and at startup — a
+  /// reboot or an OS cleanup drops scheduled alarms, and a subscription whose
+  /// billing date rolled forward needs a fresh pair.
+  Future<int> rescheduleAll() async {
+    final service = ref.read(notificationServiceProvider);
+    if (!await service.refreshPermission()) return 0;
+    var armed = 0;
+    for (final sub in ref.read(subscriptionsProvider)) {
+      if (!sub.remindersEnabled) continue;
+      if (await service.scheduleFor(sub, enabled: true)) armed++;
     }
-    final granted = await ref.read(notificationServiceProvider).requestPermission();
-    await ref.read(settingsProvider.notifier).setPermissionAsked(true);
-    if (!granted) {
-      await ref.read(settingsProvider.notifier).setNotifications(false);
-    }
+    ref.invalidate(reminderHealthProvider);
+    return armed;
   }
 
   Future<void> _scheduleReminder(Subscription subscription) async {
     final settings = ref.read(settingsProvider);
+    final service = ref.read(notificationServiceProvider);
     if (!settings.notificationsEnabled) return;
-    await ref.read(notificationServiceProvider).scheduleFor(
-          subscription,
-          enabled: true,
-        );
+    await service.scheduleFor(subscription, enabled: true);
+    ref.invalidate(reminderHealthProvider);
   }
 }
 
@@ -166,25 +179,48 @@ class SettingsNotifier extends Notifier<AppSettings> {
     await ref.read(analyticsProvider).setDisplayCurrency(currency.code);
   }
 
-  /// Returns whether reminders actually ended up enabled. Asking for the OS
-  /// permission is part of turning them on: claiming "on" after a denial left
-  /// the switch green while nothing could ever be delivered.
+  /// Prompts the OS once and stores the outcome. Unlike [setNotifications] this
+  /// never changes the user's intent — it only records whether the phone allows
+  /// delivery, so the UI can explain a blocked state.
+  Future<bool> requestNotificationPermission() async {
+    final repo = ref.read(repositoryProvider);
+    final service = ref.read(notificationServiceProvider);
+    final granted = await service.requestPermission();
+    final next = repo.settings.copyWith(
+      notificationsEnabled: granted,
+      notificationsPermissionAsked: true,
+    );
+    await repo.saveSettings(next);
+    state = next;
+    ref.invalidate(reminderHealthProvider);
+    return granted;
+  }
+
+  /// Turns reminders on or off.
+  ///
+  /// Returns whether reminders are actually deliverable. Permission is part of
+  /// "on": a switch that reads on while the OS blocks every notification is a
+  /// lie, and that is exactly what shipped before.
   Future<bool> setNotifications(bool enabled) async {
     final repo = ref.read(repositoryProvider);
     final service = ref.read(notificationServiceProvider);
 
     if (enabled) {
-      final granted = await service.requestPermission();
+      // Ask, then read back the real OS state rather than trusting the prompt.
+      await service.requestPermission();
+      final granted = await service.refreshPermission();
       final next = repo.settings.copyWith(
         notificationsEnabled: granted,
         notificationsPermissionAsked: true,
       );
       await repo.saveSettings(next);
       state = next;
-      if (!granted) return false;
-      for (final sub in ref.read(subscriptionsProvider)) {
-        await service.scheduleFor(sub, enabled: true);
+      if (!granted) {
+        ref.invalidate(reminderHealthProvider);
+        return false;
       }
+      await ref.read(subscriptionsProvider.notifier).rescheduleAll();
+      ref.invalidate(reminderHealthProvider);
       return true;
     }
 
@@ -192,15 +228,10 @@ class SettingsNotifier extends Notifier<AppSettings> {
     await repo.saveSettings(next);
     state = next;
     await service.cancelAll();
+    ref.invalidate(reminderHealthProvider);
     return false;
   }
 
-  Future<void> setPermissionAsked(bool asked) async {
-    final repo = ref.read(repositoryProvider);
-    final next = repo.settings.copyWith(notificationsPermissionAsked: asked);
-    await repo.saveSettings(next);
-    state = next;
-  }
 
   /// One anonymous id per install, created lazily and reused forever.
   Future<String> ensureInstallId() async {
@@ -282,6 +313,42 @@ final burnSummaryProvider = Provider<BurnSummary>((ref) {
     subs,
     currency: settings.displayCurrency,
     inrPerUsd: rates.inrPerUsd,
+  );
+});
+
+/// What the controls screen shows about reminders: whether the OS will deliver
+/// them, and how many are actually queued. This is the difference between "the
+/// toggle is on" and "the phone will buzz".
+class ReminderHealth {
+  const ReminderHealth({
+    required this.wantsReminders,
+    required this.status,
+    required this.pending,
+    required this.lastError,
+  });
+
+  final bool wantsReminders;
+  final ReminderStatus status;
+  final int pending;
+  final String? lastError;
+
+  bool get isWorking =>
+      wantsReminders && status == ReminderStatus.ready && pending > 0;
+
+  /// True when the user asked for reminders but the OS is blocking them.
+  bool get blockedByOs =>
+      wantsReminders && status == ReminderStatus.permissionDenied;
+}
+
+final reminderHealthProvider = FutureProvider<ReminderHealth>((ref) async {
+  final settings = ref.watch(settingsProvider);
+  final service = ref.watch(notificationServiceProvider);
+  await service.refreshPermission();
+  return ReminderHealth(
+    wantsReminders: settings.notificationsEnabled,
+    status: service.status,
+    pending: await service.pendingCount(),
+    lastError: service.lastError,
   );
 });
 

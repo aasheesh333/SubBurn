@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,6 +10,7 @@ import 'app.dart';
 import 'data/repositories/subscription_repository.dart';
 import 'services/catalogue_service.dart';
 import 'services/firebase_bootstrap.dart';
+import 'services/ads_service.dart';
 import 'services/notification_service.dart';
 import 'services/onesignal_service.dart';
 import 'state/providers.dart';
@@ -59,12 +61,13 @@ Future<void> main() async {
         debugPrint('Notifications unavailable: $error');
       }
 
-      // Reminders are scheduled against billing dates that move: an overdue
-      // row is rolled forward on read, and a reboot can drop alarms. Re-arming
-      // every enabled subscription at startup keeps the two alarms honest
-      // without any user action.
+      // Reminders are scheduled against dates that move: an overdue row is
+      // rolled forward on read, and a reboot drops alarms. Re-arm everything
+      // that the user asked for, using the real OS permission rather than the
+      // stored flag.
       if (repository.settings.notificationsEnabled) {
         for (final sub in repository.all()) {
+          if (!sub.remindersEnabled) continue;
           try {
             await notifications.scheduleFor(sub, enabled: true);
           } catch (error) {
@@ -80,6 +83,11 @@ Future<void> main() async {
             catalogueServiceProvider.overrideWithValue(catalogueService),
             analyticsProvider.overrideWithValue(firebase.analytics),
             notificationServiceProvider.overrideWithValue(notifications),
+            adsServiceProvider.overrideWithValue(
+              AdsService.fromRemoteConfig(
+                firebase.initialized ? FirebaseRemoteConfig.instance : null,
+              ),
+            ),
           ],
           child: const SubBurnApp(),
         ),

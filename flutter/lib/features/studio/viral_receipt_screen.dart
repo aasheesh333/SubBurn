@@ -10,8 +10,8 @@ import '../../data/models/subscription.dart';
 import '../../state/providers.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/receipt_card.dart';
+import '../../widgets/sb_header.dart';
 import '../../widgets/status_badge.dart';
-import '../../widgets/surface_card.dart';
 import 'roast_engine.dart';
 
 /// Screen 3 — the viral loop.
@@ -55,21 +55,11 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                _IconButton(
-                  icon: Icons.chevron_left_rounded,
-                  label: 'Back',
-                  onTap: () => Navigator.of(context).maybePop(),
-                ),
-                const SizedBox(width: SbSpace.x2),
-                Text(
-                  'Card studio',
-                  style: SbType.h3.copyWith(color: context.sb.text),
-                ),
-                const Spacer(),
-                const StatusBadge('9:16 · 1080×1920'),
-              ],
+            SbHeader(
+              title: 'Card studio',
+              subtitle: 'One isolated frame · 1080 × 1920',
+              onBack: () => Navigator.of(context).maybePop(),
+              trailing: const StatusBadge('9:16'),
             ),
             const SizedBox(height: SbSpace.x3),
             Expanded(
@@ -389,38 +379,6 @@ class _EmptyReceipt extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconButton extends StatelessWidget {
-  const _IconButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: label,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(SbRadius.tile),
-        child: SurfaceCard(
-          height: 44,
-          padding: EdgeInsets.zero,
-          child: SizedBox(
-            width: 44,
-            child: Icon(icon, size: 20, color: context.sb.text),
           ),
         ),
       ),

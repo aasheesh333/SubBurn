@@ -54,7 +54,7 @@ update the app (unless Play App Signing is enabled and you use an upload key).
 | Short description (80) | `Track AI & SaaS subscriptions, see your yearly burn, share the receipt.` |
 | Category | Finance |
 | Tags | Subscriptions, Budgeting, Productivity |
-| Contact email | `aasheeshkatheriya@gmail.com` |
+| Contact email | `support@dhanuksoftwares.com` |
 | Website | `https://dhanuk.page.gd/SubBurn/` |
 | Privacy policy | `https://dhanuk.page.gd/SubBurn/privacy.html` |
 | Privacy mirror | `https://pub-8fbd857d2069417ab8436546106f26b3.r2.dev/privacy.html` |

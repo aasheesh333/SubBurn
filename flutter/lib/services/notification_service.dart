@@ -10,6 +10,18 @@ import 'package:timezone/timezone.dart' as tz;
 import '../core/clock.dart';
 import '../data/models/subscription.dart';
 
+/// Why reminders can stop working, surfaced to the UI instead of a debug log.
+enum ReminderStatus {
+  /// Plugin not initialised yet (or failed to).
+  notInitialized,
+
+  /// OS permission not granted, or revoked in system settings.
+  permissionDenied,
+
+  /// Ready to schedule.
+  ready,
+}
+
 /// Local renewal reminders.
 ///
 /// Two notifications per subscription — 48 h and 24 h before the charge — are
@@ -17,6 +29,12 @@ import '../data/models/subscription.dart';
 /// need no `SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM` permission, which is why
 /// this app passes Play Console review without the "alarms & reminders" special
 /// access declaration. A renewal reminder does not need second precision.
+///
+/// **Failure policy:** every OS call is individually guarded. Initialisation
+/// records its own error instead of throwing, because a single throwing step
+/// used to leave `_initialized == false` forever: nothing was scheduled, the
+/// toggle still read "on", and the only trace was a debugPrint. The UI now reads
+/// [status] and [lastError] and can say exactly what is wrong.
 class NotificationService {
   NotificationService({FlutterLocalNotificationsPlugin? plugin})
       : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
@@ -29,6 +47,20 @@ class NotificationService {
       'Alerts 48 hours and 24 hours before a subscription renews.';
 
   bool _initialized = false;
+  bool _permissionGranted = false;
+  String? lastError;
+
+  /// Stable id for the in-app test notification.
+  static const testNotificationId = 990001;
+
+  bool get isInitialized => _initialized;
+
+  ReminderStatus get status {
+    if (!_initialized) return ReminderStatus.notInitialized;
+    return _permissionGranted
+        ? ReminderStatus.ready
+        : ReminderStatus.permissionDenied;
+  }
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -40,7 +72,11 @@ class NotificationService {
     } catch (error) {
       // Falls back to the packaged UTC zone; scheduling still works.
       debugPrint('Timezone lookup failed, using UTC: $error');
-      tz.setLocalLocation(tz.getLocation('UTC'));
+      try {
+        tz.setLocalLocation(tz.getLocation('UTC'));
+      } catch (_) {
+        // Nothing else to fall back to.
+      }
     }
 
     const android = AndroidInitializationSettings('ic_stat_subburn');
@@ -50,66 +86,159 @@ class NotificationService {
       requestSoundPermission: false,
     );
 
-    await _plugin.initialize(
-      settings: const InitializationSettings(
-        android: android,
-        iOS: darwin,
-        macOS: darwin,
-      ),
-    );
+    try {
+      final ok = await _plugin.initialize(
+        settings: const InitializationSettings(
+          android: android,
+          iOS: darwin,
+          macOS: darwin,
+        ),
+      );
+      // `false` means the platform refused the settings (usually a missing
+      // small-icon drawable); treat it as a failure but keep going.
+      if (ok == false) {
+        lastError = 'Notification plugin refused its settings '
+            '(check ic_stat_subburn)';
+      }
+    } catch (error) {
+      lastError = 'Notification init failed: $error';
+      debugPrint(lastError);
+      return;
+    }
 
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    await androidPlugin?.createNotificationChannel(
-      const AndroidNotificationChannel(
-        _channelId,
-        _channelName,
-        description: _channelDescription,
-        importance: Importance.high,
-      ),
-    );
+    // Channel creation is separate: on Android 8+ a failure here must not take
+    // the whole service down, and on iOS it is a no-op.
+    try {
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _channelId,
+          _channelName,
+          description: _channelDescription,
+          importance: Importance.high,
+        ),
+      );
+    } catch (error) {
+      lastError = 'Notification channel failed: $error';
+      debugPrint(lastError);
+    }
 
     _initialized = true;
+    await refreshPermission();
   }
 
-  /// Asks the OS for permission. Returns false when declined — callers must
-  /// keep working, because reminders are a convenience, not a requirement.
+  /// Re-reads the OS permission without prompting.
+  ///
+  /// A user who grants notifications later in system settings used to stay
+  /// broken for the life of the install, because the flag was only ever written
+  /// from the prompt result.
+  Future<bool> refreshPermission() async {
+    if (!_initialized) return false;
+    try {
+      if (Platform.isAndroid) {
+        final android = _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+        _permissionGranted = await android?.areNotificationsEnabled() ?? false;
+      } else if (Platform.isIOS) {
+        final ios = _plugin.resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>();
+        final options = await ios?.checkPermissions();
+        _permissionGranted =
+            options?.isEnabled ?? false;
+      } else {
+        _permissionGranted = false;
+      }
+    } catch (error) {
+      debugPrint('Permission check failed: $error');
+      _permissionGranted = false;
+    }
+    return _permissionGranted;
+  }
+
+  /// Asks the OS for permission. Returns false when declined.
   Future<bool> requestPermission() async {
     if (!_initialized) return false;
-    if (Platform.isAndroid) {
-      final android = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-      return await android?.requestNotificationsPermission() ?? false;
-    }
-    if (Platform.isIOS) {
-      final ios = _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
-      return await ios?.requestPermissions(alert: true, badge: true, sound: true) ??
-          false;
+    try {
+      if (Platform.isAndroid) {
+        final android = _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+        final granted = await android?.requestNotificationsPermission();
+        _permissionGranted = granted ?? await refreshPermission();
+        return _permissionGranted;
+      }
+      if (Platform.isIOS) {
+        final ios = _plugin.resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>();
+        final granted = await ios?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        _permissionGranted = granted ?? false;
+        return _permissionGranted;
+      }
+    } catch (error) {
+      lastError = 'Permission request failed: $error';
+      debugPrint(lastError);
     }
     return false;
   }
 
+  /// Fires one notification ~8 seconds from now. Used by Controls → "Send test
+  /// reminder" so a user can prove the channel works without waiting 48 hours.
+  Future<bool> sendTestNotification() async {
+    if (!_initialized) {
+      lastError = 'Notifications are not initialised on this device.';
+      return false;
+    }
+    if (!await refreshPermission()) {
+      lastError = 'Notification permission is not granted.';
+      return false;
+    }
+    try {
+      await _plugin.zonedSchedule(
+        id: testNotificationId,
+        scheduledDate: tz.TZDateTime.now(tz.local).add(const Duration(seconds: 8)),
+        notificationDetails: _details(
+          'This is what a renewal reminder looks like. It will fire 48 h and '
+          '24 h before every charge.',
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        title: 'SubBurn reminders are working',
+        body: 'You will be warned before every renewal.',
+      );
+      return true;
+    } catch (error) {
+      lastError = 'Test reminder failed: $error';
+      debugPrint(lastError);
+      return false;
+    }
+  }
+
   /// Schedules both reminders for [subscription], replacing any previous pair.
-  Future<void> scheduleFor(
+  Future<bool> scheduleFor(
     Subscription subscription, {
     required bool enabled,
   }) async {
-    // A plugin that never initialised (desktop test host, a failed timezone
-    // lookup, a device where the channel was rejected) must not be able to
-    // break saving or deleting a subscription.
-    if (!_initialized) return;
+    if (!_initialized) {
+      lastError = 'Notifications are not initialised on this device.';
+      return false;
+    }
+    if (!await refreshPermission()) {
+      lastError = 'Notification permission is not granted.';
+      return false;
+    }
     await cancelFor(subscription.id);
-    if (!enabled || !subscription.remindersEnabled) return;
+    if (!enabled || !subscription.remindersEnabled) return true;
 
-    final charge = subscription.currency.format(
-      subscription.amount,
-    );
+    final charge = subscription.currency.format(subscription.amount);
     final slots = <int, Duration>{
       0: const Duration(hours: SbWindow.reminderHours),
       1: const Duration(hours: SbWindow.finalNoticeHours),
     };
 
+    var scheduled = 0;
     for (final entry in slots.entries) {
       final fireAt = subscription.nextBillingDate.subtract(entry.value);
       if (fireAt.isBefore(SbClock.now().add(const Duration(minutes: 1)))) {
@@ -120,34 +249,44 @@ class NotificationService {
           ? '$charge renews in 2 days. Cancel now if it is ghost spend.'
           : '$charge renews tomorrow. Last call before the charge.';
 
-      await _plugin.zonedSchedule(
-        id: _notificationId(subscription.id, entry.key),
-        scheduledDate: tz.TZDateTime.from(fireAt, tz.local),
-        notificationDetails: NotificationDetails(
-          android: AndroidNotificationDetails(
-            _channelId,
-            _channelName,
-            channelDescription: _channelDescription,
-            icon: 'ic_stat_subburn',
-            importance: Importance.high,
-            priority: Priority.high,
-            enableVibration: true,
-            color: const Color(0xFFFF4500),
-            styleInformation: BigTextStyleInformation(body),
-          ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        title: '${subscription.name} renews soon',
-        body: body,
-        payload: subscription.id,
-      );
+      try {
+        await _plugin.zonedSchedule(
+          id: _notificationId(subscription.id, entry.key),
+          scheduledDate: tz.TZDateTime.from(fireAt, tz.local),
+          notificationDetails: _details(body),
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          title: '${subscription.name} renews soon',
+          body: body,
+          payload: subscription.id,
+        );
+        scheduled++;
+      } catch (error) {
+        // One bad slot must not stop the other, and must not silently vanish.
+        lastError = 'Scheduling ${subscription.name} failed: $error';
+        debugPrint(lastError);
+      }
     }
+    return scheduled > 0;
   }
+
+  NotificationDetails _details(String body) => NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          icon: 'ic_stat_subburn',
+          importance: Importance.high,
+          priority: Priority.high,
+          enableVibration: true,
+          color: const Color(0xFFFF4500),
+          styleInformation: BigTextStyleInformation(body),
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      );
 
   Future<void> cancelFor(String subscriptionId) async {
     if (!_initialized) return;
@@ -166,6 +305,19 @@ class NotificationService {
       await _plugin.cancelAll();
     } catch (error) {
       debugPrint('cancelAll failed: $error');
+    }
+  }
+
+  /// How many reminders are actually queued — the honest answer to "is it
+  /// working?", shown in Controls.
+  Future<int> pendingCount() async {
+    if (!_initialized) return 0;
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      return pending.length;
+    } catch (error) {
+      debugPrint('pendingNotificationRequests failed: $error');
+      return 0;
     }
   }
 
