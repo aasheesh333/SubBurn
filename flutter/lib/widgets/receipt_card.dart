@@ -498,7 +498,10 @@ class _GhostStrip extends StatelessWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [SbPalette.dark.warn, SbPalette.dark.accent],
+                          colors: [
+                            SbPalette.dark.warn,
+                            ReceiptThemeScope.of(context).accent,
+                          ],
                         ),
                       ),
                     ),
@@ -696,7 +699,7 @@ class _RoastBlock extends StatelessWidget {
                 'TIER: ',
                 style: SbType.micro.copyWith(
                   fontSize: 7.5,
-                  color: SbPalette.dark.accentWarm,
+                  color: ReceiptThemeScope.of(context).accent,
                   letterSpacing: 0.1 * 7.5,
                 ),
               ),
