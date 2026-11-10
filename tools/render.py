@@ -32,7 +32,12 @@ def main():
     failures = []
     with sync_playwright() as p:
         # system Chrome (no bundled chromium on this box)
-        browser = p.chromium.launch(channel="chrome", args=["--no-sandbox"])
+        # Prefer the bundled Playwright Chromium (what CI installs); fall back
+        # to a system Chrome when running on a box that only has that.
+        try:
+            browser = p.chromium.launch(args=["--no-sandbox"])
+        except Exception:
+            browser = p.chromium.launch(channel="chrome", args=["--no-sandbox"])
 
         # ---------- board ----------
         page = browser.new_page(viewport={"width": 1800, "height": 1100},

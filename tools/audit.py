@@ -238,7 +238,12 @@ JS = r"""
 
 def main():
     with sync_playwright() as p:
-        b = p.chromium.launch(channel="chrome", args=["--no-sandbox"])
+        # Prefer the bundled Playwright Chromium (what CI installs); fall back
+        # to a system Chrome when running on a box that only has that.
+        try:
+            b = p.chromium.launch(args=["--no-sandbox"])
+        except Exception:
+            b = p.chromium.launch(channel="chrome", args=["--no-sandbox"])
         pg = b.new_page(viewport={"width": 1800, "height": 1100}, device_scale_factor=1)
         pg.goto(URL)
         pg.wait_for_load_state("networkidle")
