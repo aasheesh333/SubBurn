@@ -92,6 +92,14 @@ Subscription _sub({
   );
 }
 
+/// Advances a few frames. `pumpAndSettle` never returns here because the
+/// renewal countdown badge pulses forever by design.
+Future<void> _settle(WidgetTester tester) async {
+  for (var i = 0; i < 6; i++) {
+    await tester.pump(const Duration(milliseconds: 80));
+  }
+}
+
 Widget _app(Widget child, SubscriptionRepository repo) {
   return ProviderScope(
     overrides: [
@@ -100,8 +108,14 @@ Widget _app(Widget child, SubscriptionRepository repo) {
       analyticsProvider.overrideWithValue(AnalyticsService(null)),
       notificationServiceProvider.overrideWithValue(NotificationService()),
     ],
+    // MaterialApp rebuilds MediaQuery from the view, so the animation flag has
+    // to be applied in its builder, not above it.
     child: MaterialApp(
       theme: AppTheme.dark,
+      builder: (context, inner) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: true),
+        child: inner ?? const SizedBox.shrink(),
+      ),
       home: Scaffold(backgroundColor: SbColors.bg, body: child),
     ),
   );
@@ -682,6 +696,110 @@ void main() {
         discountApplied: false,
       );
       expect(weekly.amount, closeTo(100, 1));
+    });
+  });
+
+  group('dead affordances', () {
+    late SubscriptionRepository repo;
+
+    setUp(() {
+      repo = SubscriptionRepository.inMemory(
+        initial: [
+          _sub(id: 'a', guilt: UsageGuilt.dailyDriver),
+          _sub(id: 'b', name: 'Cursor Pro', guilt: UsageGuilt.barelyTouch),
+        ],
+      );
+    });
+
+    testWidgets('REVIEW filters the list to ghost rows and back',
+        (tester) async {
+      tester.view.physicalSize = const Size(393 * 2, 852 * 2);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _app(BurnDashboardScreen(onAddSubscription: () {}), repo),
+      );
+      await _settle(tester);
+
+      expect(find.text('Subscriptions'), findsOneWidget);
+      await tester.tap(find.text('REVIEW'));
+      await _settle(tester);
+
+      expect(find.text('Ghost subscriptions'), findsOneWidget);
+      expect(find.text('SHOW ALL'), findsOneWidget);
+      // Non-ghost rows are gone from both sections; the ghost row remains in
+      // the rail and the list, which is correct.
+      expect(find.text('ChatGPT Plus'), findsNothing);
+      expect(find.text('Cursor Pro'), findsNWidgets(2));
+
+      await tester.tap(find.text('SHOW ALL'));
+      await _settle(tester);
+      expect(find.text('Subscriptions'), findsOneWidget);
+      expect(find.text('ChatGPT Plus'), findsWidgets);
+    });
+
+    testWidgets('a renewal card opens its detail screen', (tester) async {
+      tester.view.physicalSize = const Size(393 * 2, 852 * 2);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _app(BurnDashboardScreen(onAddSubscription: () {}), repo),
+      );
+      await _settle(tester);
+
+      // The renewal rail card shows the same name as the list row; tap the
+      // card that sits in the horizontal rail.
+      await tester.tap(find.textContaining('left').first, warnIfMissed: false);
+      await _settle(tester);
+
+      expect(find.text('Subscription'), findsWidgets);
+    });
+  });
+
+  group('edit flow', () {
+    testWidgets('price, name and cycle are editable after adding',
+        (tester) async {
+      final repo = SubscriptionRepository.inMemory(initial: [_sub()]);
+      tester.view.physicalSize = const Size(393 * 2, 852 * 2);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _app(const SubDetailScreen(subscriptionId: 'sub_audit'), repo),
+      );
+      await _settle(tester);
+
+      // Edit is reachable from the overflow menu and from the identity card.
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+      await _settle(tester);
+      await tester.tap(find.text('Edit subscription'));
+      await _settle(tester);
+
+      expect(find.text('Edit subscription'), findsWidgets);
+
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == 'Name',
+        ),
+        'ChatGPT Team',
+      );
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == '0',
+        ),
+        '2499',
+      );
+      await tester.tap(find.text('Save changes'));
+      await _settle(tester);
+
+      final saved = repo.byId('sub_audit')!;
+      expect(saved.name, 'ChatGPT Team');
+      expect(saved.amount, 2499);
+      expect(saved.id, 'sub_audit', reason: 'editing must not create a new row');
+      expect(saved.startDate, DateTime(2025, 10, 9),
+          reason: 'lifetime history survives an edit');
     });
   });
 

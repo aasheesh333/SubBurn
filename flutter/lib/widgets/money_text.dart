@@ -40,6 +40,7 @@ class MoneyText extends StatelessWidget {
     this.gradient,
     this.semanticLabel,
     this.currency,
+    this.scaleWithSystem = true,
   }) : rawValue = null;
 
   /// Pre-formatted string (e.g. `'14h 22m'`) instead of a formatted amount.
@@ -52,6 +53,7 @@ class MoneyText extends StatelessWidget {
     this.gradient,
     this.semanticLabel,
     this.currency,
+    this.scaleWithSystem = true,
   })  : rawValue = value,
         amount = null;
 
@@ -68,6 +70,13 @@ class MoneyText extends StatelessWidget {
   /// digit grouping). Defaults to the rupee formatter for design parity.
   final CurrencyCode? currency;
 
+  /// Whether the number scales with the OS text-size setting.
+  ///
+  /// True almost everywhere: clamping to 1.3 ignored users who run 200 %, which
+  /// is a WCAG failure. The share receipt is the exception — it is a fixed
+  /// 360 × 640 image, so scaling it would break the export layout.
+  final bool scaleWithSystem;
+
   String get _text {
     if (rawValue != null) return rawValue!;
     final value = amount ?? 0;
@@ -83,7 +92,9 @@ class MoneyText extends StatelessWidget {
       _text,
       style: base,
       semanticsLabel: semanticLabel ?? _text,
-      textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
+      textScaler: scaleWithSystem
+          ? MediaQuery.textScalerOf(context)
+          : TextScaler.noScaling,
     );
 
     if (gradient != null) {
@@ -117,7 +128,9 @@ class MoneyText extends StatelessWidget {
         Text(
           suffix!,
           style: SbType.micro.copyWith(color: context.sb.textMuted, fontSize: 8.5, letterSpacing: 0),
-          textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
+          textScaler: scaleWithSystem
+              ? MediaQuery.textScalerOf(context)
+              : TextScaler.noScaling,
         ),
       ],
     );

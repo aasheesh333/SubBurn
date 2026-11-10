@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/clock.dart';
+import '../../core/motion.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/currency.dart';
@@ -22,7 +23,7 @@ import '../detail/sub_detail_screen.dart';
 /// Answers one question in under a second: how much am I burning, and how much
 /// of it is ghost spend. The hero number is the product; everything below is a
 /// supporting argument.
-class BurnDashboardScreen extends ConsumerWidget {
+class BurnDashboardScreen extends ConsumerStatefulWidget {
   const BurnDashboardScreen({
     super.key,
     required this.onAddSubscription,
@@ -31,10 +32,32 @@ class BurnDashboardScreen extends ConsumerWidget {
   final VoidCallback onAddSubscription;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BurnDashboardScreen> createState() =>
+      _BurnDashboardScreenState();
+}
+
+class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
+  /// Ghost-only filter, toggled by the callout's REVIEW action. Without it the
+  /// callout was a label that looked tappable and did nothing.
+  bool _ghostOnly = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(analyticsProvider).logScreenView('dashboard');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final summary = ref.watch(burnSummaryProvider);
     final settings = ref.watch(settingsProvider);
-    final subscriptions = ref.watch(subscriptionsProvider);
+    final allSubscriptions = ref.watch(subscriptionsProvider);
+    final subscriptions = _ghostOnly
+        ? allSubscriptions.where((s) => s.isGhost).toList(growable: false)
+        : allSubscriptions;
 
     return SafeArea(
       bottom: false,
@@ -93,7 +116,7 @@ class BurnDashboardScreen extends ConsumerWidget {
             if (subscriptions.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: _EmptyState(onAdd: onAddSubscription),
+                child: _EmptyState(onAdd: widget.onAddSubscription),
               )
             else ...[
               const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x5)),
@@ -116,9 +139,14 @@ class BurnDashboardScreen extends ConsumerWidget {
               const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x2)),
               SliverToBoxAdapter(
                 child: _RenewingRail(
-                  subscriptions: summary.dueSoon,
+                  subscriptions: _ghostOnly
+                      ? summary.dueSoon
+                          .where((s) => s.isGhost)
+                          .toList(growable: false)
+                      : summary.dueSoon,
                   currency: settings.displayCurrency,
                   inrPerUsd: ref.watch(ratesProvider).inrPerUsd,
+                  onOpen: _openDetail,
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x4)),
@@ -126,8 +154,13 @@ class BurnDashboardScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: SbSpace.page),
                 sliver: SliverToBoxAdapter(
                   child: _SectionHeader(
-                    title: 'Subscriptions',
-                    badge: StatusBadge('${summary.count} TOOLS'),
+                    title: _ghostOnly ? 'Ghost subscriptions' : 'Subscriptions',
+                    badge: _ghostOnly
+                        ? StatusBadge(
+                            '${summary.ghostCount} GHOST',
+                            tone: BadgeTone.warn,
+                          )
+                        : StatusBadge('${summary.count} TOOLS'),
                   ),
                 ),
               ),
@@ -140,17 +173,16 @@ class BurnDashboardScreen extends ConsumerWidget {
                       const SizedBox(height: SbSpace.x2),
                   itemBuilder: (context, index) {
                     final sub = subscriptions[index];
-                    return _SubscriptionRow(
+                    return SbEntrance(
+                      index: index,
+                      child: _SubscriptionRow(
                       key: ValueKey(sub.id),
                       subscription: sub,
                       currency: settings.displayCurrency,
                       inrPerUsd: ref.watch(ratesProvider).inrPerUsd,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => SubDetailScreen(subscriptionId: sub.id),
-                        ),
+                      onTap: () => _openDetail(sub),
+                        onDelete: () => _delete(context, ref, sub),
                       ),
-                      onDelete: () => _delete(context, ref, sub),
                     );
                   },
                 ),
@@ -164,6 +196,8 @@ class BurnDashboardScreen extends ConsumerWidget {
                       percent: summary.ghostShare * 100,
                       count: summary.ghostCount,
                       yearly: summary.currency.format(summary.ghostYearly),
+                      active: _ghostOnly,
+                      onTap: () => setState(() => _ghostOnly = !_ghostOnly),
                     ),
                   ),
                 ),
@@ -172,6 +206,14 @@ class BurnDashboardScreen extends ConsumerWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  void _openDetail(Subscription subscription) {
+    Navigator.of(context).push(
+      SbPageRoute<void>(
+        builder: (_) => SubDetailScreen(subscriptionId: subscription.id),
       ),
     );
   }
@@ -313,11 +355,13 @@ class _RenewingRail extends StatelessWidget {
     required this.subscriptions,
     required this.currency,
     required this.inrPerUsd,
+    required this.onOpen,
   });
 
   final List<Subscription> subscriptions;
   final CurrencyCode currency;
   final double inrPerUsd;
+  final ValueChanged<Subscription> onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -367,10 +411,14 @@ class _RenewingRail extends StatelessWidget {
           ),
           itemCount: subscriptions.length,
           separatorBuilder: (_, __) => const SizedBox(width: SbSpace.x2),
-          itemBuilder: (context, index) => _RenewalCard(
-            subscription: subscriptions[index],
-            currency: currency,
-            inrPerUsd: inrPerUsd,
+          itemBuilder: (context, index) => SbEntrance(
+            index: index,
+            child: _RenewalCard(
+              subscription: subscriptions[index],
+              currency: currency,
+              inrPerUsd: inrPerUsd,
+              onTap: () => onOpen(subscriptions[index]),
+            ),
           ),
         ),
       ),
@@ -383,11 +431,13 @@ class _RenewalCard extends StatelessWidget {
     required this.subscription,
     required this.currency,
     required this.inrPerUsd,
+    required this.onTap,
   });
 
   final Subscription subscription;
   final CurrencyCode currency;
   final double inrPerUsd;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -398,6 +448,7 @@ class _RenewalCard extends StatelessWidget {
       width: 148,
       child: SurfaceCard(
         padding: const EdgeInsets.all(11),
+        onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -594,11 +645,17 @@ class _GhostCallout extends StatelessWidget {
     required this.percent,
     required this.count,
     required this.yearly,
+    required this.active,
+    required this.onTap,
   });
 
   final double percent;
   final int count;
   final String yearly;
+
+  /// True while the list is filtered to ghost rows.
+  final bool active;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -609,6 +666,7 @@ class _GhostCallout extends StatelessWidget {
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
       tint: context.sb.warn,
+      onTap: onTap,
       child: Row(
         children: [
           Container(
@@ -651,7 +709,7 @@ class _GhostCallout extends StatelessWidget {
             ),
           ),
           Text(
-            'REVIEW',
+            active ? 'SHOW ALL' : 'REVIEW',
             style: SbType.micro.copyWith(
               fontSize: 8.5,
               color: context.sb.warn,
@@ -659,7 +717,9 @@ class _GhostCallout extends StatelessWidget {
             ),
           ),
           Icon(
-            Icons.chevron_right_rounded,
+            active
+                ? Icons.filter_alt_off_rounded
+                : Icons.chevron_right_rounded,
             size: 14,
             color: context.sb.warn,
           ),

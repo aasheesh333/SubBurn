@@ -4,13 +4,14 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_links.dart';
-import '../legal/legal_page.dart';
+import '../../core/motion.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../data/models/currency.dart';
 import '../../data/models/theme_preference.dart';
 import '../../services/ads_service.dart';
 import '../../services/catalogue_service.dart';
 import '../../state/providers.dart';
+import '../legal/legal_page.dart';
 import '../../widgets/segment_pills.dart';
 import '../../widgets/sb_header.dart';
 import '../../widgets/status_badge.dart';
@@ -416,7 +417,7 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
 
   static void _openLegal(BuildContext context, LegalDoc doc) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => LegalPage(doc: doc)),
+      SbPageRoute<void>(builder: (_) => LegalPage(doc: doc)),
     );
   }
 

@@ -12,6 +12,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+export '../motion.dart' show SbMotion;
+
 /// Semantic palette. No widget in the app hard-codes a hex value.
 abstract final class SbColors {
   // ── surfaces ──────────────────────────────────────────────────────────
@@ -263,10 +265,7 @@ abstract final class SbShadow {
   );
 }
 
-abstract final class SbMotion {
-  static const pulse = Duration(milliseconds: 2400);
-  static const quick = Duration(milliseconds: 180);
-}
+
 
 /// Resolved colour set for one [Brightness].
 ///

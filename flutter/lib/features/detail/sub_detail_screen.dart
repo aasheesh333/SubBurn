@@ -14,6 +14,7 @@ import '../../widgets/money_text.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/sb_header.dart';
+import 'edit_subscription_sheet.dart';
 import '../../widgets/surface_card.dart';
 import '../../widgets/tool_tile.dart';
 
@@ -21,13 +22,29 @@ import '../../widgets/tool_tile.dart';
 ///
 /// The cancel button is deliberately not the loudest element. Shame converts
 /// worse than arithmetic: "keep ₹19,920/yr" does more work than a red button.
-class SubDetailScreen extends ConsumerWidget {
+class SubDetailScreen extends ConsumerStatefulWidget {
   const SubDetailScreen({super.key, required this.subscriptionId});
 
   final String subscriptionId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SubDetailScreen> createState() => _SubDetailScreenState();
+}
+
+class _SubDetailScreenState extends ConsumerState<SubDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(analyticsProvider).logScreenView('subscription_detail');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
+    final subscriptionId = widget.subscriptionId;
     final subs = ref.watch(subscriptionsProvider);
     Subscription? subscription;
     for (final s in subs) {
@@ -75,12 +92,22 @@ class SubDetailScreen extends ConsumerWidget {
                       subtitle: subscription.name,
                       onBack: () => Navigator.of(context).maybePop(),
                       trailing: _DetailMenu(
+                        onEdit: () => EditSubscriptionSheet.show(
+                          context,
+                          subscription!,
+                        ),
                         onDelete: () =>
                             _confirmDelete(context, ref, subscription!),
                       ),
                     ),
                     const SizedBox(height: SbSpace.x2),
-                    _IdentityCard(subscription: subscription),
+                    _IdentityCard(
+                      subscription: subscription,
+                      onEdit: () => EditSubscriptionSheet.show(
+                        context,
+                        subscription!,
+                      ),
+                    ),
                     const SizedBox(height: SbSpace.x2),
                     _RenewalAlert(subscription: subscription),
                     const SizedBox(height: SbSpace.x2),
@@ -282,8 +309,9 @@ class SubDetailScreen extends ConsumerWidget {
 
 /// Overflow menu in the detail header.
 class _DetailMenu extends StatelessWidget {
-  const _DetailMenu({required this.onDelete});
+  const _DetailMenu({required this.onEdit, required this.onDelete});
 
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
@@ -296,9 +324,17 @@ class _DetailMenu extends StatelessWidget {
         color: context.sb.textSecondary,
       ),
       onSelected: (value) {
+        if (value == 'edit') onEdit();
         if (value == 'delete') onDelete();
       },
       itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'edit',
+          child: Text(
+            'Edit subscription',
+            style: TextStyle(color: context.sb.text, fontSize: 13),
+          ),
+        ),
         PopupMenuItem(
           value: 'delete',
           child: Text(
@@ -312,14 +348,16 @@ class _DetailMenu extends StatelessWidget {
 }
 
 class _IdentityCard extends StatelessWidget {
-  const _IdentityCard({required this.subscription});
+  const _IdentityCard({required this.subscription, required this.onEdit});
 
   final Subscription subscription;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
     return SurfaceCard(
       padding: const EdgeInsets.all(SbSpace.x3),
+      onTap: onEdit,
       child: Row(
         children: [
           ToolTile(

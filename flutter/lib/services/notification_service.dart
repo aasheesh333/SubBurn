@@ -50,6 +50,9 @@ class NotificationService {
   bool _permissionGranted = false;
   String? lastError;
 
+  /// Called with the subscription id when the user taps a reminder.
+  void Function(String subscriptionId)? onOpenSubscription;
+
   /// Stable id for the in-app test notification.
   static const testNotificationId = 990001;
 
@@ -62,8 +65,9 @@ class NotificationService {
         : ReminderStatus.permissionDenied;
   }
 
-  Future<void> initialize() async {
+  Future<void> initialize({void Function(String subscriptionId)? onOpen}) async {
     if (_initialized) return;
+    onOpenSubscription = onOpen;
 
     tzdata.initializeTimeZones();
     try {
@@ -93,6 +97,7 @@ class NotificationService {
           iOS: darwin,
           macOS: darwin,
         ),
+        onDidReceiveNotificationResponse: _handleResponse,
       );
       // `false` means the platform refused the settings (usually a missing
       // small-icon drawable); treat it as a failure but keep going.
@@ -126,6 +131,33 @@ class NotificationService {
 
     _initialized = true;
     await refreshPermission();
+  }
+
+  /// A tap on a reminder opens the subscription it is about. The payload is the
+  /// subscription id written at schedule time.
+  void _handleResponse(NotificationResponse response) {
+    final id = response.payload;
+    if (id == null || id.isEmpty) {
+      // The self-test notification has no payload; just resume the app.
+      return;
+    }
+    onOpenSubscription?.call(id);
+  }
+
+  /// Handles the tap that launched a terminated app.
+  Future<void> handleLaunchNotification() async {
+    if (!_initialized) return;
+    try {
+      final details = await _plugin.getNotificationAppLaunchDetails();
+      if (details?.didNotificationLaunchApp ?? false) {
+        final payload = details?.notificationResponse?.payload;
+        if (payload != null && payload.isNotEmpty) {
+          onOpenSubscription?.call(payload);
+        }
+      }
+    } catch (error) {
+      debugPrint('launch details unavailable: $error');
+    }
   }
 
   /// Re-reads the OS permission without prompting.

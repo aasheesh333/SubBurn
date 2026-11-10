@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Obsidian launch background, so the first frame never flashes white. -->
+<!-- Launch screen: app background plus the brand mark, so the first frame is
+     recognisably SubBurn instead of a flat rectangle. The window background
+     follows the system light/dark setting (values-night overrides the colour). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/sb_background" />
+    <item android:drawable="@color/sb_launch_background" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/splash_mark" />
+    </item>
 </layer-list>

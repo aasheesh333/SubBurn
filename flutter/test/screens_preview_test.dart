@@ -201,9 +201,13 @@ Widget _harness({
       // The builder runs *inside* MaterialApp, so context.sb resolves to the
       // active theme. A Builder outside MaterialApp fell back to the dark
       // palette, which is why a "light" golden still had a black page.
-      builder: (context, inner) => ColoredBox(
-        color: context.sb.bg,
-        child: inner ?? const SizedBox.shrink(),
+      builder: (context, inner) => MediaQuery(
+        // Goldens must capture the settled frame, not a mid-animation one.
+        data: MediaQuery.of(context).copyWith(disableAnimations: true),
+        child: ColoredBox(
+          color: context.sb.bg,
+          child: inner ?? const SizedBox.shrink(),
+        ),
       ),
       home: Scaffold(backgroundColor: Colors.transparent, body: child),
     ),

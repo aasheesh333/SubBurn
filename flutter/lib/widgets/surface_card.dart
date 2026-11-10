@@ -62,6 +62,8 @@ class SurfaceCard extends StatelessWidget {
 
     if (onTap == null) return outlined;
 
+    // Tappable surfaces press in slightly. Without it a card that does open a
+    // detail view felt identical to the static rows beside it.
     return Semantics(
       button: true,
       child: Material(
@@ -69,7 +71,7 @@ class SurfaceCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(radius),
-          child: outlined,
+          child: _PressScale(child: outlined),
         ),
       ),
     );
@@ -112,4 +114,36 @@ class _DashedBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DashedBorderPainter old) => old.color != color || old.radius != radius;
+}
+
+
+/// Subtle press-in for tappable surfaces. Disabled when the OS asks for less
+/// motion, and never on hover-less desktop where there is no tap feedback need.
+class _PressScale extends StatefulWidget {
+  const _PressScale({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<_PressScale> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final animate = !SbMotion.reduced(context);
+    return Listener(
+      onPointerDown: (_) => setState(() => _down = true),
+      onPointerUp: (_) => setState(() => _down = false),
+      onPointerCancel: (_) => setState(() => _down = false),
+      child: AnimatedScale(
+        scale: _down ? 0.985 : 1,
+        duration: animate ? SbMotion.press : Duration.zero,
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
 }

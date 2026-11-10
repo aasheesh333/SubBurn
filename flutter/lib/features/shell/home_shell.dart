@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/theme_tokens.dart';
@@ -20,12 +21,42 @@ class HomeShell extends ConsumerStatefulWidget {
   ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends ConsumerState<HomeShell> {
+class _HomeShellState extends ConsumerState<HomeShell>
+    with WidgetsBindingObserver {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(analyticsProvider).logScreenView('shell');
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    // Coming back from the background is when the ledger is most likely stale:
+    // a charge may have landed while the app was asleep, which rolls the next
+    // date forward, drops the old alarms and needs a fresh pair. Doing this on
+    // resume is what makes "opened the app two days after the charge" correct.
+    ref.read(subscriptionsProvider.notifier).refresh();
+    ref.read(subscriptionsProvider.notifier).rescheduleAll();
+    ref.invalidate(reminderHealthProvider);
+  }
 
   /// Opens Quick Add and confirms the save, so the user is never left guessing
   /// whether their row landed.
   Future<void> _openQuickAdd() async {
+    HapticFeedback.mediumImpact();
     // Grab the messenger before the await: using a BuildContext across an
     // async gap is a lint error and a real crash risk if the shell unmounts.
     final messenger = ScaffoldMessenger.of(context);
@@ -72,7 +103,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       ),
       bottomNavigationBar: _BottomBar(
         index: _index,
-        onSelect: (i) => setState(() => _index = i),
+        onSelect: (i) {
+          if (i == _index) return;
+          HapticFeedback.selectionClick();
+          setState(() => _index = i);
+        },
         onAdd: _openQuickAdd,
       ),
     );

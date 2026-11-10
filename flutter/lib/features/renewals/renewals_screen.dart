@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/brand_icons.dart';
 import '../../core/clock.dart';
+import '../../core/motion.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/currency.dart';
@@ -155,7 +156,7 @@ class _RenewalRow extends StatelessWidget {
         vertical: SbSpace.x3,
       ),
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
+        SbPageRoute<void>(
           builder: (_) => SubDetailScreen(subscriptionId: subscription.id),
         ),
       ),

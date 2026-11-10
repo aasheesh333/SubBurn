@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/motion.dart';
 import '../data/models/currency.dart';
 import '../theme/subburn_tokens.dart';
 import 'money_text.dart';
@@ -103,14 +104,17 @@ class BurnHeroCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: SbSpace.x1),
-                MoneyText(
-                  monthlyTotal,
-                  style: SbType.display,
-                  gradient: SbGradients.heroAmount,
-                  suffix: '/ mo',
-                  currency: currency,
-                  semanticLabel:
-                      '${currency.format(monthlyTotal)} per month',
+                SbAnimatedNumber(
+                  value: monthlyTotal,
+                  builder: (context, value) => MoneyText(
+                    value,
+                    style: SbType.display,
+                    gradient: SbGradients.heroAmount,
+                    suffix: '/ mo',
+                    currency: currency,
+                    semanticLabel:
+                        '${currency.format(monthlyTotal)} per month',
+                  ),
                 ),
                 const SizedBox(height: 10),
                 if (toolCount == 0)
@@ -149,7 +153,10 @@ class BurnHeroCard extends StatelessWidget {
                 // measurement, so the split only appears once it can be true.
                 if (toolCount > 0) ...[
                   const SizedBox(height: SbSpace.x3),
-                  _SplitBar(activeFraction: _activeFraction),
+                  _SplitBar(
+                    activeFraction: _activeFraction,
+                    ghostPercent: ghostPct,
+                  ),
                   const SizedBox(height: SbSpace.x2),
                   Row(
                     children: [
@@ -240,30 +247,49 @@ class _CaretPainter extends CustomPainter {
 }
 
 class _SplitBar extends StatelessWidget {
-  const _SplitBar({required this.activeFraction});
+  const _SplitBar({required this.activeFraction, required this.ghostPercent});
 
   final double activeFraction;
 
+  /// Printed in the semantics label so screen readers get the same split the
+  /// bar shows visually.
+  final String ghostPercent;
+
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: SizedBox(
-        height: 7,
-        child: Row(
-          children: [
-            Expanded(
-              flex: (activeFraction * 1000).round(),
-              child: Container(
-                decoration: const BoxDecoration(gradient: SbGradients.burn),
-              ),
+    final active = activeFraction.clamp(0.0, 1.0);
+    final reduce = SbMotion.reduced(context);
+
+    return Semantics(
+      label:
+          'Active use ${(active * 100).toStringAsFixed(1)} percent, ghost subscriptions $ghostPercent percent',
+      child: TweenAnimationBuilder<double>(
+        // Grows from the left once, and animates any change in the split.
+        tween: Tween<double>(begin: reduce ? active : 0, end: active),
+        duration: SbMotion.of(context, SbMotion.value),
+        curve: SbMotion.curve,
+        builder: (context, value, _) => ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SizedBox(
+            height: 7,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: (value * 1000).round().clamp(1, 1000),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      gradient: SbGradients.burn,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Expanded(
+                  flex: ((1 - value) * 1000).round().clamp(1, 1000),
+                  child: Container(color: context.sb.mutedDeco),
+                ),
+              ],
             ),
-            const SizedBox(width: 2),
-            Expanded(
-              flex: ((1 - activeFraction) * 1000).round().clamp(1, 1000),
-              child: Container(color: context.sb.mutedDeco),
-            ),
-          ],
+          ),
         ),
       ),
     );

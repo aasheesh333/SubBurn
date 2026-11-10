@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="sb_background">#09090B</color>
-    <color name="sb_accent">#FF4500</color>
+    <color name="sb_background">#FAFAF9</color>
+    <color name="sb_accent">#E63E00</color>
+    <!-- Launch screen follows the device: light here, values-night overrides. -->
+    <color name="sb_launch_background">#FAFAF9</color>
 </resources>

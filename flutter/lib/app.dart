@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/navigator_key.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_tokens.dart';
 import 'features/shell/home_shell.dart';
@@ -14,6 +15,7 @@ class SubBurnApp extends ConsumerWidget {
     final preference = ref.watch(settingsProvider).themePreference;
 
     return MaterialApp(
+      navigatorKey: rootNavigatorKey,
       title: 'SubBurn',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,

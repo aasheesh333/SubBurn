@@ -613,6 +613,7 @@ class _TotalBlock extends StatelessWidget {
               stops: const [0, 0.78],
             ),
             suffix: '/yr',
+            scaleWithSystem: false,
             semanticLabel: '${currency.format(total)} per year',
           ),
         ],

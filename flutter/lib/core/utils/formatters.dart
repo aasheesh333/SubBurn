@@ -55,9 +55,8 @@ String _weekday(DateTime date) {
 
 /// Actual Mon–Fri days in [month]'s calendar month.
 ///
-/// The receipt's "per workday" figure used to divide by a hard-coded 22.
-/// February has 20 weekdays and August has 21, so a real user's number was
-/// wrong by up to 10%.
+/// Used by the receipt's per-workday figure when it is generated live. An
+/// archived receipt pins 22 so its printed number never changes.
 int workdaysInMonth(DateTime month) {
   final first = DateTime(month.year, month.month, 1);
   final nextMonth = DateTime(month.year, month.month + 1, 1);

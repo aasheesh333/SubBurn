@@ -7,9 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app.dart';
+import 'features/detail/sub_detail_screen.dart';
 import 'data/repositories/subscription_repository.dart';
 import 'services/catalogue_service.dart';
 import 'services/firebase_bootstrap.dart';
+import 'core/navigator_key.dart';
 import 'services/ads_service.dart';
 import 'services/notification_service.dart';
 import 'services/onesignal_service.dart';
@@ -56,7 +58,23 @@ Future<void> main() async {
 
       final notifications = NotificationService();
       try {
-        await notifications.initialize();
+        await notifications.initialize(
+          // A reminder tap has to land on the subscription it describes, even
+          // when the app was terminated. Pushing through the root navigator is
+          // the only context-free way to do it.
+          onOpen: (subscriptionId) {
+            final navigator = rootNavigatorKey.currentState;
+            if (navigator == null) return;
+            navigator.push(
+              MaterialPageRoute<void>(
+                builder: (_) => SubDetailScreen(subscriptionId: subscriptionId),
+              ),
+            );
+          },
+        );
+        // Cold start from a tap: the callback above is already set, so this
+        // replays the launch payload exactly once.
+        await notifications.handleLaunchNotification();
       } catch (error) {
         debugPrint('Notifications unavailable: $error');
       }
