@@ -41,7 +41,11 @@ class SbHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 48,
+      // 48 is the Figma height at 1x; with a subtitle at 200 % the two lines
+      // need more, so the header grows instead of clipping.
+      height: subtitle == null
+          ? 48
+          : 48 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 26,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [

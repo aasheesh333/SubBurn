@@ -10,6 +10,7 @@ import 'package:subburn/core/theme/app_theme.dart';
 import 'package:subburn/core/utils/formatters.dart';
 import 'package:subburn/core/theme/theme_tokens.dart';
 import 'package:subburn/data/models/billing_cycle.dart';
+import 'package:subburn/data/hive/local_adapters.dart';
 import 'package:subburn/data/models/currency.dart';
 import 'package:subburn/data/models/cycle_conversion.dart';
 import 'package:subburn/data/models/preset_tool.dart';
@@ -800,6 +801,50 @@ void main() {
       expect(saved.id, 'sub_audit', reason: 'editing must not create a new row');
       expect(saved.startDate, DateTime(2025, 10, 9),
           reason: 'lifetime history survives an edit');
+    });
+  });
+
+  group('release-only and honesty fixes', () {
+    test('reminders start off and are not claimed before permission', () {
+      const settings = AppSettings();
+      expect(
+        settings.notificationsEnabled,
+        isFalse,
+        reason: 'a green switch with no permission is a lie',
+      );
+      expect(settings.notificationsPermissionAsked, isFalse);
+    });
+
+    test('changing the cycle re-anchors the next charge', () {
+      final sub = _sub(cycle: BillingCycle.monthly);
+      final yearly = sub.copyWith(
+        cycle: BillingCycle.yearly,
+        nextBillingDate:
+            BillingCycle.yearly.nextAfter(sub.startDate),
+      );
+      expect(
+        yearly.nextBillingDate.difference(DateTime.now()).inDays,
+        greaterThan(300),
+        reason: 'yearly must not keep a monthly renewal date',
+      );
+    });
+
+    test('reminder health is honest when the plugin cannot start', () async {
+      final repo = SubscriptionRepository.inMemory();
+      final container = ProviderContainer(
+        overrides: [
+          repositoryProvider.overrideWithValue(repo),
+          catalogueProvider.overrideWith(() => _FixedCatalogue(_snapshot)),
+          analyticsProvider.overrideWithValue(AnalyticsService(null)),
+          notificationServiceProvider.overrideWithValue(NotificationService()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final health = await container.read(reminderHealthProvider.future);
+      expect(health.wantsReminders, isFalse);
+      expect(health.isWorking, isFalse);
+      expect(health.blockedByOs, isFalse);
     });
   });
 

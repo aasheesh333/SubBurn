@@ -453,8 +453,9 @@ class _RenewalAlert extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 62,
-            height: 62,
+            // Two lines inside a fixed 62 px circle clip at 200 % text.
+            width: 62 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 22,
+            height: 62 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 22,
             child: CustomPaint(
               painter: _RingPainter(
                 progress: progress,
@@ -464,6 +465,7 @@ class _RenewalAlert extends StatelessWidget {
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       '${(progress * 100).round()}%',
@@ -674,6 +676,7 @@ class _RowCard extends StatelessWidget {
         children: [
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -698,7 +701,14 @@ class _RowCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: SbSpace.x2),
-          trailing,
+          // A "DAILY DRIVER" badge at 200 % is wider than the remaining space.
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: trailing,
+            ),
+          ),
         ],
       ),
     );
@@ -772,7 +782,14 @@ class _CancelTimeline extends StatelessWidget {
                   ],
                 ),
               ),
-              const StatusBadge('CANCEL ANYTIME', tone: BadgeTone.safe),
+              const SizedBox(width: SbSpace.x2),
+              const Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: StatusBadge('CANCEL ANYTIME', tone: BadgeTone.safe),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: SbSpace.x3),

@@ -113,123 +113,137 @@ class SubBurnReceiptCard extends StatelessWidget {
     // receipt is a dark artefact that gets exported as a PNG, so it must look
     // identical in light mode. Reading the ambient theme here made the title
     // white-on-white.
-    return SizedBox(
-      width: SbSize.shareCard.width,
-      height: SbSize.shareCard.height,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(SbRadius.composite),
-        child: DecoratedBox(
-          decoration: const BoxDecoration(color: Color(0xFF0B0B0E)),
-          child: Stack(
-            children: [
-              // glows live *inside* the clip, so the export has clean edges
-              Positioned(
-                left: -90,
-                top: -230,
-                child: Container(
-                  width: 420,
-                  height: 360,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [Color(0x4DFF4500), Color(0x14FF8C00), Color(0x00000000)],
-                      stops: [0, 0.46, 0.68],
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: -80,
-                bottom: -235,
-                child: Container(
-                  width: 520,
-                  height: 340,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [Color(0x3DFF4500), Color(0x00000000)],
-                      stops: [0, 0.64],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                // Bottom inset reserves the barcode strip, which is pinned to
-                // the edge so it never floats mid-card.
-                padding: const EdgeInsets.fromLTRB(22, 24, 22, 88),
-                child: FittedBox(
-                  // Authored at 316 px wide. If a long roast or a sixth line
-                  // makes the column taller than the export box, the content
-                  // scales down by a fraction instead of overflowing.
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.topLeft,
-                  child: SizedBox(
-                    width: 316,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _BrandRow(year: year, receiptNo: receiptNo),
-                        const SizedBox(height: 10),
-                        _Title(
-                          headline: headline,
-                          accent: headlineAccent,
-                          subline: subline,
+    // One label for the whole card: as loose text nodes it read as forty
+    // disconnected fragments in TalkBack.
+    return Semantics(
+      container: true,
+      label: 'AI tax receipt: ${currency.format(_total)} per year, '
+          '$roastTier. $verdict',
+      child: ExcludeSemantics(
+        child: SizedBox(
+          width: SbSize.shareCard.width,
+          height: SbSize.shareCard.height,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(SbRadius.composite),
+            child: DecoratedBox(
+              decoration: const BoxDecoration(color: Color(0xFF0B0B0E)),
+              child: Stack(
+                children: [
+                  // glows live *inside* the clip, so the export has clean edges
+                  Positioned(
+                    left: -90,
+                    top: -230,
+                    child: Container(
+                      width: 420,
+                      height: 360,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            Color(0x4DFF4500),
+                            Color(0x14FF8C00),
+                            Color(0x00000000)
+                          ],
+                          stops: [0, 0.46, 0.68],
                         ),
-                        const SizedBox(height: 10),
-                        const _DashedRule(),
-                        const SizedBox(height: 9),
-                        const _ColumnHeads(),
-                        const SizedBox(height: 7),
-                        for (final l in lines) ...[
-                          _LineRow(line: l, currency: currency),
-                          const SizedBox(height: 7),
-                        ],
-                        if (hiddenLineCount > 0) ...[
-                          Text(
-                            '+ $hiddenLineCount MORE TOOLS · STILL BURNING',
-                            style: SbType.micro.copyWith(
-                              fontSize: 6.5,
-                              color: const Color(0xFF6E6E78),
-                              letterSpacing: 0.12 * 6.5,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: -80,
+                    bottom: -235,
+                    child: Container(
+                      width: 520,
+                      height: 340,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [Color(0x3DFF4500), Color(0x00000000)],
+                          stops: [0, 0.64],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    // Bottom inset reserves the barcode strip, which is pinned to
+                    // the edge so it never floats mid-card.
+                    padding: const EdgeInsets.fromLTRB(22, 24, 22, 88),
+                    child: FittedBox(
+                      // Authored at 316 px wide. If a long roast or a sixth line
+                      // makes the column taller than the export box, the content
+                      // scales down by a fraction instead of overflowing.
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.topLeft,
+                      child: SizedBox(
+                        width: 316,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _BrandRow(year: year, receiptNo: receiptNo),
+                            const SizedBox(height: 10),
+                            _Title(
+                              headline: headline,
+                              accent: headlineAccent,
+                              subline: subline,
                             ),
-                          ),
-                          const SizedBox(height: 7),
-                        ],
-                        const SizedBox(height: 1),
-                        _GhostStrip(
-                          share: ghostShare,
-                          amount: ghostAmount ?? (_total * ghostShare).round(),
-                          currency: currency,
+                            const SizedBox(height: 10),
+                            const _DashedRule(),
+                            const SizedBox(height: 9),
+                            const _ColumnHeads(),
+                            const SizedBox(height: 7),
+                            for (final l in lines) ...[
+                              _LineRow(line: l, currency: currency),
+                              const SizedBox(height: 7),
+                            ],
+                            if (hiddenLineCount > 0) ...[
+                              Text(
+                                '+ $hiddenLineCount MORE TOOLS · STILL BURNING',
+                                style: SbType.micro.copyWith(
+                                  fontSize: 6.5,
+                                  color: const Color(0xFF6E6E78),
+                                  letterSpacing: 0.12 * 6.5,
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                            ],
+                            const SizedBox(height: 1),
+                            _GhostStrip(
+                              share: ghostShare,
+                              amount:
+                                  ghostAmount ?? (_total * ghostShare).round(),
+                              currency: currency,
+                            ),
+                            const SizedBox(height: 9),
+                            _StatsStrip(
+                              total: _total,
+                              toolCount: lines.length + hiddenLineCount,
+                              currency: currency,
+                              workdays: workdays,
+                            ),
+                            const SizedBox(height: 9),
+                            _TotalBlock(total: _total, currency: currency),
+                            const SizedBox(height: 8),
+                            _RoastBlock(
+                              tier: roastTier,
+                              line: roastLine,
+                              intensity: roastIntensity,
+                            ),
+                            const SizedBox(height: 8),
+                            _VerdictStrip(verdict: verdict),
+                          ],
                         ),
-                        const SizedBox(height: 9),
-                        _StatsStrip(
-                          total: _total,
-                          toolCount: lines.length + hiddenLineCount,
-                          currency: currency,
-                          workdays: workdays,
-                        ),
-                        const SizedBox(height: 9),
-                        _TotalBlock(total: _total, currency: currency),
-                        const SizedBox(height: 8),
-                        _RoastBlock(
-                          tier: roastTier,
-                          line: roastLine,
-                          intensity: roastIntensity,
-                        ),
-                        const SizedBox(height: 8),
-                        _VerdictStrip(verdict: verdict),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                  const Positioned(
+                    left: 22,
+                    right: 22,
+                    bottom: 20,
+                    child: _ReceiptFooterStrip(),
+                  ),
+                ],
               ),
-              const Positioned(
-                left: 22,
-                right: 22,
-                bottom: 20,
-                child: _ReceiptFooterStrip(),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -279,7 +293,8 @@ class _BrandRow extends StatelessWidget {
 }
 
 class _Title extends StatelessWidget {
-  const _Title({required this.headline, required this.accent, required this.subline});
+  const _Title(
+      {required this.headline, required this.accent, required this.subline});
 
   final String headline;
   final String accent;
@@ -613,7 +628,8 @@ class _TotalBlock extends StatelessWidget {
           const SizedBox(height: 1),
           MoneyText(
             total,
-            style: SbType.display.copyWith(fontSize: 40, letterSpacing: -0.055 * 40),
+            style: SbType.display
+                .copyWith(fontSize: 40, letterSpacing: -0.055 * 40),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -652,7 +668,8 @@ class _RoastBlock extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [Color(0x24FF4500), Color(0x08FF8C00)],
         ),
-        border: Border.all(color: SbPalette.dark.accent.withValues(alpha: 0.38)),
+        border:
+            Border.all(color: SbPalette.dark.accent.withValues(alpha: 0.38)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -687,7 +704,9 @@ class _RoastBlock extends StatelessWidget {
                   height: 3,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(1),
-                    color: i < intensity ? SbPalette.dark.accent : const Color(0xFF3A2A22),
+                    color: i < intensity
+                        ? SbPalette.dark.accent
+                        : const Color(0xFF3A2A22),
                     gradient: i < intensity ? SbGradients.burn : null,
                   ),
                 ),
@@ -782,7 +801,9 @@ class _Barcode extends StatelessWidget {
         child: Row(
           children: [
             for (var i = 0; i < 46; i++) ...[
-              Container(width: widths[i % widths.length], color: const Color(0xFF9C9CA6)),
+              Container(
+                  width: widths[i % widths.length],
+                  color: const Color(0xFF9C9CA6)),
               const SizedBox(width: 1.6),
             ],
           ],
@@ -800,7 +821,9 @@ class _ReceiptFooter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(top: 8),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0xFF2A2A31), style: BorderStyle.solid)),
+        border: Border(
+            top:
+                BorderSide(color: Color(0xFF2A2A31), style: BorderStyle.solid)),
       ),
       child: Row(
         children: [
@@ -822,7 +845,23 @@ class _ReceiptFooter extends StatelessWidget {
               mainAxisSpacing: 2,
               crossAxisSpacing: 2,
               children: List.generate(25, (i) {
-                final on = {0, 1, 2, 5, 6, 7, 10, 12, 14, 17, 18, 19, 20, 22, 24};
+                final on = {
+                  0,
+                  1,
+                  2,
+                  5,
+                  6,
+                  7,
+                  10,
+                  12,
+                  14,
+                  17,
+                  18,
+                  19,
+                  20,
+                  22,
+                  24
+                };
                 return ColoredBox(
                   color: on.contains(i)
                       ? const Color(0xFF6E6E78)

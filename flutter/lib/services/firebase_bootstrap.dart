@@ -65,8 +65,11 @@ class FirebaseRuntime {
       final remoteConfig = RemoteConfigService(FirebaseRemoteConfig.instance);
       await remoteConfig.initialize();
 
+      // Do NOT request permission here. Three services asking at boot (FCM,
+      // OneSignal, local notifications) is a first-run wall of dialogs, and
+      // this one is only needed for broadcast topics, which can be subscribed
+      // without it.
       final messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission();
       await messaging.subscribeToTopic('subburn_global');
       FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
 

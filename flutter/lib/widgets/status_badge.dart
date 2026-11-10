@@ -39,6 +39,19 @@ class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStat
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Respect the OS "remove animations" setting: a pulsing badge is exactly
+    // what that preference exists to stop.
+    if (SbMotion.reduced(context)) {
+      _c.stop();
+      _c.value = 0;
+    } else if (widget.pulse && !_c.isAnimating) {
+      _c.repeat(reverse: true);
+    }
+  }
+
+  @override
   void didUpdateWidget(covariant StatusBadge oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.pulse && !_c.isAnimating) {

@@ -205,6 +205,17 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
       return;
     }
 
+    // Two rows for the same tool double the burn and the receipt. Warn instead
+    // of silently allowing it, but do not block a genuinely separate plan.
+    final existing = ref
+        .read(subscriptionsProvider)
+        .where((s) => s.name.toLowerCase() == name.toLowerCase())
+        .toList();
+    if (existing.isNotEmpty) {
+      final proceed = await _confirmDuplicate(name);
+      if (proceed != true) return;
+    }
+
     setState(() => _saving = true);
     final preset = _preset;
     final subscription = Subscription(
@@ -312,6 +323,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                     label: 'Close',
                     child: IconButton(
                       onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Close',
                       icon: const Icon(Icons.close_rounded, size: 18),
                       color: context.sb.textSecondary,
                     ),
@@ -556,6 +568,32 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
     );
   }
 
+  /// Asks before adding a second row with the same name.
+  Future<bool?> _confirmDuplicate(String name) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.sb.surfaceHi,
+        title: Text('Already tracking $name', style: SbType.h3),
+        content: Text(
+          'You already have a $name subscription. Adding another one counts '
+          'both — useful for two separate plans, wrong if this is a duplicate.',
+          style: SbType.body.copyWith(color: context.sb.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('ADD ANYWAY'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// `month` / `year` / `week` — "per monthly period" was a tautology.
   static String _periodNoun(BillingCycle cycle) => switch (cycle) {
         BillingCycle.weekly => 'week',
@@ -607,6 +645,7 @@ class _SearchField extends StatelessWidget {
             ? null
             : IconButton(
                 icon: const Icon(Icons.close_rounded, size: 16),
+                tooltip: 'Clear search',
                 color: context.sb.textMuted,
                 onPressed: () {
                   controller.clear();

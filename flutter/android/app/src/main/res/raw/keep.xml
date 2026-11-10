@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Resources that are referenced ONLY from Dart, never from Android XML.
+
+  With `isShrinkResources = true` the Android resource shrinker deletes anything
+  it cannot see a reference to. `ic_stat_subburn` is passed to
+  flutter_local_notifications as a *string* at runtime, so the shrinker removed
+  it from the release APK. Initialisation then threw on the missing small icon,
+  which left the notification service permanently uninitialised and made the
+  reminder toggle report "not initialised on this device" — in release builds
+  only, never in debug or tests.
+
+  Verified by inspecting resources.arsc in the built APK.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_subburn,@drawable/splash_mark,@mipmap/ic_launcher,@mipmap/ic_launcher_round,@drawable/ic_launcher_foreground,@drawable/ic_launcher_monochrome" />

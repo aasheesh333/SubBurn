@@ -104,12 +104,19 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
 
     setState(() => _saving = true);
     final s = widget.subscription;
+    // A cycle change re-anchors the next charge. Without this the row said
+    // "yearly" while its reminders still fired on the old monthly date.
+    final nextCharge = _cycle == s.cycle
+        ? s.nextBillingDate
+        : _cycle.nextAfter(s.startDate);
+
     final updated = s.copyWith(
       name: name,
       amount: amount,
       currency: _currency,
       cycle: _cycle,
       guilt: _guilt,
+      nextBillingDate: nextCharge,
       brandColor: s.brandColor,
     );
 
@@ -293,7 +300,8 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
                     ),
                     const SizedBox(height: SbSpace.x2),
                     Text(
-                      'Next charge ${formatChargeDate(s.nextBillingDate)} · '
+                      'Next charge '
+                      '${formatChargeDate(_cycle == s.cycle ? s.nextBillingDate : _cycle.nextAfter(s.startDate))} · '
                       'adjust the date from the detail screen.',
                       style: SbType.micro.copyWith(
                         fontSize: 8,

@@ -85,7 +85,7 @@ class _Segment extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
+          duration: SbMotion.of(context, SbMotion.quick),
           height: SbSize.minTapTarget,
           alignment: Alignment.center,
           decoration: BoxDecoration(

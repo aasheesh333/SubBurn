@@ -64,7 +64,15 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
       child: RefreshIndicator(
         color: context.sb.accent,
         backgroundColor: context.sb.surfaceHi,
-        onRefresh: () => ref.read(catalogueProvider.notifier).refresh(),
+        onRefresh: () async {
+          // Pull-to-refresh on a ledger screen must refresh the ledger: roll
+          // overdue dates forward, re-arm reminders, re-read the rate. It used
+          // to refresh the preset catalogue, which the user cannot see.
+          ref.read(subscriptionsProvider.notifier).refresh();
+          await ref.read(subscriptionsProvider.notifier).rescheduleAll();
+          ref.invalidate(reminderHealthProvider);
+          await ref.read(catalogueProvider.notifier).refresh();
+        },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -241,7 +249,18 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
     Subscription subscription,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
-    await ref.read(subscriptionsProvider.notifier).remove(subscription.id);
+    try {
+      await ref.read(subscriptionsProvider.notifier).remove(subscription.id);
+    } catch (error) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Could not delete ${subscription.name}: $error'),
+          ),
+        );
+      return;
+    }
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -402,7 +421,8 @@ class _RenewingRail extends StatelessWidget {
     return SizedBox(
       // Figma draws the rail at 104 px. That is a text-size-dependent box, so
       // it grows with the OS text scale instead of clipping its cards.
-      height: 104 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 56,
+      // Content needs ~104 at 1x; three stacked bands at 200 % need ~160.
+      height: 104 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 92,
       child: ShaderMask(
         shaderCallback: (rect) => const LinearGradient(
           begin: Alignment.centerLeft,
@@ -466,6 +486,7 @@ class _RenewalCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
@@ -574,8 +595,10 @@ class _SubscriptionRow extends StatelessWidget {
             '${subscription.name}, ${subscription.currency.format(subscription.amount)} per ${subscription.cycle.label.toLowerCase()}, '
             '${subscription.guilt.label}. Opens detail.',
         child: SurfaceCard(
-          // Figma: SubRow is 44 px high with an 8 px gap (tile pitch 52).
-          height: 44,
+          // Figma: SubRow is 44 px high with an 8 px gap (tile pitch 52). That
+          // is a 1x measurement; two text lines at 200 % need ~68 px, so the row
+          // grows with the OS text scale rather than clipping.
+          height: 44 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 30,
           padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
           dashed: subscription.isGhost,
           onTap: onTap,
@@ -599,6 +622,7 @@ class _SubscriptionRow extends StatelessWidget {
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -627,6 +651,7 @@ class _SubscriptionRow extends StatelessWidget {
               const SizedBox(width: SbSpace.x2),
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   MoneyText(

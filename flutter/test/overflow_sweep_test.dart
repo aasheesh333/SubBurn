@@ -245,6 +245,44 @@ void main() {
       }
     });
 
+    // WCAG 1.4.4: text must scale to 200 % without loss of content. The sweep
+    // only covered 130 % before, which is where the old clamp sat.
+    testWidgets('dashboard at 200 % text', (tester) async {
+      await render(
+        tester,
+        BurnDashboardScreen(onAddSubscription: () {}),
+        const Size(320, 640),
+        textScale: 2,
+      );
+    });
+
+    testWidgets('detail at 200 % text', (tester) async {
+      await render(
+        tester,
+        const SubDetailScreen(subscriptionId: 's0'),
+        const Size(320, 640),
+        textScale: 2,
+      );
+    });
+
+    testWidgets('controls at 200 % text', (tester) async {
+      await render(
+        tester,
+        const ControlsScreen(),
+        const Size(320, 640),
+        textScale: 2,
+      );
+    });
+
+    testWidgets('legal at 200 % text', (tester) async {
+      await render(
+        tester,
+        const LegalPage(doc: LegalDoc.privacy),
+        const Size(320, 640),
+        textScale: 2,
+      );
+    });
+
     testWidgets('empty ledger', (tester) async {
       repo = SubscriptionRepository.inMemory();
       await render(

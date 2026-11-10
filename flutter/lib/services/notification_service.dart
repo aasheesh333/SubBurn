@@ -65,9 +65,15 @@ class NotificationService {
         : ReminderStatus.permissionDenied;
   }
 
+  /// Initialises the plugin, retrying if a previous attempt failed.
+  ///
+  /// A single failure used to be permanent: `_initialized` stayed false, every
+  /// later call returned early, and the only symptom was "not initialised on
+  /// this device" in the UI. Now each call re-attempts while uninitialised, so a
+  /// transient failure (or a fixed resource after an update) heals itself.
   Future<void> initialize({void Function(String subscriptionId)? onOpen}) async {
     if (_initialized) return;
-    onOpenSubscription = onOpen;
+    if (onOpen != null) onOpenSubscription = onOpen;
 
     tzdata.initializeTimeZones();
     try {
@@ -99,14 +105,18 @@ class NotificationService {
         ),
         onDidReceiveNotificationResponse: _handleResponse,
       );
-      // `false` means the platform refused the settings (usually a missing
-      // small-icon drawable); treat it as a failure but keep going.
+      // `false` means the platform refused the settings, which in practice is a
+      // missing small-icon drawable. Record it and stay uninitialised so the
+      // next call retries rather than pretending everything is fine.
       if (ok == false) {
-        lastError = 'Notification plugin refused its settings '
-            '(check ic_stat_subburn)';
+        lastError =
+            'The system refused the notification setup. The app icon used for '
+            'alerts could not be loaded.';
+        debugPrint('initialize returned false');
+        return;
       }
     } catch (error) {
-      lastError = 'Notification init failed: $error';
+      lastError = 'Notification setup failed: $error';
       debugPrint(lastError);
       return;
     }
@@ -190,6 +200,9 @@ class NotificationService {
 
   /// Asks the OS for permission. Returns false when declined.
   Future<bool> requestPermission() async {
+    // Retry initialisation first: a failed start must not make the toggle
+    // permanently unusable for the rest of the session.
+    if (!_initialized) await initialize();
     if (!_initialized) return false;
     try {
       if (Platform.isAndroid) {
@@ -220,8 +233,9 @@ class NotificationService {
   /// Fires one notification ~8 seconds from now. Used by Controls → "Send test
   /// reminder" so a user can prove the channel works without waiting 48 hours.
   Future<bool> sendTestNotification() async {
+    if (!_initialized) await initialize();
     if (!_initialized) {
-      lastError = 'Notifications are not initialised on this device.';
+      lastError ??= 'Notifications could not start on this device.';
       return false;
     }
     if (!await refreshPermission()) {
@@ -231,7 +245,12 @@ class NotificationService {
     try {
       await _plugin.zonedSchedule(
         id: testNotificationId,
-        scheduledDate: tz.TZDateTime.now(tz.local).add(const Duration(seconds: 8)),
+        scheduledDate: tz.TZDateTime.fromMillisecondsSinceEpoch(
+          tz.local,
+          SbClock.now()
+              .add(const Duration(seconds: 8))
+              .millisecondsSinceEpoch,
+        ),
         notificationDetails: _details(
           'This is what a renewal reminder looks like. It will fire 48 h and '
           '24 h before every charge.',
@@ -253,8 +272,9 @@ class NotificationService {
     Subscription subscription, {
     required bool enabled,
   }) async {
+    if (!_initialized) await initialize();
     if (!_initialized) {
-      lastError = 'Notifications are not initialised on this device.';
+      lastError ??= 'Notifications could not start on this device.';
       return false;
     }
     if (!await refreshPermission()) {
@@ -284,7 +304,15 @@ class NotificationService {
       try {
         await _plugin.zonedSchedule(
           id: _notificationId(subscription.id, entry.key),
-          scheduledDate: tz.TZDateTime.from(fireAt, tz.local),
+          // Built from the absolute instant, not the wall clock: if the
+          // timezone lookup failed we fall back to UTC, and `TZDateTime.from`
+          // would then shift every alarm by the device offset (a 9:00 reminder
+          // firing at 14:30 in IST). Epoch millis are zone-independent, and
+          // Android's alarm manager only needs the instant.
+          scheduledDate: tz.TZDateTime.fromMillisecondsSinceEpoch(
+            tz.local,
+            fireAt.millisecondsSinceEpoch,
+          ),
           notificationDetails: _details(body),
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           title: '${subscription.name} renews soon',

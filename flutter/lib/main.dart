@@ -79,20 +79,8 @@ Future<void> main() async {
         debugPrint('Notifications unavailable: $error');
       }
 
-      // Reminders are scheduled against dates that move: an overdue row is
-      // rolled forward on read, and a reboot drops alarms. Re-arm everything
-      // that the user asked for, using the real OS permission rather than the
-      // stored flag.
-      if (repository.settings.notificationsEnabled) {
-        for (final sub in repository.all()) {
-          if (!sub.remindersEnabled) continue;
-          try {
-            await notifications.scheduleFor(sub, enabled: true);
-          } catch (error) {
-            debugPrint('reschedule ${sub.id} failed: $error');
-          }
-        }
-      }
+      // Re-arming happens on the shell's first frame and on every resume:
+      // doing it here raced with the UI and could not report failures.
 
       runApp(
         ProviderScope(

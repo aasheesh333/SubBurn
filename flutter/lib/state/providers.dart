@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/hive/local_adapters.dart';
@@ -70,7 +71,15 @@ class SubscriptionsNotifier extends Notifier<List<Subscription>> {
     // Dismissible asserts if a dismissed child is still present on the next
     // build, and awaiting Hive first guaranteed exactly that window.
     state = state.where((s) => s.id != id).toList(growable: false);
-    await repo.delete(id);
+    try {
+      await repo.delete(id);
+    } catch (error) {
+      // The row is gone from the screen but still on disk, which would make it
+      // reappear on the next launch. Put it back and say so.
+      debugPrint('delete $id failed: $error');
+      if (removed != null) state = _sorted([...state, removed]);
+      rethrow;
+    }
     await ref.read(notificationServiceProvider).cancelFor(id);
     if (removed != null) {
       ref.read(analyticsProvider).logSubscriptionDeleted();
@@ -340,7 +349,10 @@ class ReminderHealth {
       wantsReminders && status == ReminderStatus.permissionDenied;
 }
 
-final reminderHealthProvider = FutureProvider<ReminderHealth>((ref) async {
+/// Cached for a short window: it performs two platform calls, and without
+/// keepAlive every rebuild of the Controls screen re-queried the OS.
+final reminderHealthProvider = FutureProvider.autoDispose<ReminderHealth>((ref) async {
+  ref.keepAlive();
   final settings = ref.watch(settingsProvider);
   final service = ref.watch(notificationServiceProvider);
   await service.refreshPermission();

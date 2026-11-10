@@ -29,9 +29,15 @@ class _HomeShellState extends ConsumerState<HomeShell>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       ref.read(analyticsProvider).logScreenView('shell');
+      // First frame is the first safe moment to touch platform channels, and
+      // the app may have been killed while a charge landed. This replaces a
+      // fire-and-forget loop in main() that raced the UI and swallowed errors.
+      final armed =
+          await ref.read(subscriptionsProvider.notifier).rescheduleAll();
+      if (armed > 0) ref.invalidate(reminderHealthProvider);
     });
   }
 

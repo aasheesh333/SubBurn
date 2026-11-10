@@ -265,6 +265,22 @@ token cannot exist in one theme and be missing from the other.
 - The receipt always uses the dark palette: it is a dark artefact exported as a
   PNG, so it must look identical whatever the app theme is.
 
+## 8c. Release-only failure modes
+
+These cannot be caught by `flutter run` or widget tests, so each has a deliberate
+guard:
+
+| Failure | Guard |
+|---|---|
+| Resource shrinker deletes `ic_stat_subburn` (referenced only by a Dart string) → notification init throws → reminders dead in release only | `res/raw/keep.xml` with `tools:keep`; verified by reading `resources.arsc` out of the built APK |
+| R8 strips Play Core split-install classes referenced by the Flutter engine | `-dontwarn com.google.android.play.core.**` in `proguard-rules.pro` |
+| Keystore path resolved against `android/app/` instead of `android/` | `rootProject.file(...)` in the signing config |
+| Obfuscated stack traces | Crashlytics Gradle plugin uploads the R8 mapping |
+| Three services prompting for notification permission at boot | only `NotificationService` asks, in context |
+
+**Rule:** any behaviour that depends on packaging (resources, R8, signing,
+manifest) must be verified against the *release artifact*, not the debug build.
+
 ## 9. Why the cost stays at zero
 
 | Scaling pressure | Why it does not apply |

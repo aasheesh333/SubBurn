@@ -85,7 +85,9 @@ class AppSettings {
   const AppSettings({
     this.displayCurrency = CurrencyCode.inr,
     this.themePreference = ThemePreference.system,
-    this.notificationsEnabled = true,
+    // Off until the user asks. Defaulting to "on" showed a green switch on a
+    // fresh install where no permission had ever been requested.
+    this.notificationsEnabled = false,
     this.notificationsPermissionAsked = false,
     this.installId,
   });
@@ -137,7 +139,7 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       displayCurrency: CurrencyCode.fromStorage(
         (fields[0] as String?) ?? 'inr',
       ),
-      notificationsEnabled: (fields[1] as bool?) ?? true,
+      notificationsEnabled: (fields[1] as bool?) ?? false,
       notificationsPermissionAsked: (fields[2] as bool?) ?? false,
       installId: fields[3] as String?,
       themePreference: ThemePreference.fromStorage(fields[4] as String?),

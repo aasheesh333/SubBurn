@@ -32,7 +32,8 @@ abstract final class OneSignalService {
       if (installId != null && installId.isNotEmpty) {
         await OneSignal.login(installId);
       }
-      await OneSignal.Notifications.requestPermission(true);
+      // Prompting is the notification service's job (one prompt, in context).
+      // OneSignal only registers the device here.
       _ready = true;
       debugPrint('OneSignal ready: $resolved');
     } catch (error) {

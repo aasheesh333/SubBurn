@@ -117,7 +117,7 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
               PrimaryButton(
                 label: _busy ? 'Rendering…' : 'Share receipt',
                 icon: _busy ? null : Icons.ios_share_rounded,
-                onPressed: _busy ? null : () => _share(summary, roast, 'share'),
+                onPressed: _busy ? null : () => _share(summary, roast),
               ),
               const SizedBox(height: SbSpace.x2),
               SizedBox(
@@ -126,9 +126,7 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
                   label: 'Export PNG',
                   variant: ButtonVariant.outline,
                   icon: Icons.download_rounded,
-                  onPressed: _busy
-                      ? null
-                      : () => _share(summary, roast, 'save'),
+                  onPressed: _busy ? null : _saveToDevice,
                 ),
               ),
             ],
@@ -204,32 +202,37 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
     return (hash % 90000 + 10000).toString();
   }
 
-  Future<void> _share(BurnSummary summary, Roast roast, String method) async {
+  /// Shares the receipt through the system sheet and records the event only
+  /// when a share actually happened.
+  Future<void> _share(BurnSummary summary, Roast roast) async {
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
-    final box = context.findRenderObject() as RenderBox?;
-    final origin = box == null
-        ? null
-        : box.localToGlobal(Offset.zero) & box.size;
+    final origin = _origin(context);
 
     try {
-      final bytes = await ref
-          .read(shareServiceProvider)
-          .capturePng(_boundaryKey, pixelRatio: SbSize.shareCardPixelRatio);
+      final bytes = await ref.read(shareServiceProvider).capturePng(
+            _boundaryKey,
+            pixelRatio: SbSize.shareCardPixelRatio,
+          );
       final result = await ref.read(shareServiceProvider).sharePng(
             bytes,
             fileName:
                 'subburn-receipt-${DateTime.now().millisecondsSinceEpoch}.png',
-            text: 'My AI & SaaS burn: ${summary.currency.format(summary.yearly)}/yr. '
-                '${roast.tier}.',
+            text: 'My AI & SaaS burn: '
+                '${summary.currency.format(summary.yearly)}/yr. ${roast.tier}.',
             sharePositionOrigin: origin,
           );
 
-      await ref.read(analyticsProvider).logRoastCardShared(
-            tier: roast.tier,
-            yearlyBurn: summary.yearly,
-            method: method,
-          );
+      // Dismissing the sheet is not a share. Logging it inflated the metric.
+      final shared = result.status == ShareResultStatus.success;
+      if (shared) {
+        await ref.read(analyticsProvider).logRoastCardShared(
+              tier: roast.tier,
+              yearlyBurn: summary.yearly,
+              method: 'share',
+            );
+      }
+      await ref.read(shareServiceProvider).pruneTemporaryFiles();
 
       if (!mounted) return;
       messenger
@@ -237,9 +240,9 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
         ..showSnackBar(
           SnackBar(
             content: Text(
-              result.status == ShareResultStatus.dismissed
-                  ? 'Receipt is ready — 1080 × 1920 PNG'
-                  : 'Receipt shared · 1080 × 1920 PNG',
+              shared
+                  ? 'Receipt shared · 1080 × 1920 PNG'
+                  : 'Share cancelled — the receipt was not sent.',
             ),
           ),
         );
@@ -248,11 +251,62 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text('Could not export the receipt: $error')),
+          SnackBar(content: Text('Could not prepare the receipt: $error')),
         );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Saves the receipt without a social caption.
+  ///
+  /// The second button used to call the share handler, so "Export PNG" and
+  /// "Share receipt" did exactly the same thing and nothing was ever saved.
+  Future<void> _saveToDevice() async {
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final origin = _origin(context);
+
+    try {
+      final bytes = await ref.read(shareServiceProvider).capturePng(
+            _boundaryKey,
+            pixelRatio: SbSize.shareCardPixelRatio,
+          );
+      final result = await ref.read(shareServiceProvider).savePng(
+            bytes,
+            fileName:
+                'subburn-receipt-${DateTime.now().millisecondsSinceEpoch}.png',
+            sharePositionOrigin: origin,
+          );
+      await ref.read(shareServiceProvider).pruneTemporaryFiles();
+
+      if (!mounted) return;
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              result.status == ShareResultStatus.success
+                  ? 'Saved — choose Photos or Files in the sheet.'
+                  : 'Save cancelled.',
+            ),
+          ),
+        );
+    } catch (error) {
+      if (!mounted) return;
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('Could not save the receipt: $error')),
+        );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Rect? _origin(BuildContext context) {
+    final box = context.findRenderObject() as RenderBox?;
+    return box == null ? null : box.localToGlobal(Offset.zero) & box.size;
   }
 }
 
