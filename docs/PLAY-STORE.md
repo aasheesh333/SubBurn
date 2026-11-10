@@ -108,6 +108,7 @@ Answer these exactly — they match `privacy.html` and the code.
 | App info & performance → *Crash logs* | Yes | No | App functionality / diagnostics | No |
 | App info & performance → *Other app performance data* | Yes | No | Analytics | No |
 | Device or other IDs → *Device or other IDs* (install id, push token) | Yes | No | App functionality, Analytics | Yes (push can be declined) |
+| Device or other IDs → *Device or other IDs* (Google advertising ID) | Yes | **Yes — shared with Google AdMob** | Advertising | Yes (consent form, and Controls → Ads → Manage) |
 
 Everything else: **No** — no name, email, phone, contacts, location, photos,
 files, health, financial info, messages, or browsing history.
@@ -115,7 +116,10 @@ files, health, financial info, messages, or browsing history.
 - Is data encrypted in transit? **Yes.**
 - Can users request deletion? **Yes** — uninstall, or *Controls → Delete all
   subscriptions*; email for server-side deletion.
-- Is data sold? **No.**
+- Is data sold? **No.** (Note: sharing an advertising ID with AdMob counts as
+  "shared with third parties" in the Data Safety form, not as a sale.)
+- Does the app contain ads? **Yes** — one dashboard banner plus an optional
+  rewarded video. No interstitials, no app-open ads.
 - Is data used for advertising? **No.**
 - Is data used to track users across apps/sites? **No.**
 - Committed to the Play Families policy? **N/A** (not targeted at children).

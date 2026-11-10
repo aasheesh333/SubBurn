@@ -12,6 +12,7 @@ import 'data/repositories/subscription_repository.dart';
 import 'services/catalogue_service.dart';
 import 'services/firebase_bootstrap.dart';
 import 'core/navigator_key.dart';
+import 'services/ads_bootstrap.dart';
 import 'services/ads_service.dart';
 import 'services/notification_service.dart';
 import 'services/onesignal_service.dart';
@@ -98,6 +99,10 @@ Future<void> main() async {
           child: const SubBurnApp(),
         ),
       );
+
+      // Ads initialise after the first frame: they are revenue, not a
+      // dependency, and the consent form must never delay the UI.
+      unawaited(AdsBootstrap.initialise());
 
       // Non-blocking: push is a broadcast channel, never a startup dependency.
       unawaited(

@@ -180,6 +180,13 @@ class SettingsNotifier extends Notifier<AppSettings> {
     state = next;
   }
 
+  Future<void> unlockReceiptThemes() async {
+    final repo = ref.read(repositoryProvider);
+    final next = repo.settings.copyWith(receiptThemesUnlocked: true);
+    await repo.saveSettings(next);
+    state = next;
+  }
+
   Future<void> setCurrency(CurrencyCode currency) async {
     final repo = ref.read(repositoryProvider);
     final next = repo.settings.copyWith(displayCurrency: currency);

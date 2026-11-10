@@ -337,7 +337,18 @@ class _PrivacyBody extends StatelessWidget {
             'Name, email, phone number or contacts.',
             'Your subscription list, prices or spend figures.',
             'Location, photos, files, SMS, call logs or clipboard.',
-            'Advertising identifiers (no ad SDK is active in this build).',
+            'Advertising identifiers unless you consent through Google\'s form.',
+          ]),
+        ),
+        const _Section(
+          title: 'Advertising',
+          child: _Bullets([
+            'One banner sits at the bottom of the dashboard, below all content.',
+            'An optional rewarded video unlocks two extra receipt themes. They '
+                'are cosmetic: no feature and no data is locked behind an ad.',
+            'No interstitial or app-open ads, and none on the detail screen, in '
+                'the add flow, or on the receipt itself.',
+            'Change or withdraw ad consent any time in Controls → Ads → Manage.',
           ]),
         ),
         const _Section(

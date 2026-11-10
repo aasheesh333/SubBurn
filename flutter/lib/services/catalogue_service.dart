@@ -261,6 +261,11 @@ class RemoteConfigService {
     ),
     'smart_reminders': true,
     'roast_tone': 'savage',
+    // Ad flags. Live unit ids are public identifiers, not secrets; the console
+    // can rotate them or switch ads off without shipping a release.
+    'ads_enabled': true,
+    'admob_banner_unit': 'ca-app-pub-4285271252655677/4419017228',
+    'admob_rewarded_unit': 'ca-app-pub-4285271252655677/5895575414',
   };
 
   static const minimumFetchInterval = Duration(hours: 12);

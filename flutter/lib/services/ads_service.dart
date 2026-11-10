@@ -25,6 +25,10 @@ class AdsService {
   /// ad surface renders nothing rather than an empty grey box.
   bool get canShowBanner => enabled && (bannerUnitId?.isNotEmpty ?? false);
 
+  /// Rewarded is opt-in, so it only needs an id, not a separate flag: if the
+  /// console clears this id, the unlock button simply hides.
+  String? get rewardedUnitId => interstitialUnitId;
+
   static const disabled = AdsService(enabled: false);
 
   static AdsService fromRemoteConfig(FirebaseRemoteConfig? config) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/models/currency.dart';
+import '../data/models/receipt_theme.dart';
 import '../core/theme/theme_tokens.dart';
 import '../theme/subburn_tokens.dart';
 import '../widgets/money_text.dart';
@@ -68,6 +69,7 @@ class SubBurnReceiptCard extends StatelessWidget {
     this.hiddenLineCount = 0,
     this.totalOverride,
     this.workdays = 22,
+    this.theme = ReceiptTheme.ember,
   });
 
   final List<ReceiptLine> lines;
@@ -104,6 +106,10 @@ class SubBurnReceiptCard extends StatelessWidget {
   /// Weekdays in the current month, used for the per-workday figure.
   final int workdays;
 
+  /// Colour treatment. Ember is the product default; the other two are the
+  /// rewarded unlock.
+  final ReceiptTheme theme;
+
   num get _total =>
       totalOverride ?? lines.fold<num>(0, (sum, l) => sum + l.annual);
 
@@ -115,133 +121,136 @@ class SubBurnReceiptCard extends StatelessWidget {
     // white-on-white.
     // One label for the whole card: as loose text nodes it read as forty
     // disconnected fragments in TalkBack.
-    return Semantics(
-      container: true,
-      label: 'AI tax receipt: ${currency.format(_total)} per year, '
-          '$roastTier. $verdict',
-      child: ExcludeSemantics(
-        child: SizedBox(
-          width: SbSize.shareCard.width,
-          height: SbSize.shareCard.height,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(SbRadius.composite),
-            child: DecoratedBox(
-              decoration: const BoxDecoration(color: Color(0xFF0B0B0E)),
-              child: Stack(
-                children: [
-                  // glows live *inside* the clip, so the export has clean edges
-                  Positioned(
-                    left: -90,
-                    top: -230,
-                    child: Container(
-                      width: 420,
-                      height: 360,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Color(0x4DFF4500),
-                            Color(0x14FF8C00),
-                            Color(0x00000000)
-                          ],
-                          stops: [0, 0.46, 0.68],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: -80,
-                    bottom: -235,
-                    child: Container(
-                      width: 520,
-                      height: 340,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [Color(0x3DFF4500), Color(0x00000000)],
-                          stops: [0, 0.64],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    // Bottom inset reserves the barcode strip, which is pinned to
-                    // the edge so it never floats mid-card.
-                    padding: const EdgeInsets.fromLTRB(22, 24, 22, 88),
-                    child: FittedBox(
-                      // Authored at 316 px wide. If a long roast or a sixth line
-                      // makes the column taller than the export box, the content
-                      // scales down by a fraction instead of overflowing.
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.topLeft,
-                      child: SizedBox(
-                        width: 316,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _BrandRow(year: year, receiptNo: receiptNo),
-                            const SizedBox(height: 10),
-                            _Title(
-                              headline: headline,
-                              accent: headlineAccent,
-                              subline: subline,
-                            ),
-                            const SizedBox(height: 10),
-                            const _DashedRule(),
-                            const SizedBox(height: 9),
-                            const _ColumnHeads(),
-                            const SizedBox(height: 7),
-                            for (final l in lines) ...[
-                              _LineRow(line: l, currency: currency),
-                              const SizedBox(height: 7),
+    return ReceiptThemeScope(
+      theme: theme,
+      child: Semantics(
+        container: true,
+        label: 'AI tax receipt: ${currency.format(_total)} per year, '
+            '$roastTier. $verdict',
+        child: ExcludeSemantics(
+          child: SizedBox(
+            width: SbSize.shareCard.width,
+            height: SbSize.shareCard.height,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(SbRadius.composite),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(color: Color(0xFF0B0B0E)),
+                child: Stack(
+                  children: [
+                    // glows live *inside* the clip, so the export has clean edges
+                    Positioned(
+                      left: -90,
+                      top: -230,
+                      child: Container(
+                        width: 420,
+                        height: 360,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Color(0x4DFF4500),
+                              Color(0x14FF8C00),
+                              Color(0x00000000)
                             ],
-                            if (hiddenLineCount > 0) ...[
-                              Text(
-                                '+ $hiddenLineCount MORE TOOLS · STILL BURNING',
-                                style: SbType.micro.copyWith(
-                                  fontSize: 6.5,
-                                  color: const Color(0xFF6E6E78),
-                                  letterSpacing: 0.12 * 6.5,
-                                ),
+                            stops: [0, 0.46, 0.68],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: -80,
+                      bottom: -235,
+                      child: Container(
+                        width: 520,
+                        height: 340,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [Color(0x3DFF4500), Color(0x00000000)],
+                            stops: [0, 0.64],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      // Bottom inset reserves the barcode strip, which is pinned to
+                      // the edge so it never floats mid-card.
+                      padding: const EdgeInsets.fromLTRB(22, 24, 22, 88),
+                      child: FittedBox(
+                        // Authored at 316 px wide. If a long roast or a sixth line
+                        // makes the column taller than the export box, the content
+                        // scales down by a fraction instead of overflowing.
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.topLeft,
+                        child: SizedBox(
+                          width: 316,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _BrandRow(year: year, receiptNo: receiptNo),
+                              const SizedBox(height: 10),
+                              _Title(
+                                headline: headline,
+                                accent: headlineAccent,
+                                subline: subline,
                               ),
+                              const SizedBox(height: 10),
+                              const _DashedRule(),
+                              const SizedBox(height: 9),
+                              const _ColumnHeads(),
                               const SizedBox(height: 7),
+                              for (final l in lines) ...[
+                                _LineRow(line: l, currency: currency),
+                                const SizedBox(height: 7),
+                              ],
+                              if (hiddenLineCount > 0) ...[
+                                Text(
+                                  '+ $hiddenLineCount MORE TOOLS · STILL BURNING',
+                                  style: SbType.micro.copyWith(
+                                    fontSize: 6.5,
+                                    color: const Color(0xFF6E6E78),
+                                    letterSpacing: 0.12 * 6.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 7),
+                              ],
+                              const SizedBox(height: 1),
+                              _GhostStrip(
+                                share: ghostShare,
+                                amount: ghostAmount ??
+                                    (_total * ghostShare).round(),
+                                currency: currency,
+                              ),
+                              const SizedBox(height: 9),
+                              _StatsStrip(
+                                total: _total,
+                                toolCount: lines.length + hiddenLineCount,
+                                currency: currency,
+                                workdays: workdays,
+                              ),
+                              const SizedBox(height: 9),
+                              _TotalBlock(total: _total, currency: currency),
+                              const SizedBox(height: 8),
+                              _RoastBlock(
+                                tier: roastTier,
+                                line: roastLine,
+                                intensity: roastIntensity,
+                              ),
+                              const SizedBox(height: 8),
+                              _VerdictStrip(verdict: verdict),
                             ],
-                            const SizedBox(height: 1),
-                            _GhostStrip(
-                              share: ghostShare,
-                              amount:
-                                  ghostAmount ?? (_total * ghostShare).round(),
-                              currency: currency,
-                            ),
-                            const SizedBox(height: 9),
-                            _StatsStrip(
-                              total: _total,
-                              toolCount: lines.length + hiddenLineCount,
-                              currency: currency,
-                              workdays: workdays,
-                            ),
-                            const SizedBox(height: 9),
-                            _TotalBlock(total: _total, currency: currency),
-                            const SizedBox(height: 8),
-                            _RoastBlock(
-                              tier: roastTier,
-                              line: roastLine,
-                              intensity: roastIntensity,
-                            ),
-                            const SizedBox(height: 8),
-                            _VerdictStrip(verdict: verdict),
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const Positioned(
-                    left: 22,
-                    right: 22,
-                    bottom: 20,
-                    child: _ReceiptFooterStrip(),
-                  ),
-                ],
+                    const Positioned(
+                      left: 22,
+                      right: 22,
+                      bottom: 20,
+                      child: _ReceiptFooterStrip(),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -274,7 +283,7 @@ class _BrandRow extends StatelessWidget {
           'SUBBURN · WRAPPED $year',
           style: SbType.micro.copyWith(
             fontSize: 8,
-            color: SbPalette.dark.accentAlt,
+            color: ReceiptThemeScope.of(context).accentAlt,
             letterSpacing: 0.17 * 8,
           ),
         ),
@@ -313,7 +322,7 @@ class _Title extends StatelessWidget {
             ),
             TextSpan(
               text: accent,
-              style: SbType.h1.copyWith(color: const Color(0xFFFF7A1F)),
+              style: SbType.h1.copyWith(color: ReceiptThemeScope.of(context).accent),
             ),
           ]),
         ),
@@ -633,7 +642,10 @@ class _TotalBlock extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [const Color(0xFFFFA03A), SbPalette.dark.accent],
+              colors: [
+                ReceiptThemeScope.of(context).heroTop,
+                ReceiptThemeScope.of(context).accent,
+              ],
               stops: const [0, 0.78],
             ),
             suffix: '/yr',
@@ -669,7 +681,11 @@ class _RoastBlock extends StatelessWidget {
           colors: [Color(0x24FF4500), Color(0x08FF8C00)],
         ),
         border:
-            Border.all(color: SbPalette.dark.accent.withValues(alpha: 0.38)),
+            Border.all(
+              color: ReceiptThemeScope.of(context)
+                  .accent
+                  .withValues(alpha: 0.38),
+            ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -692,7 +708,7 @@ class _RoastBlock extends StatelessWidget {
                   style: SbType.micro.copyWith(
                     fontSize: 7.5,
                     fontWeight: FontWeight.w700,
-                    color: SbPalette.dark.accent,
+                    color: ReceiptThemeScope.of(context).accent,
                     letterSpacing: 0.1 * 7.5,
                   ),
                 ),
@@ -705,7 +721,7 @@ class _RoastBlock extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(1),
                     color: i < intensity
-                        ? SbPalette.dark.accent
+                        ? ReceiptThemeScope.of(context).accent
                         : const Color(0xFF3A2A22),
                     gradient: i < intensity ? SbGradients.burn : null,
                   ),

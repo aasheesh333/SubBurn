@@ -25,6 +25,7 @@ import 'package:subburn/features/renewals/renewals_screen.dart';
 import 'package:subburn/features/studio/viral_receipt_screen.dart';
 import 'package:subburn/services/analytics_service.dart';
 import 'package:subburn/services/catalogue_service.dart';
+import 'package:subburn/services/ads_bootstrap.dart';
 import 'package:subburn/services/notification_service.dart';
 import 'package:subburn/state/providers.dart';
 
@@ -235,6 +236,8 @@ void main() {
   setUpAll(() async {
     await _loadFonts();
     GoogleFonts.config.allowRuntimeFetching = false;
+    // No ad SDK in tests: it needs platform channels and a real network.
+    AdsBootstrap.disabled = true;
     // Freeze time so renewal countdowns in the goldens are deterministic.
     SbClock.freeze(DateTime(2026, 11, 9, 9, 41));
     PackageInfo.setMockInitialValues(

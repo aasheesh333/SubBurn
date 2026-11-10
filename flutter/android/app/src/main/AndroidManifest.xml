@@ -64,6 +64,18 @@
             </intent-filter>
         </receiver>
 
+        <!-- AdMob application id. Required by the SDK; without it the app
+             crashes on ad init. Public by design, like the Firebase key. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-4285271252655677~8713310448" />
+
+        <!-- Ads return before the first frame, so initialisation runs off the
+             critical path. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
+            android:value="true" />
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

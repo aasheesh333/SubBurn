@@ -89,6 +89,7 @@ class AppSettings {
     // fresh install where no permission had ever been requested.
     this.notificationsEnabled = false,
     this.notificationsPermissionAsked = false,
+    this.receiptThemesUnlocked = false,
     this.installId,
   });
 
@@ -103,6 +104,10 @@ class AppSettings {
   /// once, on the first save, and never again.
   final bool notificationsPermissionAsked;
 
+  /// True once the user has watched a rewarded ad for the extra receipt
+  /// themes. A real, permanent unlock — not a consumable.
+  final bool receiptThemesUnlocked;
+
   /// Stable anonymous id used for OneSignal and support, never linked to a
   /// person.
   final String? installId;
@@ -112,6 +117,7 @@ class AppSettings {
     ThemePreference? themePreference,
     bool? notificationsEnabled,
     bool? notificationsPermissionAsked,
+    bool? receiptThemesUnlocked,
     String? installId,
   }) {
     return AppSettings(
@@ -120,6 +126,8 @@ class AppSettings {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       notificationsPermissionAsked:
           notificationsPermissionAsked ?? this.notificationsPermissionAsked,
+      receiptThemesUnlocked:
+          receiptThemesUnlocked ?? this.receiptThemesUnlocked,
       installId: installId ?? this.installId,
     );
   }
@@ -143,13 +151,14 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       notificationsPermissionAsked: (fields[2] as bool?) ?? false,
       installId: fields[3] as String?,
       themePreference: ThemePreference.fromStorage(fields[4] as String?),
+      receiptThemesUnlocked: (fields[5] as bool?) ?? false,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.displayCurrency.name)
       ..writeByte(1)
@@ -159,6 +168,8 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(3)
       ..write(obj.installId)
       ..writeByte(4)
-      ..write(obj.themePreference.name);
+      ..write(obj.themePreference.name)
+      ..writeByte(5)
+      ..write(obj.receiptThemesUnlocked);
   }
 }

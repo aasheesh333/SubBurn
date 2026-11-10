@@ -8,6 +8,7 @@ import '../../core/motion.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../data/models/currency.dart';
 import '../../data/models/theme_preference.dart';
+import '../../services/ads_bootstrap.dart';
 import '../../services/ads_service.dart';
 import '../../services/catalogue_service.dart';
 import '../../state/providers.dart';
@@ -254,15 +255,25 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
               _SettingRow(
                 title: ads.enabled ? 'Ads enabled' : 'No ads',
                 subtitle: ads.enabled
-                    ? 'A single banner may appear on the dashboard. Ad identifiers '
-                        'are declared in the Play data safety form.'
-                    : 'This build shows no advertising and contains no ad SDK.',
+                    ? 'One banner on the dashboard, plus an optional rewarded '
+                        'video for the extra receipt themes. No interstitials, '
+                        'no ads while you are editing or sharing.'
+                    : 'This build shows no advertising.',
                 child: StatusBadge(
                   ads.enabled ? 'ON' : 'OFF',
                   tone: ads.enabled ? BadgeTone.warn : BadgeTone.safe,
                   leadingDot: true,
                 ),
               ),
+              if (ads.enabled)
+                const _SettingRow(
+                  title: 'Ad privacy',
+                  subtitle: 'Change or withdraw your ad consent at any time.',
+                  child: TextButton(
+                    onPressed: AdsBootstrap.showPrivacyOptions,
+                    child: Text('MANAGE'),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: SbSpace.x3),

@@ -4,6 +4,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/clock.dart';
 import '../../core/theme/theme_tokens.dart';
+import '../../data/models/receipt_theme.dart';
+import '../../services/rewarded_ad_service.dart';
 import '../../data/models/billing_cycle.dart';
 import '../../data/models/currency.dart';
 import '../../data/models/subscription.dart';
@@ -31,6 +33,7 @@ class ViralReceiptScreen extends ConsumerStatefulWidget {
 class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
   final GlobalKey _boundaryKey = GlobalKey();
   bool _busy = false;
+  ReceiptTheme _theme = ReceiptTheme.ember;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +82,7 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
                         currency: settings.displayCurrency,
                         hiddenLineCount: hidden,
                         totalOverride: summary.yearly,
+                        theme: _theme,
                         // Pinned, not computed: an archived receipt must not
                         // change its printed per-workday figure next month.
                         workdays: 22,
@@ -105,6 +109,13 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: SbSpace.x2),
+            _ThemePicker(
+              selected: _theme,
+              unlocked: ref.watch(settingsProvider).receiptThemesUnlocked,
+              onPick: (theme) => setState(() => _theme = theme),
+              onUnlock: _unlockThemes,
             ),
             const SizedBox(height: SbSpace.x3),
             if (summary.count == 0)
@@ -304,9 +315,154 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
     }
   }
 
+  /// Rewarded ad in exchange for the extra themes, once, permanently.
+  Future<void> _unlockThemes() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final service = ref.read(rewardedAdServiceProvider);
+    await service.load();
+    if (!mounted) return;
+
+    final rewarded = await service.show(
+      onReward: () {
+        ref.read(settingsProvider.notifier).unlockReceiptThemes();
+      },
+    );
+    if (!mounted) return;
+
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            rewarded
+                ? 'Themes unlocked. Pick one above.'
+                : 'No ad was available — nothing changed.',
+          ),
+        ),
+      );
+  }
+
   Rect? _origin(BuildContext context) {
     final box = context.findRenderObject() as RenderBox?;
     return box == null ? null : box.localToGlobal(Offset.zero) & box.size;
+  }
+}
+
+/// Theme chips. Locked chips advertise the rewarded unlock instead of opening a
+/// paywall — nothing in the app becomes unusable.
+class _ThemePicker extends StatelessWidget {
+  const _ThemePicker({
+    required this.selected,
+    required this.unlocked,
+    required this.onPick,
+    required this.onUnlock,
+  });
+
+  final ReceiptTheme selected;
+  final bool unlocked;
+  final ValueChanged<ReceiptTheme> onPick;
+  final VoidCallback onUnlock;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final theme in ReceiptTheme.values) ...[
+          Expanded(
+            child: _ThemeChip(
+              theme: theme,
+              selected: theme == selected,
+              locked: !theme.isFree && !unlocked,
+              onTap: () {
+                if (theme.isFree || unlocked) {
+                  onPick(theme);
+                } else {
+                  onUnlock();
+                }
+              },
+            ),
+          ),
+          if (theme != ReceiptTheme.values.last)
+            const SizedBox(width: SbSpace.x2),
+        ],
+      ],
+    );
+  }
+}
+
+class _ThemeChip extends StatelessWidget {
+  const _ThemeChip({
+    required this.theme,
+    required this.selected,
+    required this.locked,
+    required this.onTap,
+  });
+
+  final ReceiptTheme theme;
+  final bool selected;
+  final bool locked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: locked
+          ? '${theme.label} theme, watch an ad to unlock'
+          : '${theme.label} theme',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(SbRadius.button),
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(SbRadius.button),
+            color: context.sb.surface,
+            border: Border.all(
+              color: selected ? theme.accent : context.sb.border,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [theme.heroTop, theme.accent],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  theme.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: SbType.micro.copyWith(
+                    fontSize: 8.5,
+                    color: selected ? context.sb.text : context.sb.textSecondary,
+                    letterSpacing: 0.04,
+                  ),
+                ),
+              ),
+              if (locked) ...[
+                const SizedBox(width: 3),
+                Icon(
+                  Icons.play_circle_outline_rounded,
+                  size: 11,
+                  color: context.sb.warn,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
