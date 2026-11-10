@@ -367,29 +367,37 @@ class _LineRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              line.name,
-              style: SbType.body.copyWith(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFFE9E9EC),
+        // Expanded, not Spacer: a long tool name (a real catalogue entry, or a
+        // user's custom name) used to push the amount off the card edge.
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                line.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: SbType.body.copyWith(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFE9E9EC),
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              line.quantityLabelIn(currency),
-              style: SbType.micro.copyWith(
-                fontSize: 7.5,
-                color: const Color(0xFF6E6E78),
-                letterSpacing: 0,
+              const SizedBox(height: 2),
+              Text(
+                line.quantityLabelIn(currency),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: SbType.micro.copyWith(
+                  fontSize: 7.5,
+                  color: const Color(0xFF6E6E78),
+                  letterSpacing: 0,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const Spacer(),
+        const SizedBox(width: 8),
         Text(
           currency.format(line.annual),
           style: SbType.micro.copyWith(

@@ -353,7 +353,8 @@ class SbPalette extends ThemeExtension<SbPalette> {
     textMuted: SbColors.textMuted,
     mutedDeco: SbColors.mutedDeco,
     onAccent: Color(0xFF1A0800),
-    heroSurface: [Color(0xFF1B1214), Color(0xFF131316), Color(0xFF111114)],
+    // Figma paints HeroCard a solid #241B0C and adds a separate glow ellipse.
+    heroSurface: [Color(0xFF241B0C), Color(0xFF241B0C), Color(0xFF241B0C)],
     heroBorder: Color(0xFF33271F),
     heroAmount: SbGradients.heroAmount,
     segmentSurface: Color(0xFF0B0B0E),

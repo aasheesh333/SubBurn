@@ -342,9 +342,18 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(title, style: SbType.section.copyWith(color: context.sb.text)),
-        const Spacer(),
-        if (badge != null) badge!,
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: SbType.section.copyWith(color: context.sb.text),
+          ),
+        ),
+        if (badge != null) ...[
+          const SizedBox(width: SbSpace.x2),
+          badge!,
+        ],
       ],
     );
   }
@@ -391,7 +400,9 @@ class _RenewingRail extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 106,
+      // Figma draws the rail at 104 px. That is a text-size-dependent box, so
+      // it grows with the OS text scale instead of clipping its cards.
+      height: 104 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 56,
       child: ShaderMask(
         shaderCallback: (rect) => const LinearGradient(
           begin: Alignment.centerLeft,
@@ -447,7 +458,10 @@ class _RenewalCard extends StatelessWidget {
     return SizedBox(
       width: 148,
       child: SurfaceCard(
-        padding: const EdgeInsets.all(11),
+        // 9 instead of 11: three stacked bands (tile, price, badge) plus text
+        // rounding need 4 px of slack inside the Figma 104 px rail, and a
+        // 0.03 px overflow still trips the debug assert.
+        padding: const EdgeInsets.all(9),
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,7 +574,8 @@ class _SubscriptionRow extends StatelessWidget {
             '${subscription.name}, ${subscription.currency.format(subscription.amount)} per ${subscription.cycle.label.toLowerCase()}, '
             '${subscription.guilt.label}. Opens detail.',
         child: SurfaceCard(
-          height: 56,
+          // Figma: SubRow is 44 px high with an 8 px gap (tile pitch 52).
+          height: 44,
           padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
           dashed: subscription.isGhost,
           onTap: onTap,
@@ -663,7 +678,9 @@ class _GhostCallout extends StatelessWidget {
     final label = whole ? percent.round().toString() : percent.toStringAsFixed(1);
 
     return SurfaceCard(
-      height: 60,
+      // Figma: Callout/Ghost is 56 px at 1x. It grows with the text scale so
+      // the two-line copy never clips at 130 %.
+      height: 56 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 34,
       padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
       tint: context.sb.warn,
       onTap: onTap,
@@ -687,9 +704,12 @@ class _GhostCallout extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   '$label% of your burn is ghost subs',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: SbType.caption.copyWith(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
@@ -699,6 +719,8 @@ class _GhostCallout extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '$count tools · $yearly/yr you do not use',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: SbType.micro.copyWith(
                     fontSize: 8,
                     color: context.sb.textMuted,

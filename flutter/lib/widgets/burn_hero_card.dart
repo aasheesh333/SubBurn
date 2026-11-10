@@ -125,29 +125,31 @@ class BurnHeroCard extends StatelessWidget {
                     ),
                   )
                 else
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          '$toolCount ${toolCount == 1 ? 'tool' : 'tools'} tracked · ',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: SbType.caption
-                              .copyWith(color: context.sb.textSecondary),
-                        ),
+                  // One flexible Text, not three: at 320 dp the separate runs
+                  // overflowed by 73 px because only the first could shrink.
+                  LayoutBuilder(
+                    builder: (context, constraints) => Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '$toolCount '
+                                '${toolCount == 1 ? 'tool' : 'tools'} tracked · ',
+                          ),
+                          TextSpan(
+                            text: currency.format(ghostAmount),
+                            style: SbType.micro.copyWith(
+                              fontSize: 9.5,
+                              color: context.sb.accentWarm,
+                            ),
+                          ),
+                          const TextSpan(text: ' is ghost spend'),
+                        ],
                       ),
-                      MoneyText(
-                        ghostAmount,
-                        style: SbType.micro.copyWith(fontSize: 9.5),
-                        color: context.sb.accentWarm,
-                        currency: currency,
-                      ),
-                      Text(
-                        ' is ghost spend',
-                        style: SbType.caption
-                            .copyWith(color: context.sb.textSecondary),
-                      ),
-                    ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: SbType.caption
+                          .copyWith(color: context.sb.textSecondary),
+                    ),
                   ),
                 // A 100 %-active bar over zero subscriptions is a claim, not a
                 // measurement, so the split only appears once it can be true.
@@ -158,18 +160,25 @@ class BurnHeroCard extends StatelessWidget {
                     ghostPercent: ghostPct,
                   ),
                   const SizedBox(height: SbSpace.x2),
+                  // Two legends that can each shrink; `Spacer` pushed them
+                  // past the card edge at 320 dp.
                   Row(
                     children: [
-                      _Legend(
-                        color: context.sb.accent,
-                        label: 'Active use',
-                        value: pct,
+                      Expanded(
+                        child: _Legend(
+                          color: context.sb.accent,
+                          label: 'Active use',
+                          value: pct,
+                        ),
                       ),
-                      const Spacer(),
-                      _Legend(
-                        color: context.sb.mutedDeco,
-                        label: 'Ghost subs',
-                        value: ghostPct,
+                      const SizedBox(width: SbSpace.x2),
+                      Expanded(
+                        child: _Legend(
+                          color: context.sb.mutedDeco,
+                          label: 'Ghost subs',
+                          value: ghostPct,
+                          alignEnd: true,
+                        ),
                       ),
                     ],
                   ),
@@ -297,15 +306,24 @@ class _SplitBar extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend({required this.color, required this.label, required this.value});
+  const _Legend({
+    required this.color,
+    required this.label,
+    required this.value,
+    this.alignEnd = false,
+  });
 
   final Color color;
   final String label;
   final String value;
 
+  /// Right-hand legend sits against the card edge.
+  final bool alignEnd;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final row = Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 5,
@@ -317,9 +335,14 @@ class _Legend extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 5),
-        Text(
-          label,
-          style: SbType.caption.copyWith(fontSize: 9.5, color: context.sb.textSecondary),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: SbType.caption
+                .copyWith(fontSize: 9.5, color: context.sb.textSecondary),
+          ),
         ),
         const SizedBox(width: 3),
         Text(
@@ -328,6 +351,7 @@ class _Legend extends StatelessWidget {
         ),
       ],
     );
+    return alignEnd ? Align(alignment: Alignment.centerRight, child: row) : row;
   }
 }
 

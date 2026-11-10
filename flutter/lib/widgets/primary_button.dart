@@ -34,7 +34,9 @@ class PrimaryButton extends StatelessWidget {
       child: Opacity(
         opacity: enabled ? 1 : 0.45,
         child: Material(
-          color: variant == ButtonVariant.primary ? Colors.transparent : context.sb.surface,
+          color: variant == ButtonVariant.primary
+              ? Colors.transparent
+              : context.sb.surface,
           borderRadius: BorderRadius.circular(SbRadius.button),
           child: InkWell(
             onTap: onPressed,
@@ -43,7 +45,8 @@ class PrimaryButton extends StatelessWidget {
               height: height,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(SbRadius.button),
-                gradient: variant == ButtonVariant.primary ? SbGradients.burn : null,
+                gradient:
+                    variant == ButtonVariant.primary ? SbGradients.burn : null,
                 border: variant == ButtonVariant.primary
                     ? null
                     : Border.all(
@@ -75,17 +78,21 @@ class PrimaryButton extends StatelessWidget {
                     ),
                     const SizedBox(width: SbSpace.x2),
                   ],
-                  Text(
-                    label,
-                    style: SbType.section.copyWith(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.015 * 13,
-                      color: switch (variant) {
-                        ButtonVariant.primary => context.sb.onAccent,
-                        ButtonVariant.danger => context.sb.danger,
-                        ButtonVariant.outline => context.sb.text,
-                      },
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: SbType.section.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.015 * 13,
+                        color: switch (variant) {
+                          ButtonVariant.primary => context.sb.onAccent,
+                          ButtonVariant.danger => context.sb.danger,
+                          ButtonVariant.outline => context.sb.text,
+                        },
+                      ),
                     ),
                   ),
                   if (trailing != null) ...[

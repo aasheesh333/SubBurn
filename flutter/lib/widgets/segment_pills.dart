@@ -127,19 +127,24 @@ class _Segment extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
               ],
-              Text(
-                label,
-                style: SbType.caption.copyWith(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.01 * 11,
-                  color: selected ? context.sb.text : context.sb.textMuted,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: SbType.caption.copyWith(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.01 * 11,
+                    color: selected ? context.sb.text : context.sb.textMuted,
+                  ),
                 ),
               ),
               if (trailing != null) ...[
                 const SizedBox(width: 5),
                 Text(
                   trailing!,
+                  maxLines: 1,
                   style: SbType.micro.copyWith(
                     fontSize: 8,
                     letterSpacing: 0.02,

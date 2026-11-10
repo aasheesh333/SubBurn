@@ -565,12 +565,18 @@ class _SpendCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              MoneyText(
-                lifetime,
-                style: SbType.moneyLg,
-                currency: currency,
-                semanticLabel:
-                    '${currency.format(lifetime)} spent since signup',
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.bottomLeft,
+                  child: MoneyText(
+                    lifetime,
+                    style: SbType.moneyLg,
+                    currency: currency,
+                    semanticLabel:
+                        '${currency.format(lifetime)} spent since signup',
+                  ),
+                ),
               ),
               const SizedBox(width: SbSpace.x2),
               Text(
@@ -739,31 +745,29 @@ class _CancelTimeline extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          'Keep ',
-                          style: SbType.body.copyWith(
-                            fontSize: 12,
-                            color: context.sb.textSecondary,
+                    // One flexible Text.rich instead of three peers: only the
+                    // first run in a Row can shrink, so the amount plus " / yr"
+                    // pushed the row past the card at 320 dp.
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: 'Keep '),
+                          TextSpan(
+                            text: currency.format(keep),
+                            style: SbType.moneyMd.copyWith(
+                              fontSize: 17,
+                              color: context.sb.safe,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        MoneyText(
-                          keep,
-                          style: SbType.moneyMd.copyWith(fontSize: 17),
-                          color: context.sb.safe,
-                          currency: currency,
-                        ),
-                        Text(
-                          ' / yr',
-                          style: SbType.caption.copyWith(
-                            color: context.sb.textSecondary,
-                          ),
-                        ),
-                      ],
+                          const TextSpan(text: ' / yr'),
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: SbType.body.copyWith(
+                        fontSize: 12,
+                        color: context.sb.textSecondary,
+                      ),
                     ),
                   ],
                 ),

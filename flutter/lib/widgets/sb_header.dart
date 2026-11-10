@@ -109,7 +109,16 @@ class SbHeader extends StatelessWidget {
             const Spacer(),
           if (trailing != null) ...[
             const Spacer(),
-            trailing!,
+            // Trailing chrome (badges, currency chip) may be wider than the
+            // remaining space at 320 dp with large text; it shrinks rather than
+            // overflowing the header.
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: trailing!,
+              ),
+            ),
           ],
         ],
       ),
