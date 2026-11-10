@@ -525,22 +525,24 @@ void main() {
           data: const MediaQueryData(
             size: Size(320, 640),
             textScaler: TextScaler.linear(1.3),
+            disableAnimations: true,
           ),
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
             theme: AppTheme.dark,
             home: Scaffold(
               backgroundColor: SbColors.bg,
-              body: BurnDashboardScreen(
-                onAddSubscription: () {},
-                      ),
+              body: BurnDashboardScreen(onAddSubscription: () {}),
             ),
           ),
         ),
       ),
     );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    // Staggered entrances delay the last row by index * 32 ms; pump past the
+    // whole window before capturing.
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 80));
+    }
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/07-dashboard-320.png'),

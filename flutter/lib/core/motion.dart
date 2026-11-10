@@ -32,10 +32,10 @@ abstract final class SbMotion {
   static const value = Duration(milliseconds: 520);
 
   /// Per-item delay in a list entrance.
-  static const stagger = Duration(milliseconds: 45);
+  static const stagger = Duration(milliseconds: 32);
 
   /// Longest list entrance is capped so a 40-row list does not crawl.
-  static const maxStaggerIndex = 8;
+  static const maxStaggerIndex = 5;
 
   static const curve = Curves.easeOutCubic;
   static const curveIn = Curves.easeInCubic;
