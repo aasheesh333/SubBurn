@@ -98,7 +98,7 @@ class _HomeShellState extends ConsumerState<HomeShell>
                 ViralReceiptScreen(
                   onAddSubscription: _openQuickAdd,
                 ),
-                const RenewalsScreen(),
+                RenewalsScreen(onAddSubscription: _openQuickAdd),
                 const ControlsScreen(),
               ],
             ),

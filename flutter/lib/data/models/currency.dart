@@ -19,15 +19,21 @@ enum CurrencyCode {
       };
 
   /// Indian grouping for INR (`₹1,24,000`), western grouping for USD.
-  String format(num amount, {bool compact = false}) {
-    final whole = amount.round();
-    if (compact && whole >= 100000) {
-      final lakhs = whole / 100000;
-      return '$symbol${lakhs.toStringAsFixed(lakhs >= 10 ? 0 : 1)}L';
-    }
-    final digits = NumberFormat.decimalPattern(
-      this == CurrencyCode.inr ? 'en_IN' : 'en_US',
-    ).format(whole);
+  ///
+  /// **Decimals are preserved.** This used to round every amount to a whole
+  /// unit, so a $9.99 subscription was stored correctly and then displayed as
+  /// $10 everywhere — dashboard, rows, receipt total, detail. For a money app
+  /// that is a wrong number, not a formatting choice.
+  ///
+  /// Whole amounts stay whole (`₹1,660`, not `₹1,660.00`), which keeps the
+  /// design's mono figures clean.
+  String format(num amount) {
+    final pattern = this == CurrencyCode.inr ? 'en_IN' : 'en_US';
+    final isWhole = amount == amount.roundToDouble();
+    final digits = NumberFormat.decimalPatternDigits(
+      locale: pattern,
+      decimalDigits: isWhole ? 0 : 2,
+    ).format(amount);
     return '$symbol$digits';
   }
 

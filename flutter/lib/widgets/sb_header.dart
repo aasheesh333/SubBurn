@@ -76,13 +76,20 @@ class SbHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: SbSpace.x2),
-            Text(
-              'SUBBURN',
-              style: SbType.section.copyWith(
-                letterSpacing: 0.15 * 13,
-                fontWeight: FontWeight.w800,
+            // Flexible, not fixed: at 130 % text the wordmark plus the trailing
+            // chip is wider than a 320 dp header.
+            Flexible(
+              child: Text(
+                'SUBBURN',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: SbType.section.copyWith(
+                  letterSpacing: 0.15 * 13,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
+            if (trailing != null) const Spacer(),
           ] else if (title.isNotEmpty)
             Expanded(
               child: Column(
@@ -112,11 +119,12 @@ class SbHeader extends StatelessWidget {
           else
             const Spacer(),
           if (trailing != null) ...[
-            const Spacer(),
-            // Trailing chrome (badges, currency chip) may be wider than the
-            // remaining space at 320 dp with large text; it shrinks rather than
-            // overflowing the header.
+            const SizedBox(width: SbSpace.x2),
+            // Trailing chrome (badges, currency chip) is allowed to shrink a
+            // little rather than stealing the whole title column — before this
+            // a "v1.0.0 (1)" chip pushed the subtitle to "no account…".
             Flexible(
+              flex: 0,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerRight,

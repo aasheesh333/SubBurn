@@ -89,10 +89,10 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
                   showLogo: true,
                   trailing: _CurrencyChip(
                     currency: settings.displayCurrency,
-                  onToggleCurrency: () {
-                    final next = settings.displayCurrency == CurrencyCode.inr
-                        ? CurrencyCode.usd
-                        : CurrencyCode.inr;
+                    onToggleCurrency: () {
+                      final next = settings.displayCurrency == CurrencyCode.inr
+                          ? CurrencyCode.usd
+                          : CurrencyCode.inr;
                       ref.read(settingsProvider.notifier).setCurrency(next);
                     },
                   ),
@@ -184,11 +184,11 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
                     return SbEntrance(
                       index: index,
                       child: _SubscriptionRow(
-                      key: ValueKey(sub.id),
-                      subscription: sub,
-                      currency: settings.displayCurrency,
-                      inrPerUsd: ref.watch(ratesProvider).inrPerUsd,
-                      onTap: () => _openDetail(sub),
+                        key: ValueKey(sub.id),
+                        subscription: sub,
+                        currency: settings.displayCurrency,
+                        inrPerUsd: ref.watch(ratesProvider).inrPerUsd,
+                        onTap: () => _openDetail(sub),
                         onDelete: () => _delete(context, ref, sub),
                       ),
                     );
@@ -409,7 +409,8 @@ class _RenewingRail extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Nothing renews in the next ${SbWindow.renewingHours} hours.',
-                  style: SbType.caption.copyWith(color: context.sb.textSecondary),
+                  style:
+                      SbType.caption.copyWith(color: context.sb.textSecondary),
                 ),
               ),
             ],
@@ -493,10 +494,10 @@ class _RenewalCard extends StatelessWidget {
                 ToolTile(
                   mark: subscription.monogram,
                   icon: BrandIcons.resolve(
-                  presetId: subscription.presetId,
-                  name: subscription.name,
-                  category: subscription.category,
-                ),
+                    presetId: subscription.presetId,
+                    name: subscription.name,
+                    category: subscription.category,
+                  ),
                   platform: subscription.name,
                   brandColor: Color(subscription.brandColor),
                   size: 28,
@@ -602,77 +603,95 @@ class _SubscriptionRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
           dashed: subscription.isGhost,
           onTap: onTap,
-          child: Row(
-            children: [
-              Opacity(
-                opacity: subscription.isGhost ? 0.62 : 1,
-                child: ToolTile(
-                  mark: subscription.monogram,
-                  icon: BrandIcons.resolve(
-                  presetId: subscription.presetId,
-                  name: subscription.name,
-                  category: subscription.category,
-                ),
-                  platform: subscription.name,
-                  brandColor: Color(subscription.brandColor),
-                  size: 30,
-                ),
-              ),
-              const SizedBox(width: SbSpace.x2 + 2),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      subscription.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: SbType.body.copyWith(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: context.sb.text,
-                      ),
+          child: LayoutBuilder(
+            builder: (context, constraints) => Row(
+              children: [
+                Opacity(
+                  opacity: subscription.isGhost ? 0.62 : 1,
+                  child: ToolTile(
+                    mark: subscription.monogram,
+                    icon: BrandIcons.resolve(
+                      presetId: subscription.presetId,
+                      name: subscription.name,
+                      category: subscription.category,
                     ),
-                    Text(
-                      subscription.vendor.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: SbType.micro.copyWith(
-                        fontSize: 7.5,
-                        color: context.sb.textMuted,
-                        letterSpacing: 0.04,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: SbSpace.x2),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  MoneyText(
-                    subscription.monthlyIn(currency, inrPerUsd),
-                    style: SbType.moneySm.copyWith(fontSize: 12.5),
-                    color: context.sb.text,
-                    currency: currency,
+                    platform: subscription.name,
+                    brandColor: Color(subscription.brandColor),
+                    size: 30,
                   ),
-                  Text(
-                    subscription.isGhost ? 'GHOST' : 'DAILY USE',
-                    style: SbType.micro.copyWith(
-                      fontSize: 7.5,
-                      letterSpacing: 0.06,
-                      color: subscription.isGhost
-                          ? context.sb.warn
-                          : context.sb.safe,
+                ),
+                const SizedBox(width: SbSpace.x2 + 2),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        subscription.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: SbType.body.copyWith(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: context.sb.text,
+                        ),
+                      ),
+                      Text(
+                        subscription.vendor.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: SbType.micro.copyWith(
+                          fontSize: 7.5,
+                          color: context.sb.textMuted,
+                          letterSpacing: 0.04,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: SbSpace.x2),
+                // The price + flag column has an intrinsic width; at 200 % text it
+                // was wider than the space left after the tile and the name. It
+                // scales down inside its own box instead of pushing the row apart.
+                // Capped to a share of the row instead of Flexible(flex: 0):
+                // a flex-0 child gets no allocation once Expanded has claimed the
+                // remainder, so at 200 % the price overflowed by 7.8 px. This
+                // reserves real space and the FittedBox scales inside it.
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth * 0.42,
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        MoneyText(
+                          subscription.monthlyIn(currency, inrPerUsd),
+                          style: SbType.moneySm.copyWith(fontSize: 12.5),
+                          color: context.sb.text,
+                          currency: currency,
+                        ),
+                        Text(
+                          subscription.isGhost ? 'GHOST' : 'DAILY USE',
+                          style: SbType.micro.copyWith(
+                            fontSize: 7.5,
+                            letterSpacing: 0.06,
+                            color: subscription.isGhost
+                                ? context.sb.warn
+                                : context.sb.safe,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -700,7 +719,8 @@ class _GhostCallout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final whole = (percent - percent.roundToDouble()).abs() < 0.05;
-    final label = whole ? percent.round().toString() : percent.toStringAsFixed(1);
+    final label =
+        whole ? percent.round().toString() : percent.toStringAsFixed(1);
 
     return SurfaceCard(
       // Figma: Callout/Ghost is 56 px at 1x. It grows with the text scale so
@@ -764,9 +784,7 @@ class _GhostCallout extends StatelessWidget {
             ),
           ),
           Icon(
-            active
-                ? Icons.filter_alt_off_rounded
-                : Icons.chevron_right_rounded,
+            active ? Icons.filter_alt_off_rounded : Icons.chevron_right_rounded,
             size: 14,
             color: context.sb.warn,
           ),

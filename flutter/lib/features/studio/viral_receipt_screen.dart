@@ -57,7 +57,7 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
           children: [
             SbHeader(
               title: 'Card studio',
-              subtitle: 'One isolated frame · 1080 × 1920',
+              subtitle: '1080 × 1920 export',
               onBack: () => Navigator.of(context).maybePop(),
               trailing: const StatusBadge('9:16'),
             ),

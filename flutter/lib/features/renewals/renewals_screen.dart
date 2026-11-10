@@ -10,6 +10,7 @@ import '../../data/models/currency.dart';
 import '../../data/models/subscription.dart';
 import '../../state/providers.dart';
 import '../../widgets/money_text.dart';
+import '../../widgets/primary_button.dart';
 import '../../widgets/sb_header.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/surface_card.dart';
@@ -22,7 +23,10 @@ import '../detail/sub_detail_screen.dart';
 /// charge too, but this view answers "what hits my card this month" with dates
 /// and amounts, and nothing else.
 class RenewalsScreen extends ConsumerWidget {
-  const RenewalsScreen({super.key});
+  const RenewalsScreen({super.key, this.onAddSubscription});
+
+  /// Provided by the shell so the empty state is not a dead end.
+  final VoidCallback? onAddSubscription;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,94 +45,153 @@ class RenewalsScreen extends ConsumerWidget {
 
     return SafeArea(
       bottom: false,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          SbSpace.page,
-          SbSpace.x2,
-          SbSpace.page,
-          96,
-        ),
-        children: [
-          SbHeader(
-            title: 'Renewals',
-            subtitle: 'Every charge on the horizon',
-            trailing: StatusBadge('$thisMonth THIS MONTH'),
+      child: RefreshIndicator(
+        color: context.sb.accent,
+        backgroundColor: context.sb.surfaceHi,
+        onRefresh: () async {
+          ref.read(subscriptionsProvider.notifier).refresh();
+          await ref.read(subscriptionsProvider.notifier).rescheduleAll();
+          ref.invalidate(reminderHealthProvider);
+        },
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(
+            SbSpace.page,
+            SbSpace.x2,
+            SbSpace.page,
+            96,
           ),
-          const SizedBox(height: SbSpace.x4),
-          // Neutral surface: the green icon and switch carry the state. A full
-          // green panel here fought the amber countdowns directly below it.
-          SurfaceCard(
-            child: Row(
-              children: [
-                Icon(
-                  remindersOn
-                      ? Icons.notifications_active_outlined
-                      : Icons.notifications_off_outlined,
-                  size: 16,
-                  color: remindersOn ? context.sb.safe : context.sb.warn,
-                ),
-                const SizedBox(width: SbSpace.x2),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        remindersOn
-                            ? 'Reminders are on'
-                            : 'Reminders are off',
-                        style: SbType.body.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: context.sb.text,
-                        ),
-                      ),
-                      Text(
-                        '48 hours and 24 hours before every charge.',
-                        style: SbType.micro.copyWith(
-                          fontSize: 8,
-                          color: context.sb.textMuted,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch.adaptive(
-                  value: remindersOn,
-                  onChanged: (value) =>
-                      ref.read(settingsProvider.notifier).setNotifications(value),
-                ),
-              ],
+          children: [
+            SbHeader(
+              title: 'Renewals',
+              subtitle: 'Upcoming charges',
+              trailing: StatusBadge('$thisMonth THIS MONTH'),
             ),
-          ),
-          const SizedBox(height: SbSpace.x4),
-          if (ordered.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: SbSpace.x8),
-              child: Column(
+            const SizedBox(height: SbSpace.x4),
+            // Neutral surface: the green icon and switch carry the state. A full
+            // green panel here fought the amber countdowns directly below it.
+            SurfaceCard(
+              child: Row(
                 children: [
                   Icon(
-                    Icons.event_available_rounded,
-                    size: 28,
-                    color: context.sb.textMuted,
+                    remindersOn
+                        ? Icons.notifications_active_outlined
+                        : Icons.notifications_off_outlined,
+                    size: 16,
+                    color: remindersOn ? context.sb.safe : context.sb.warn,
                   ),
-                  const SizedBox(height: SbSpace.x2),
-                  Text(
-                    'No renewals to worry about.',
-                    style: SbType.body.copyWith(color: context.sb.textSecondary),
+                  const SizedBox(width: SbSpace.x2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          remindersOn
+                              ? 'Reminders are on'
+                              : 'Reminders are off',
+                          style: SbType.body.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: context.sb.text,
+                          ),
+                        ),
+                        Text(
+                          '48 hours and 24 hours before every charge.',
+                          style: SbType.micro.copyWith(
+                            fontSize: 8,
+                            color: context.sb.textMuted,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: remindersOn,
+                    onChanged: (value) async {
+                      // setNotifications returns whether reminders are actually
+                      // deliverable. Discarding it here meant Android could block
+                      // the permission and the switch would just flip back with
+                      // no explanation (Controls already handled this).
+                      final ok = await ref
+                          .read(settingsProvider.notifier)
+                          .setNotifications(value);
+                      if (!context.mounted) return;
+                      if (value && !ok) {
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Android is blocking notifications. Allow SubBurn '
+                                'in system settings, then turn this on again.',
+                              ),
+                            ),
+                          );
+                      } else if (value) {
+                        await ref
+                            .read(subscriptionsProvider.notifier)
+                            .rescheduleAll();
+                      }
+                    },
                   ),
                 ],
               ),
-            )
-          else
-            for (final sub in ordered) ...[
-              _RenewalRow(
-                subscription: sub,
-                currency: settings.displayCurrency,
-                inrPerUsd: rates.inrPerUsd,
-              ),
-              const SizedBox(height: SbSpace.x2),
-            ],
-        ],
+            ),
+            const SizedBox(height: SbSpace.x4),
+            if (ordered.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: SbSpace.x8),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.event_available_rounded,
+                      size: 28,
+                      color: context.sb.textMuted,
+                    ),
+                    const SizedBox(height: SbSpace.x2),
+                    Text(
+                      'No renewals to worry about.',
+                      style:
+                          SbType.body.copyWith(color: context.sb.textSecondary),
+                    ),
+                    const SizedBox(height: SbSpace.x1),
+                    Text(
+                      ordered.isEmpty && subs.isEmpty
+                          ? 'Add a subscription and its charges appear here.'
+                          : 'Nothing is due yet. Charges show up as they approach.',
+                      textAlign: TextAlign.center,
+                      style: SbType.micro.copyWith(
+                        fontSize: 8.5,
+                        color: context.sb.textMuted,
+                        letterSpacing: 0,
+                        height: 1.5,
+                      ),
+                    ),
+                    if (subs.isEmpty && onAddSubscription != null) ...[
+                      const SizedBox(height: SbSpace.x4),
+                      SizedBox(
+                        width: double.infinity,
+                        child: PrimaryButton(
+                          label: 'Add a subscription',
+                          icon: Icons.add_rounded,
+                          onPressed: onAddSubscription,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              )
+            else
+              for (final sub in ordered) ...[
+                _RenewalRow(
+                  subscription: sub,
+                  currency: settings.displayCurrency,
+                  inrPerUsd: rates.inrPerUsd,
+                ),
+                const SizedBox(height: SbSpace.x2),
+              ],
+          ],
+        ),
       ),
     );
   }
@@ -165,10 +228,10 @@ class _RenewalRow extends StatelessWidget {
           ToolTile(
             mark: subscription.monogram,
             icon: BrandIcons.resolve(
-                  presetId: subscription.presetId,
-                  name: subscription.name,
-                  category: subscription.category,
-                ),
+              presetId: subscription.presetId,
+              name: subscription.name,
+              category: subscription.category,
+            ),
             platform: subscription.name,
             brandColor: Color(subscription.brandColor),
             size: 32,

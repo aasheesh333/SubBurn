@@ -68,7 +68,7 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
         children: [
           SbHeader(
             title: 'Controls',
-            subtitle: 'Local-first · no account, no sync',
+            subtitle: 'Local-first settings',
             trailing: StatusBadge(_version.isEmpty ? 'LOCAL' : 'v$_version'),
           ),
           const SizedBox(height: SbSpace.x4),

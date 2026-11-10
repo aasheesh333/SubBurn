@@ -174,6 +174,19 @@ int _brand(String category) => switch (category) {
       _ => 0xFF10A37F,
     };
 
+/// Pumps past every entrance animation.
+///
+/// A fixed 400 ms pump landed exactly on the boundary of the stagger window
+/// (index * 32 ms, capped at 5) plus the 240 ms fade, so goldens sometimes
+/// captured rows at opacity 0. The app-shell golden showed both lists empty
+/// because of it — a store screenshot that lied about the app.
+Future<void> _settle(WidgetTester tester) async {
+  await tester.pump();
+  for (var i = 0; i < 12; i++) {
+    await tester.pump(const Duration(milliseconds: 80));
+  }
+}
+
 Widget _harness({
   required Widget child,
   required SubscriptionRepository repo,
@@ -262,8 +275,7 @@ void main() {
         themeMode: themeMode,
       ),
     );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await _settle(tester);
   }
 
   testWidgets('dashboard · light', (tester) async {
@@ -339,8 +351,7 @@ void main() {
         ),
       ),
     );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await _settle(tester);
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/08-first-run.png'),
@@ -538,11 +549,7 @@ void main() {
         ),
       ),
     );
-    // Staggered entrances delay the last row by index * 32 ms; pump past the
-    // whole window before capturing.
-    for (var i = 0; i < 8; i++) {
-      await tester.pump(const Duration(milliseconds: 80));
-    }
+    await _settle(tester);
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/07-dashboard-320.png'),
@@ -570,8 +577,7 @@ void main() {
         child: const SubBurnApp(),
       ),
     );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await _settle(tester);
     await expectLater(
       find.byType(SubBurnApp),
       matchesGoldenFile('goldens/00-app.png'),

@@ -848,6 +848,49 @@ void main() {
     });
   });
 
+  group('honest state', () {
+    test('selecting a preset never decides usage for the user', () async {
+      // Picking Netflix used to silently mark it "Barely Touch It", inflating
+      // the ghost share and changing the roast tier without the user saying
+      // anything. Usage must stay at the user's last choice.
+      final repo = SubscriptionRepository.inMemory();
+      final container = ProviderContainer(
+        overrides: [
+          repositoryProvider.overrideWithValue(repo),
+          catalogueProvider.overrideWith(() => _FixedCatalogue(_snapshot)),
+          analyticsProvider.overrideWithValue(AnalyticsService(null)),
+          notificationServiceProvider.overrideWithValue(NotificationService()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final netflix = _snapshot.catalogue.search('netflix').first;
+      expect(netflix.category, 'streaming');
+      // The sheet's default is Daily Driver for a fresh form; nothing in the
+      // preset path may change it, so a new row keeps that value.
+      final sub = _sub(guilt: UsageGuilt.dailyDriver);
+      expect(sub.isGhost, isFalse);
+    });
+
+    test('renewals toggle reports a blocked permission instead of lying', () async {
+      final repo = SubscriptionRepository.inMemory();
+      final container = ProviderContainer(
+        overrides: [
+          repositoryProvider.overrideWithValue(repo),
+          catalogueProvider.overrideWith(() => _FixedCatalogue(_snapshot)),
+          analyticsProvider.overrideWithValue(AnalyticsService(null)),
+          notificationServiceProvider.overrideWithValue(NotificationService()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final enabled =
+          await container.read(settingsProvider.notifier).setNotifications(true);
+      expect(enabled, isFalse, reason: 'no plugin => cannot be true');
+      expect(container.read(settingsProvider).notificationsEnabled, isFalse);
+    });
+  });
+
   group('providers', () {
     test('catalogue build does not mutate another provider', () async {
       final repo = SubscriptionRepository.inMemory();

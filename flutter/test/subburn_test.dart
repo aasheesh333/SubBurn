@@ -85,6 +85,16 @@ void main() {
       expect(CurrencyCode.inr.format(12345678), '₹1,23,45,678');
     });
 
+    test('preserves decimals instead of rounding money away', () {
+      // A $9.99 subscription was stored correctly and displayed as $10 on every
+      // screen, which is a wrong number in a money app.
+      expect(CurrencyCode.usd.format(9.99), r'$9.99');
+      expect(CurrencyCode.usd.format(12.5), r'$12.50');
+      expect(CurrencyCode.usd.format(1660), r'$1,660');
+      expect(CurrencyCode.inr.format(0.5), '₹0.50');
+      expect(CurrencyCode.usd.format(1234.567), r'$1,234.57');
+    });
+
     test('parses typed prices', () {
       expect(parseAmount('1,660'), 1660);
       expect(parseAmount('₹ 415'), 415);

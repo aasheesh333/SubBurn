@@ -51,7 +51,9 @@ class QuickAddSheet extends ConsumerStatefulWidget {
 class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
   final _queryController = TextEditingController();
   final _nameController = TextEditingController();
-  final _priceController = TextEditingController(text: '0');
+  // Empty, not '0': a pre-filled zero looked like a real price and the CTA
+  // chip read as a broken dash.
+  final _priceController = TextEditingController();
   final _searchFocus = FocusNode();
 
   PresetTool? _preset;
@@ -95,11 +97,10 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
       _cycle = preset.cycle;
       _currency = preset.currency;
       _priceController.text = formatPlainAmount(preset.defaultPrice);
-      _guilt = (preset.category == 'streaming' ||
-              preset.category == 'social' ||
-              preset.category == 'reading')
-          ? UsageGuilt.barelyTouch
-          : UsageGuilt.dailyDriver;
+      // Deliberately do NOT infer usage from the category. Picking Netflix
+      // used to silently mark it "Barely Touch It", which inflated the ghost
+      // percentage and changed the roast tier without the user saying anything.
+      // Usage is a judgement only the user can make.
     });
   }
 
@@ -107,7 +108,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
     setState(() {
       _preset = null;
       _nameController.clear();
-      _priceController.text = '0';
+      _priceController.clear();
       _guilt = UsageGuilt.dailyDriver;
     });
   }
@@ -601,9 +602,11 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
         BillingCycle.yearly => 'year',
       };
 
-  String _priceTrailing() {
+  /// The live price chip on the CTA. Null while the price is not meaningful,
+  /// so the button shows just its label instead of a placeholder dash.
+  String? _priceTrailing() {
     final amount = parseAmount(_priceController.text);
-    if (amount == null || amount <= 0) return '—';
+    if (amount == null || amount <= 0) return null;
     final monthly = _cycle == BillingCycle.yearly
         ? amount / 12
         : amount * _cycle.monthlyFactor;
