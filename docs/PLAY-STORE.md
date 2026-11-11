@@ -76,10 +76,12 @@ much of it do I actually use?
 • A 9:16 year-end receipt with a deterministic roast, exported at 1080 × 1920
 
 Local-first by design: your subscriptions are stored on your phone. There is no
-account, no cloud database, and the app never uploads your ledger. No ads.
-No tracking beyond anonymous crash reports and two product events.
+account, no cloud database, and the app never uploads your ledger. One banner
+above the navigation bar and an optional rewarded video are the only ads, and
+nothing is gated behind them. No tracking beyond anonymous crash reports and a
+few bucketed product events.
 
-Dark mode only. Made for people with too many tabs.
+Light and dark, following the device. Made for people with too many tabs.
 ```
 
 ### Graphics checklist

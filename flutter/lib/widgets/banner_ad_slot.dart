@@ -16,9 +16,11 @@ import '../services/ads_service.dart';
 ///   own refresh cycle ("reload, but on time").
 /// * **Always at the bottom** — same position and height on every screen,
 ///   above the tab bar, never over content or a tap target.
-/// * **No layout jump per screen** — height is reserved once, when the first
-///   real ad fills, and then stays constant everywhere. A failed fill keeps
-///   rendering nothing rather than an empty grey band.
+/// * **Small** — the standard anchored-adaptive size (~50 dp), not the large
+///   ~100 dp variant: a banner should be a strip, not a second screen.
+///   Height is reserved once, when the first real ad fills, and then stays
+///   constant everywhere. A failed fill keeps rendering nothing rather than
+///   an empty grey band.
 ///
 /// Debug builds always request Google's test unit, never the live one.
 class BannerAdSlot extends ConsumerStatefulWidget {
@@ -51,9 +53,15 @@ class _BannerAdSlotState extends ConsumerState<BannerAdSlot> {
     if (!AdsBootstrap.isInitialised) await AdsBootstrap.initialise();
     if (!AdsBootstrap.isInitialised || !mounted) return;
 
-    // Anchored adaptive (v9 API): full-width, Google-optimised height, and a
-    // higher-earning format than the legacy fixed 320×50 banner.
-    final size = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(widthDp);
+    // Standard anchored adaptive (~50 dp on phones), NOT the "large" variant:
+    // large anchored adaptive takes ~100 dp of chrome, far too much of a
+    // utility app's screen. google_mobile_ads 9.2.0 only offers the standard
+    // size through this (nominally deprecated) call — its suggested
+    // replacement is the large one — so the lint is silenced deliberately.
+    const anchoredAdaptive =
+        // ignore: deprecated_member_use
+        AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize;
+    final size = await anchoredAdaptive(widthDp);
     if (!mounted) return;
 
     final ad = BannerAd(
