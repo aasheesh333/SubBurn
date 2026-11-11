@@ -633,14 +633,15 @@ void main() {
     });
 
     test('the -17% chip applies on every path into yearly', () {
-      // monthly -> yearly
+      // monthly -> yearly. Cents are preserved: whole-unit rounding used to
+      // turn $9.99/mo plans into $10/mo when the pill was toggled.
       final fromMonthly = CycleConversion.convert(
         amount: 1660,
         from: BillingCycle.monthly,
         to: BillingCycle.yearly,
         discountApplied: false,
       );
-      expect(fromMonthly.amount, 16534);
+      expect(fromMonthly.amount, closeTo(16533.6, 0.001));
       expect(fromMonthly.discountApplied, isTrue);
 
       // weekly -> yearly: the path that silently skipped the discount before.
@@ -650,7 +651,7 @@ void main() {
         to: BillingCycle.yearly,
         discountApplied: false,
       );
-      expect(fromWeekly.amount, 4316);
+      expect(fromWeekly.amount, closeTo(4316, 0.001));
       expect(fromWeekly.discountApplied, isTrue);
     });
 
@@ -689,14 +690,15 @@ void main() {
         to: BillingCycle.monthly,
         discountApplied: false,
       );
-      expect(monthly.amount, 433);
+      // 100 × 52/12 = 433.33 — cents survive the conversion now.
+      expect(monthly.amount, closeTo(433.33, 0.001));
       final weekly = CycleConversion.convert(
         amount: monthly.amount,
         from: BillingCycle.monthly,
         to: BillingCycle.weekly,
         discountApplied: false,
       );
-      expect(weekly.amount, closeTo(100, 1));
+      expect(weekly.amount, closeTo(100, 0.02));
     });
   });
 

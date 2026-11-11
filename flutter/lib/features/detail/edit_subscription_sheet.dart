@@ -50,6 +50,15 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
   late UsageGuilt _guilt;
   bool _saving = false;
 
+  /// Inline error. SnackBars from a modal sheet render on the page's Scaffold
+  /// — *below* the sheet — so the user never saw them. Errors live in the
+  /// sheet's own pinned bar instead.
+  String? _error;
+
+  /// Same sanity ceiling as Quick Add; a pasted 310-digit number parses to
+  /// Infinity and used to crash this sheet's initState on the next open.
+  static const double _maxAmount = 1000000000; // 1e9
+
   @override
   void initState() {
     super.initState();
@@ -87,31 +96,50 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
+    final s = widget.subscription;
     final name = _name.text.trim();
-    final amount = parseAmount(_price.text) ?? 0;
-    if (name.isEmpty || amount <= 0) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              name.isEmpty ? 'Give it a name.' : 'Enter the real charge.',
-            ),
-          ),
-        );
+    final amount = parseAmount(_price.text);
+    if (name.isEmpty || amount == null || amount <= 0 || !amount.isFinite) {
+      setState(() {
+        _error = name.isEmpty ? 'Give it a name.' : 'Enter the real charge.';
+      });
+      return;
+    }
+    if (amount > _maxAmount) {
+      setState(() => _error = 'That price looks too large — check the amount.');
       return;
     }
 
-    setState(() => _saving = true);
-    final s = widget.subscription;
+    // Quick Add warns about duplicates; renaming onto an existing row used to
+    // slip past that guard and silently double-count the burn.
+    final clash = ref
+        .read(subscriptionsProvider)
+        .where(
+          (o) => o.id != s.id && o.name.toLowerCase() == name.toLowerCase(),
+        )
+        .toList();
+    if (clash.isNotEmpty) {
+      final proceed = await _confirmDuplicate(name);
+      if (proceed != true) return;
+    }
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     // A cycle change re-anchors the next charge. Without this the row said
     // "yearly" while its reminders still fired on the old monthly date.
     final nextCharge = _cycle == s.cycle
         ? s.nextBillingDate
         : _cycle.nextAfter(s.startDate);
 
+    // A rename must carry the identity with it: the old monogram ("N" for
+    // Netflix) used to survive a rename to Hulu.
+    final renamed = name.toLowerCase() != s.name.toLowerCase();
     final updated = s.copyWith(
       name: name,
+      monogram: renamed ? monogramFor(name) : s.monogram,
       amount: amount,
       currency: _currency,
       cycle: _cycle,
@@ -120,11 +148,50 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
       brandColor: s.brandColor,
     );
 
-    await ref.read(subscriptionsProvider.notifier).update(updated);
+    try {
+      await ref.read(subscriptionsProvider.notifier).update(updated);
+    } catch (error) {
+      // Release the latch on failure: the CTA used to stay at "Saving…"
+      // forever with no message, a dead end.
+      debugPrint('Edit save failed: $error');
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = 'Could not save. Please try again.';
+        });
+      }
+      return;
+    }
 
     if (!mounted) return;
     HapticFeedback.selectionClick();
     Navigator.of(context).pop(true);
+  }
+
+  /// Asks before renaming onto a row that already exists.
+  Future<bool?> _confirmDuplicate(String name) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.sb.surfaceHi,
+        title: Text('Already tracking $name', style: SbType.h3),
+        content: Text(
+          'Another subscription is already named $name. Saving counts both — '
+          'useful for two separate plans, wrong if this is a duplicate.',
+          style: SbType.body.copyWith(color: context.sb.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('SAVE ANYWAY'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -220,12 +287,16 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
                       child: TextField(
                         controller: _name,
                         textCapitalization: TextCapitalization.words,
+                        maxLength: 60,
                         style: SbType.body.copyWith(
                           fontSize: 13,
                           color: context.sb.text,
                         ),
-                        decoration: const InputDecoration(hintText: 'Name'),
-                        onChanged: (_) => setState(() {}),
+                        decoration: const InputDecoration(
+                          hintText: 'Name',
+                          counterText: '',
+                        ),
+                        onChanged: (_) => setState(() => _error = null),
                       ),
                     ),
                     const SizedBox(height: SbSpace.x3),
@@ -237,13 +308,16 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
                             value: _currency,
                             onChanged: (next) {
                               if (next == _currency) return;
-                              final current = parseAmount(_price.text) ?? 0;
+                              final parsed = parseAmount(_price.text);
                               final rate = ref.read(ratesProvider).inrPerUsd;
-                              final converted = next == CurrencyCode.usd
-                                  ? current / rate
-                                  : current * rate;
                               setState(() {
                                 _currency = next;
+                                // An empty field stays empty — converting
+                                // "nothing" injected a fake pre-filled 0.
+                                if (parsed == null) return;
+                                final converted = next == CurrencyCode.usd
+                                    ? parsed / rate
+                                    : parsed * rate;
                                 _price.text = next == CurrencyCode.usd
                                     ? converted.toStringAsFixed(
                                         converted >= 100 ? 0 : 2,
@@ -272,7 +346,7 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
                                 color: context.sb.text,
                               ),
                               decoration: const InputDecoration(hintText: '0'),
-                              onChanged: (_) => setState(() {}),
+                              onChanged: (_) => setState(() => _error = null),
                             ),
                           ),
                         ],
@@ -310,18 +384,59 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
                         height: 1.5,
                       ),
                     ),
-                    const SizedBox(height: SbSpace.x4),
-                    SizedBox(
-                      width: double.infinity,
-                      child: PrimaryButton(
-                        label: _saving ? 'Saving…' : 'Save changes',
-                        icon: _saving ? null : Icons.check_rounded,
-                        trailing: _monthlyTrailing(),
-                        onPressed: _saving ? null : _save,
-                      ),
-                    ),
                   ],
                 ),
+              ),
+            ),
+            // Pinned action bar — mirrors Quick Add. Inside the scroll view the
+            // Save button slid under the keyboard on short screens, so saving
+            // an edit required scrolling past the fields first.
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                SbSpace.page,
+                SbSpace.x3,
+                SbSpace.page,
+                SbSpace.x3,
+              ),
+              decoration: BoxDecoration(
+                color: context.sb.surface,
+                border: Border(top: BorderSide(color: context.sb.border)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: SbSpace.x2),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            size: 14,
+                            color: context.sb.danger,
+                          ),
+                          const SizedBox(width: SbSpace.x1),
+                          Expanded(
+                            child: Text(
+                              _error!,
+                              style: SbType.caption.copyWith(
+                                color: context.sb.danger,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: PrimaryButton(
+                      label: _saving ? 'Saving…' : 'Save changes',
+                      icon: _saving ? null : Icons.check_rounded,
+                      trailing: _monthlyTrailing(),
+                      onPressed: _saving ? null : _save,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

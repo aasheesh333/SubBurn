@@ -68,9 +68,14 @@ class FirebaseRuntime {
       // Do NOT request permission here. Three services asking at boot (FCM,
       // OneSignal, local notifications) is a first-run wall of dialogs, and
       // this one is only needed for broadcast topics, which can be subscribed
-      // without it.
+      // without it. Fire-and-forget: a slow topic subscribe used to gate the
+      // first frame, and push is never a startup dependency.
       final messaging = FirebaseMessaging.instance;
-      await messaging.subscribeToTopic('subburn_global');
+      unawaited(
+        messaging.subscribeToTopic('subburn_global').catchError((Object error) {
+          debugPrint('Topic subscribe skipped: $error');
+        }),
+      );
       FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
 
       return FirebaseRuntime(

@@ -63,6 +63,11 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
   String _query = '';
   bool _saving = false;
 
+  /// Inline validation/save error. A SnackBar is invisible from inside a modal
+  /// sheet — it renders on the page's Scaffold, *below* the sheet — so errors
+  /// are shown inside the sheet's own pinned action bar instead.
+  String? _error;
+
   late DateTime _startDate = SbClock.now();
   late DateTime _nextDate = _cycle.nextAfter(_startDate);
   bool _nextDateEdited = false;
@@ -71,6 +76,17 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
   /// number the user typed. Makes the Yearly toggle reversible: switching back
   /// to monthly divides by the same factor instead of compounding the discount.
   bool _yearlyDiscountApplied = false;
+
+  /// The yearly price as the vendor actually charges it, when the user typed it
+  /// (or a yearly preset supplied it). Toggling Yearly → Monthly → Yearly
+  /// restores this exact number instead of inventing a fresh 17 % discount on
+  /// money that was never discounted.
+  double? _nativeYearlyAmount;
+
+  /// Sanity ceiling for one charge. A paste of 310+ digits parses to Infinity,
+  /// which used to crash the edit sheet (`Infinity.round()`); absurd-but-finite
+  /// values are rejected too so no ledger total can become meaningless.
+  static const double _maxPrice = 1000000000; // 1e9
 
   @override
   void initState() {
@@ -97,6 +113,9 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
       _cycle = preset.cycle;
       _currency = preset.currency;
       _priceController.text = formatPlainAmount(preset.defaultPrice);
+      _yearlyDiscountApplied = false;
+      _nativeYearlyAmount =
+          preset.cycle == BillingCycle.yearly ? preset.defaultPrice : null;
       // Deliberately do NOT infer usage from the category. Picking Netflix
       // used to silently mark it "Barely Touch It", which inflated the ghost
       // percentage and changed the roast tier without the user saying anything.
@@ -122,12 +141,21 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
   void _switchCycle(BillingCycle next) {
     if (next == _cycle) return;
     final current = parseAmount(_priceController.text) ?? 0;
-    final result = CycleConversion.convert(
-      amount: current,
-      from: _cycle,
-      to: next,
-      discountApplied: _yearlyDiscountApplied,
-    );
+
+    // A yearly amount the user typed (or a yearly preset supplied) is the real
+    // bill. Returning to yearly restores it verbatim — re-discounting it there
+    // silently corrupted stored amounts (₹10,000/yr → ₹8,297/yr round trip).
+    final restoreNative = next == BillingCycle.yearly &&
+        !_yearlyDiscountApplied &&
+        _nativeYearlyAmount != null;
+    final result = restoreNative
+        ? ConversionResult(_nativeYearlyAmount!, discountApplied: false)
+        : CycleConversion.convert(
+            amount: current,
+            from: _cycle,
+            to: next,
+            discountApplied: _yearlyDiscountApplied,
+          );
 
     setState(() {
       _cycle = next;
@@ -158,13 +186,17 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
   }
 
   Future<void> _pickNextDate() async {
+    final now = SbClock.now();
+    // Today must be selectable: "it renews today" is the most common real
+    // state, and the old tomorrow-floor pushed every such charge a day late.
+    final firstDate = DateTime(now.year, now.month, now.day);
+    var initial = _nextDate.isAfter(now) ? _nextDate : _cycle.nextAfter(_startDate);
+    if (initial.isBefore(firstDate)) initial = _cycle.nextAfter(_startDate);
     final picked = await showDatePicker(
       context: context,
-      initialDate: _nextDate.isAfter(SbClock.now())
-          ? _nextDate
-          : _cycle.nextAfter(_startDate),
-      firstDate: SbClock.now().add(const Duration(days: 1)),
-      lastDate: SbClock.now().add(const Duration(days: 365 * 3)),
+      initialDate: initial,
+      firstDate: firstDate,
+      lastDate: now.add(const Duration(days: 365 * 3)),
       helpText: 'When is the next charge?',
     );
     if (picked == null) return;
@@ -176,33 +208,40 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
 
   void _switchCurrency(CurrencyCode next, double inrPerUsd) {
     if (next == _currency) return;
-    final current = parseAmount(_priceController.text) ?? 0;
-    final converted = next == CurrencyCode.usd
-        ? current / inrPerUsd
-        : current * inrPerUsd;
+    final parsed = parseAmount(_priceController.text);
     setState(() {
       _currency = next;
-      _priceController.text = next == CurrencyCode.usd
-          ? converted.toStringAsFixed(converted >= 100 ? 0 : 2)
-          : formatPlainAmount(converted.roundToDouble());
+      // An empty field stays empty: converting "nothing" used to inject a
+      // pre-filled 0 that looked like a real price.
+      if (parsed != null) {
+        final converted =
+            next == CurrencyCode.usd ? parsed / inrPerUsd : parsed * inrPerUsd;
+        _priceController.text = next == CurrencyCode.usd
+            ? converted.toStringAsFixed(converted >= 100 ? 0 : 2)
+            : formatPlainAmount(converted.roundToDouble());
+      }
+      final native = _nativeYearlyAmount;
+      if (native != null) {
+        _nativeYearlyAmount =
+            next == CurrencyCode.usd ? native / inrPerUsd : native * inrPerUsd;
+      }
     });
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final name = _nameController.text.trim();
-    final price = parseAmount(_priceController.text) ?? 0;
-    if (name.isEmpty || price <= 0 || _saving) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              name.isEmpty
-                  ? 'Give the subscription a name first.'
-                  : 'Enter what it actually costs.',
-            ),
-          ),
-        );
+    final price = parseAmount(_priceController.text);
+    if (name.isEmpty || price == null || price <= 0 || !price.isFinite) {
+      setState(() {
+        _error = name.isEmpty
+            ? 'Give the subscription a name first.'
+            : 'Enter what it actually costs.';
+      });
+      return;
+    }
+    if (price > _maxPrice) {
+      setState(() => _error = 'That price looks too large — check the amount.');
       return;
     }
 
@@ -217,20 +256,16 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
       if (proceed != true) return;
     }
 
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     final preset = _preset;
     final subscription = Subscription(
       id: SubscriptionRepository.newId(),
       name: name,
       vendor: preset?.vendor ?? 'CUSTOM',
-      monogram: preset?.monogram ??
-          name
-              .trim()
-              .split(RegExp(r'\s+'))
-              .take(2)
-              .map((w) => w.isEmpty ? '' : w[0])
-              .join()
-              .toUpperCase(),
+      monogram: preset?.monogram ?? monogramFor(name),
       brandColor: preset?.brandColor ?? 0xFF9A9AA4,
       amount: price,
       currency: _currency,
@@ -243,9 +278,22 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
       presetId: preset?.id,
     );
 
-    await ref
-        .read(subscriptionsProvider.notifier)
-        .add(subscription, fromPreset: preset != null);
+    try {
+      await ref
+          .read(subscriptionsProvider.notifier)
+          .add(subscription, fromPreset: preset != null);
+    } catch (error) {
+      // Release the latch on failure: without this the CTA stayed disabled
+      // at "Adding…" forever and the sheet was a dead end.
+      debugPrint('Quick add failed: $error');
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = 'Could not save. Please try again.';
+        });
+      }
+      return;
+    }
 
     if (!mounted) return;
     Navigator.of(context).pop(subscription);
@@ -405,12 +453,16 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                       child: TextField(
                         controller: _nameController,
                         textCapitalization: TextCapitalization.words,
+                        // Bounded so the identity card, list rows and receipt
+                        // never receive a paragraph posing as a product name.
+                        maxLength: 60,
                         style: SbType.body.copyWith(
                           fontSize: 13,
                           color: context.sb.text,
                         ),
                         decoration: const InputDecoration(
                           hintText: 'e.g. ChatGPT Plus',
+                          counterText: '',
                         ),
                         onChanged: (_) => setState(() {}),
                       ),
@@ -482,9 +534,17 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                               decoration: const InputDecoration(
                                 hintText: '0',
                               ),
-                              onChanged: (_) => setState(
-                                () => _yearlyDiscountApplied = false,
-                              ),
+                              onChanged: (text) => setState(() {
+                                _yearlyDiscountApplied = false;
+                                // Whatever the user types in yearly mode is the
+                                // real bill; remember it so cycle toggles can
+                                // restore it instead of re-discounting.
+                                _nativeYearlyAmount =
+                                    _cycle == BillingCycle.yearly
+                                        ? parseAmount(text)
+                                        : null;
+                                _error = null;
+                              }),
                             ),
                           ),
                         ],
@@ -542,6 +602,28 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: SbSpace.x2),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            size: 14,
+                            color: context.sb.danger,
+                          ),
+                          const SizedBox(width: SbSpace.x1),
+                          Expanded(
+                            child: Text(
+                              _error!,
+                              style: SbType.caption.copyWith(
+                                color: context.sb.danger,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   SizedBox(
                     width: double.infinity,
                     child: PrimaryButton(

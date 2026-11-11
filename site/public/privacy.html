@@ -52,7 +52,8 @@
   <div class="card">
     <p><b>The short version:</b> your subscriptions never leave your phone.
     There is no account, no cloud database, and no way for us to read your
-    ledger. We do not sell data and the app has no ads.</p>
+    ledger. We do not sell data. The only advertising is one small dashboard
+    banner and an optional rewarded video — see section 5a.</p>
   </div>
 
   <h2>1. Who we are</h2>
@@ -96,9 +97,11 @@
     </tr>
     <tr>
       <td>Firebase Analytics</td>
-      <td>Two product events — <code>sub_added</code> and
-      <code>roast_card_shared</code> — with coarse buckets (category, cycle,
-      price range, burn range) and an app-instance id.</td>
+      <td>A small set of product events — <code>sub_added</code>,
+      <code>sub_deleted</code>, <code>roast_card_shared</code> and
+      <code>cancel_link_opened</code> — with coarse buckets (category, cycle,
+      price range, burn range), screen views, a display-currency preference and
+      an app-instance id. Never names, prices or vendors.</td>
       <td>Understand whether the core flow works.</td>
     </tr>
     <tr>
@@ -125,8 +128,11 @@
     <li>Your name, email address, phone number or contacts.</li>
     <li>Your subscription list, prices, vendors, or the amount you spend.</li>
     <li>Your location, photos, files, SMS, call logs or clipboard.</li>
-    <li>Advertising identifiers. The app contains no ad SDK and no tracking SDK
-    beyond the Firebase services listed above.</li>
+    <li>Advertising identifiers without your consent. Google AdMob is the only
+    advertising SDK in the app; where the law requires it, an advertising
+    identifier is used only after you accept Google's consent form (section
+    5a). No other tracking SDK is present beyond the Firebase services listed
+    above.</li>
   </ul>
 
   <h2>5. Permissions and why they are requested</h2>
@@ -156,9 +162,10 @@
 
   <h2>6. Sharing and selling</h2>
   <p>We do not sell, rent or share personal data with advertisers or data
-  brokers. The only processors are Google (Firebase) and our content delivery
-  provider, acting as infrastructure providers under their own terms. This build
-  contains no advertising SDK.</p>
+  brokers. The only processors are Google (Firebase and AdMob) and our content
+  delivery provider, acting as infrastructure providers under their own terms.
+  The only advertising SDK is Google AdMob, which serves the two formats
+  described in section 5a.</p>
 
   <h2>7. Retention and deletion</h2>
   <ul>

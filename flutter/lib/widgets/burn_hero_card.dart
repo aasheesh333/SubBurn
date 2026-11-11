@@ -4,8 +4,6 @@ import '../core/motion.dart';
 import '../data/models/currency.dart';
 import '../theme/subburn_tokens.dart';
 import 'money_text.dart';
-import 'tool_tile.dart';
-import 'status_badge.dart';
 
 /// Monthly burn hero.
 ///
@@ -78,10 +76,7 @@ class BurnHeroCard extends StatelessWidget {
                 height: 300,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0x5CFF4500), Color(0x1AFF8C00), Color(0x00FF8C00)],
-                    stops: [0, 0.45, 0.72],
-                  ),
+                  gradient: SbGradients.heroGlow,
                 ),
               ),
             ),
@@ -99,17 +94,26 @@ class BurnHeroCard extends StatelessWidget {
                       style: SbType.label.copyWith(color: context.sb.textMuted),
                     ),
                     const Spacer(),
+                    // Flexible + ellipsis: both ends of this row are intrinsic
+                    // and overflowed by ~100 px at 200 % text scale.
                     if (delta != null)
-                      _Delta(delta: delta!, currency: currency),
+                      Flexible(child: _Delta(delta: delta!, currency: currency)),
                   ],
                 ),
                 const SizedBox(height: SbSpace.x1),
+                // Keyed by currency so a currency switch snaps to the new value
+                // instead of rolling the counter across units — animating
+                // ₹8,300 → $100 shows dollar amounts that never existed.
                 SbAnimatedNumber(
+                  key: ValueKey(currency),
                   value: monthlyTotal,
                   builder: (context, value) => MoneyText(
                     value,
                     style: SbType.display,
-                    gradient: SbGradients.heroAmount,
+                    // Palette gradient, not the dark-only token: the light
+                    // theme's heroAmount starts mid-orange because white-on-
+                    // white made the product's headline number invisible.
+                    gradient: context.sb.heroAmount,
                     suffix: '/ mo',
                     currency: currency,
                     semanticLabel:
@@ -127,29 +131,27 @@ class BurnHeroCard extends StatelessWidget {
                 else
                   // One flexible Text, not three: at 320 dp the separate runs
                   // overflowed by 73 px because only the first could shrink.
-                  LayoutBuilder(
-                    builder: (context, constraints) => Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: '$toolCount '
-                                '${toolCount == 1 ? 'tool' : 'tools'} tracked · ',
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '$toolCount '
+                              '${toolCount == 1 ? 'tool' : 'tools'} tracked · ',
+                        ),
+                        TextSpan(
+                          text: currency.format(ghostAmount),
+                          style: SbType.micro.copyWith(
+                            fontSize: 9.5,
+                            color: context.sb.accentWarm,
                           ),
-                          TextSpan(
-                            text: currency.format(ghostAmount),
-                            style: SbType.micro.copyWith(
-                              fontSize: 9.5,
-                              color: context.sb.accentWarm,
-                            ),
-                          ),
-                          const TextSpan(text: ' is ghost spend'),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: SbType.caption
-                          .copyWith(color: context.sb.textSecondary),
+                        ),
+                        const TextSpan(text: ' is ghost spend'),
+                      ],
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: SbType.caption
+                        .copyWith(color: context.sb.textSecondary),
                   ),
                 // A 100 %-active bar over zero subscriptions is a claim, not a
                 // measurement, so the split only appears once it can be true.
@@ -217,12 +219,16 @@ class _Delta extends StatelessWidget {
           painter: _CaretPainter(context.sb.accentWarm),
         ),
         const SizedBox(width: 3),
-        Text(
-          '${currency.format(delta)} added this month',
-          style: SbType.micro.copyWith(
-            fontSize: 8,
-            color: context.sb.accentWarm,
-            letterSpacing: 0.02,
+        Flexible(
+          child: Text(
+            '${currency.format(delta)} added this month',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: SbType.micro.copyWith(
+              fontSize: 8,
+              color: context.sb.accentWarm,
+              letterSpacing: 0.02,
+            ),
           ),
         ),
       ],
@@ -270,8 +276,10 @@ class _SplitBar extends StatelessWidget {
     final reduce = SbMotion.reduced(context);
 
     return Semantics(
+      // ghostPercent already carries its '%' — the old label made screen
+      // readers announce "26.0% percent".
       label:
-          'Active use ${(active * 100).toStringAsFixed(1)} percent, ghost subscriptions $ghostPercent percent',
+          'Active use ${(active * 100).toStringAsFixed(1)} percent, ghost subscriptions ${ghostPercent.replaceAll('%', '')} percent',
       child: TweenAnimationBuilder<double>(
         // Grows from the left once, and animates any change in the split.
         tween: Tween<double>(begin: reduce ? active : 0, end: active),
@@ -281,23 +289,33 @@ class _SplitBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           child: SizedBox(
             height: 7,
-            child: Row(
-              children: [
-                Expanded(
-                  flex: (value * 1000).round().clamp(1, 1000),
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      gradient: SbGradients.burn,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 2),
-                Expanded(
-                  flex: ((1 - value) * 1000).round().clamp(1, 1000),
-                  child: Container(color: context.sb.mutedDeco),
-                ),
-              ],
-            ),
+            // At exactly 0 % or 100 % a single full-width segment is drawn:
+            // the flex clamp(1, …) needed to avoid a zero-width child used to
+            // leave a visible stub of the opposite colour.
+            child: value <= 0
+                ? Container(color: context.sb.mutedDeco)
+                : value >= 1
+                    ? Container(
+                        decoration:
+                            const BoxDecoration(gradient: SbGradients.burn),
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            flex: (value * 1000).round().clamp(1, 1000),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                gradient: SbGradients.burn,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            flex: ((1 - value) * 1000).round().clamp(1, 1000),
+                            child: Container(color: context.sb.mutedDeco),
+                          ),
+                        ],
+                      ),
           ),
         ),
       ),
@@ -352,91 +370,5 @@ class _Legend extends StatelessWidget {
       ],
     );
     return alignEnd ? Align(alignment: Alignment.centerRight, child: row) : row;
-  }
-}
-
-/// Renewal warning state used by the horizontal rail on the dashboard.
-enum RenewalUrgency { today, tomorrow, later }
-
-class RenewalCard extends StatelessWidget {
-  const RenewalCard({
-    super.key,
-    required this.name,
-    required this.monogram,
-    required this.brandColor,
-    required this.amount,
-    required this.countdown,
-    this.urgency = RenewalUrgency.today,
-  });
-
-  final String name;
-  final String monogram;
-  final Color brandColor;
-  final num amount;
-  final String countdown;
-  final RenewalUrgency urgency;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 148,
-      height: 104,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(SbSpace.x3, 11, SbSpace.x3, 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(SbRadius.inner),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [context.sb.surfaceHi, context.sb.surface],
-          ),
-          border: Border.all(color: context.sb.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                ToolTile(mark: monogram, brandColor: brandColor, size: 30),
-                const SizedBox(width: SbSpace.x2),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: SbType.body.copyWith(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        urgency == RenewalUrgency.later ? 'Renews tomorrow' : 'Renews today',
-                        style: SbType.micro.copyWith(
-                          fontSize: 7.5,
-                          color: context.sb.textMuted,
-                          letterSpacing: 0.01,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            MoneyText(amount, style: SbType.moneyMd, suffix: '/mo'),
-            StatusBadge(
-              countdown,
-              tone: urgency == RenewalUrgency.later ? BadgeTone.neutral : BadgeTone.warn,
-              leadingDot: true,
-              pulse: urgency != RenewalUrgency.later,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

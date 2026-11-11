@@ -9,8 +9,9 @@ import '../../data/models/currency.dart';
 /// receipt you can compare) and a cost feature ($0 per share).
 ///
 /// Inputs: total yearly burn, the AI share of it, the ghost share, and the tool
-/// count. Tone comes from Remote Config (`roast_tone`), but the default is
-/// savage.
+/// count. Tone is a constructor parameter and always savage in production —
+/// there is no Remote Config wiring for it (an earlier comment claimed a
+/// `roast_tone` key that no code ever read).
 class RoastEngine {
   const RoastEngine({this.tone = RoastTone.savage});
 

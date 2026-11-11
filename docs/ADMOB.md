@@ -29,11 +29,15 @@ never click a live ad. Invalid traffic is the fastest route to an account ban.
 
 | Format | Used | Why |
 |---|---|---|
-| Banner (adaptive) | **Yes, one** | Predictable revenue, zero policy risk when it sits below content. Placed at the bottom of the dashboard, under the ghost callout, above the tab bar. |
+| Banner (anchored adaptive) | **Yes, one** | Predictable revenue, zero policy risk when it sits below content. Placed at the bottom of the dashboard, under the ghost callout, above the tab bar. Requests `AdSize.getLargeAnchoredAdaptiveBannerAdSize` (full-width, Google-optimised height) — the legacy fixed 320×50 letterboxes on wide phones and earns less. |
 | Rewarded | **Yes, opt-in** | The only format where the interruption is the user's own choice, so it cannot cost retention. The reward is two extra receipt themes — cosmetic, permanent, and nothing else is gated. |
 | Interstitial | **No** | Must not fire at app open, mid-task, or between a tap and its result. In an app opened for seconds it destroys the experience and the highest-risk format for policy action. |
 | App open | **No** | Google requires it not to obscure the first screen's content, and it reads as a toll booth on a utility app. |
 | Native advanced | **No** | Needs bespoke layout work to look native; not worth the complexity at this stage. |
+
+Debug builds always request Google's official test unit ids — the swap happens
+in `BannerAdSlot`/`RewardedAdService` *before* any config value is consulted, so
+a debug build can never request a live unit even if Remote Config ships one.
 
 ---
 

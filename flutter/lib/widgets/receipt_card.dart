@@ -144,15 +144,20 @@ class SubBurnReceiptCard extends StatelessWidget {
                       child: Container(
                         width: 420,
                         height: 360,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          // Derived from the active receipt theme — a hardcoded
+                          // ember bloom contradicted every themed element under
+                          // Mono/Gold, on screen and in the exported PNG. This
+                          // is built above the scope, so it reads `theme`
+                          // directly rather than ReceiptThemeScope.of().
                           gradient: RadialGradient(
                             colors: [
-                              Color(0x4DFF4500),
-                              Color(0x14FF8C00),
-                              Color(0x00000000)
+                              theme.accent.withValues(alpha: 0.30),
+                              theme.accentAlt.withValues(alpha: 0.08),
+                              const Color(0x00000000),
                             ],
-                            stops: [0, 0.46, 0.68],
+                            stops: const [0, 0.46, 0.68],
                           ),
                         ),
                       ),
@@ -163,11 +168,14 @@ class SubBurnReceiptCard extends StatelessWidget {
                       child: Container(
                         width: 520,
                         height: 340,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
-                            colors: [Color(0x3DFF4500), Color(0x00000000)],
-                            stops: [0, 0.64],
+                            colors: [
+                              theme.accent.withValues(alpha: 0.24),
+                              const Color(0x00000000),
+                            ],
+                            stops: const [0, 0.64],
                           ),
                         ),
                       ),
@@ -642,16 +650,12 @@ class _TotalBlock extends StatelessWidget {
             total,
             style: SbType.display
                 .copyWith(fontSize: 40, letterSpacing: -0.055 * 40),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                ReceiptThemeScope.of(context).heroTop,
-                ReceiptThemeScope.of(context).accent,
-              ],
-              stops: const [0, 0.78],
-            ),
+            gradient: ReceiptThemeScope.of(context).totalGradient,
             suffix: '/yr',
+            // The receipt is dark-locked; the ambient light theme's muted grey
+            // leaked in here and failed contrast on the near-black card (and in
+            // the exported PNG). Pin the suffix to the dark palette.
+            suffixColor: SbPalette.dark.textMuted,
             scaleWithSystem: false,
             semanticLabel: '${currency.format(total)} per year',
           ),
@@ -678,10 +682,15 @@ class _RoastBlock extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(11),
-        gradient: const LinearGradient(
+        // Themed wash: the ember-tinted fill stayed orange under Mono/Gold
+        // while the border and tier text had already been migrated.
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0x24FF4500), Color(0x08FF8C00)],
+          colors: [
+            ReceiptThemeScope.of(context).accent.withValues(alpha: 0.14),
+            ReceiptThemeScope.of(context).accentAlt.withValues(alpha: 0.03),
+          ],
         ),
         border:
             Border.all(
@@ -723,10 +732,16 @@ class _RoastBlock extends StatelessWidget {
                   height: 3,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(1),
+                    // Lit bars follow the theme's own gradient. The old fixed
+                    // SbGradients.burn shader overrode the themed color
+                    // entirely (a shader wins over paint.color), so Mono/Gold
+                    // meters still rendered ember.
                     color: i < intensity
                         ? ReceiptThemeScope.of(context).accent
-                        : const Color(0xFF3A2A22),
-                    gradient: i < intensity ? SbGradients.burn : null,
+                        : const Color(0xFF2A2A31),
+                    gradient: i < intensity
+                        ? ReceiptThemeScope.of(context).totalGradient
+                        : null,
                   ),
                 ),
                 const SizedBox(width: 2),

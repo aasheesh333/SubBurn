@@ -260,7 +260,6 @@ class RemoteConfigService {
       defaultValue: '060140bf-e174-4f44-85d2-f5757dfdbd35',
     ),
     'smart_reminders': true,
-    'roast_tone': 'savage',
     // Ad flags. Live unit ids are public identifiers, not secrets; the console
     // can rotate them or switch ads off without shipping a release.
     'ads_enabled': true,
@@ -279,7 +278,11 @@ class RemoteConfigService {
     );
     await _config.setDefaults(_defaults);
     try {
-      await _config.fetchAndActivate();
+      // Race the fetch against a 3 s budget. Defaults are already applied, so
+      // boot never needs the network; on a slow or captive network the old
+      // unbounded await hung the splash for up to the full 8 s fetchTimeout.
+      // An unfinished fetch keeps running and activates for later reads.
+      await _config.fetchAndActivate().timeout(const Duration(seconds: 3));
     } catch (error) {
       // Offline first launch is expected — defaults are already applied.
       debugPrint('Remote Config fetch skipped: $error');

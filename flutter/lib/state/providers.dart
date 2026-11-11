@@ -173,25 +173,34 @@ class SettingsNotifier extends Notifier<AppSettings> {
   @override
   AppSettings build() => ref.watch(repositoryProvider).settings;
 
-  Future<void> setTheme(ThemePreference preference) async {
-    final repo = ref.read(repositoryProvider);
-    final next = repo.settings.copyWith(themePreference: preference);
-    await repo.saveSettings(next);
-    state = next;
+  /// Serialises the read-modify-write every setter performs. Without the
+  /// queue, two concurrent mutations (e.g. the ad reward callback unlocking
+  /// themes while the user flips the theme) both snapshot the same base and
+  /// the second write silently clobbers the first — on disk and in state.
+  Future<void> _writeLock = Future<void>.value();
+
+  Future<void> _mutate(
+    AppSettings Function(AppSettings current) compute,
+  ) {
+    final next = _writeLock.then((_) async {
+      final repo = ref.read(repositoryProvider);
+      final updated = compute(repo.settings);
+      await repo.saveSettings(updated);
+      state = updated;
+    });
+    // Keep the chain alive even if one write throws.
+    _writeLock = next.catchError((_) {});
+    return next;
   }
 
-  Future<void> unlockReceiptThemes() async {
-    final repo = ref.read(repositoryProvider);
-    final next = repo.settings.copyWith(receiptThemesUnlocked: true);
-    await repo.saveSettings(next);
-    state = next;
-  }
+  Future<void> setTheme(ThemePreference preference) =>
+      _mutate((s) => s.copyWith(themePreference: preference));
+
+  Future<void> unlockReceiptThemes() =>
+      _mutate((s) => s.copyWith(receiptThemesUnlocked: true));
 
   Future<void> setCurrency(CurrencyCode currency) async {
-    final repo = ref.read(repositoryProvider);
-    final next = repo.settings.copyWith(displayCurrency: currency);
-    await repo.saveSettings(next);
-    state = next;
+    await _mutate((s) => s.copyWith(displayCurrency: currency));
     await ref.read(analyticsProvider).setDisplayCurrency(currency.code);
   }
 
@@ -199,15 +208,14 @@ class SettingsNotifier extends Notifier<AppSettings> {
   /// never changes the user's intent — it only records whether the phone allows
   /// delivery, so the UI can explain a blocked state.
   Future<bool> requestNotificationPermission() async {
-    final repo = ref.read(repositoryProvider);
     final service = ref.read(notificationServiceProvider);
     final granted = await service.requestPermission();
-    final next = repo.settings.copyWith(
-      notificationsEnabled: granted,
-      notificationsPermissionAsked: true,
+    await _mutate(
+      (s) => s.copyWith(
+        notificationsEnabled: granted,
+        notificationsPermissionAsked: true,
+      ),
     );
-    await repo.saveSettings(next);
-    state = next;
     ref.invalidate(reminderHealthProvider);
     return granted;
   }
@@ -218,19 +226,18 @@ class SettingsNotifier extends Notifier<AppSettings> {
   /// "on": a switch that reads on while the OS blocks every notification is a
   /// lie, and that is exactly what shipped before.
   Future<bool> setNotifications(bool enabled) async {
-    final repo = ref.read(repositoryProvider);
     final service = ref.read(notificationServiceProvider);
 
     if (enabled) {
       // Ask, then read back the real OS state rather than trusting the prompt.
       await service.requestPermission();
       final granted = await service.refreshPermission();
-      final next = repo.settings.copyWith(
-        notificationsEnabled: granted,
-        notificationsPermissionAsked: true,
+      await _mutate(
+        (s) => s.copyWith(
+          notificationsEnabled: granted,
+          notificationsPermissionAsked: true,
+        ),
       );
-      await repo.saveSettings(next);
-      state = next;
       if (!granted) {
         ref.invalidate(reminderHealthProvider);
         return false;
@@ -240,9 +247,7 @@ class SettingsNotifier extends Notifier<AppSettings> {
       return true;
     }
 
-    final next = repo.settings.copyWith(notificationsEnabled: false);
-    await repo.saveSettings(next);
-    state = next;
+    await _mutate((s) => s.copyWith(notificationsEnabled: false));
     await service.cancelAll();
     ref.invalidate(reminderHealthProvider);
     return false;
@@ -260,12 +265,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
     return id;
   }
 
-  Future<void> setInstallId(String installId) async {
-    final repo = ref.read(repositoryProvider);
-    final next = repo.settings.copyWith(installId: installId);
-    await repo.saveSettings(next);
-    state = next;
-  }
+  Future<void> setInstallId(String installId) =>
+      _mutate((s) => s.copyWith(installId: installId));
 }
 
 /// True while a manual refresh is in flight. Kept separate from the

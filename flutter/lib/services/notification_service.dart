@@ -369,12 +369,15 @@ class NotificationService {
   }
 
   /// How many reminders are actually queued — the honest answer to "is it
-  /// working?", shown in Controls.
+  /// working?", shown in Controls. The scheduled test notification is excluded:
+  /// it used to linger in the count for its whole 8 s fuse (and the health
+  /// provider is keepAlive), so Controls claimed "1 reminder queued" on a
+  /// device with zero subscriptions.
   Future<int> pendingCount() async {
     if (!_initialized) return 0;
     try {
       final pending = await _plugin.pendingNotificationRequests();
-      return pending.length;
+      return pending.where((p) => p.id != testNotificationId).length;
     } catch (error) {
       debugPrint('pendingNotificationRequests failed: $error');
       return 0;

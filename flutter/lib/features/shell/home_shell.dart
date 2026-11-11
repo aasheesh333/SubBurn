@@ -91,15 +91,31 @@ class _HomeShellState extends ConsumerState<HomeShell>
           Expanded(
             child: IndexedStack(
               index: _index,
+              // TickerMode per tab: IndexedStack keeps hidden children mounted
+              // but does not mute their tickers, so a pulsing "due in 24h"
+              // badge kept scheduling frames forever while the user was on
+              // another tab.
               children: [
-                BurnDashboardScreen(
-                  onAddSubscription: _openQuickAdd,
+                TickerMode(
+                  enabled: _index == 0,
+                  child: BurnDashboardScreen(
+                    onAddSubscription: _openQuickAdd,
+                  ),
                 ),
-                ViralReceiptScreen(
-                  onAddSubscription: _openQuickAdd,
+                TickerMode(
+                  enabled: _index == 1,
+                  child: ViralReceiptScreen(
+                    onAddSubscription: _openQuickAdd,
+                  ),
                 ),
-                RenewalsScreen(onAddSubscription: _openQuickAdd),
-                const ControlsScreen(),
+                TickerMode(
+                  enabled: _index == 2,
+                  child: RenewalsScreen(onAddSubscription: _openQuickAdd),
+                ),
+                TickerMode(
+                  enabled: _index == 3,
+                  child: const ControlsScreen(),
+                ),
               ],
             ),
           ),
@@ -171,10 +187,13 @@ class _BottomBar extends StatelessWidget {
                     child: Container(
                       width: 52,
                       height: 52,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: SbGradients.burn,
-                        boxShadow: [SbShadow.ctaGlow],
+                        // Same guard PrimaryButton uses: the orange bloom reads
+                        // as a dirty smudge on a light bottom bar.
+                        boxShadow:
+                            context.sb.isDark ? const [SbShadow.ctaGlow] : null,
                       ),
                       child: Icon(
                         Icons.add_rounded,

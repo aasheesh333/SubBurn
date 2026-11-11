@@ -42,6 +42,11 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
   /// callout was a label that looked tappable and did nothing.
   bool _ghostOnly = false;
 
+  /// Rows whose staggered entrance has already played. Sliver items recycled
+  /// beyond the cache extent lose their State; without this set the fade+slide
+  /// replayed every time a row scrolled back into view.
+  final Set<String> _entrancePlayed = <String>{};
+
   @override
   void initState() {
     super.initState();
@@ -56,9 +61,27 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
     final summary = ref.watch(burnSummaryProvider);
     final settings = ref.watch(settingsProvider);
     final allSubscriptions = ref.watch(subscriptionsProvider);
-    final subscriptions = _ghostOnly
+
+    // The filter must never trap the screen in a false empty state: deleting
+    // the last ghost sub while REVIEW is active also removes the callout — the
+    // only control that clears the filter — leaving "Nothing burning yet" on
+    // screen while the real ledger is intact. Drop the filter instead.
+    final ghosts = _ghostOnly
         ? allSubscriptions.where((s) => s.isGhost).toList(growable: false)
-        : allSubscriptions;
+        : const <Subscription>[];
+    final filterStale = _ghostOnly && ghosts.isEmpty && allSubscriptions.isNotEmpty;
+    if (filterStale) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _ghostOnly) setState(() => _ghostOnly = false);
+      });
+    }
+    final filterActive = _ghostOnly && !filterStale;
+    final subscriptions = filterActive ? ghosts : allSubscriptions;
+    // The rail and its pulse badge must describe the same population: the
+    // badge used to flash urgency for rows the filter was hiding.
+    final railSubs = filterActive
+        ? summary.dueSoon.where((s) => s.isGhost).toList(growable: false)
+        : summary.dueSoon;
 
     return SafeArea(
       bottom: false,
@@ -114,8 +137,11 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
                   ghostAmount: summary.ghostMonthly,
                   toolCount: summary.count,
                   currency: settings.displayCurrency,
+                  // The delta belongs to the unfiltered headline total above
+                  // it; computing it from the filtered list mixed two
+                  // populations inside one card while REVIEW was active.
                   delta: _monthDelta(
-                    subscriptions,
+                    allSubscriptions,
                     settings.displayCurrency,
                     ref.watch(ratesProvider).inrPerUsd,
                   ),
@@ -138,7 +164,7 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
                       '${SbWindow.renewingHours}H WINDOW',
                       tone: BadgeTone.warn,
                       leadingDot: true,
-                      pulse: summary.dueSoon.any(
+                      pulse: railSubs.any(
                         (s) => s.timeUntilRenewal().inHours < 24,
                       ),
                     ),
@@ -148,11 +174,7 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
               const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x2)),
               SliverToBoxAdapter(
                 child: _RenewingRail(
-                  subscriptions: _ghostOnly
-                      ? summary.dueSoon
-                          .where((s) => s.isGhost)
-                          .toList(growable: false)
-                      : summary.dueSoon,
+                  subscriptions: railSubs,
                   currency: settings.displayCurrency,
                   inrPerUsd: ref.watch(ratesProvider).inrPerUsd,
                   onOpen: _openDetail,
@@ -182,17 +204,19 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
                       const SizedBox(height: SbSpace.x2),
                   itemBuilder: (context, index) {
                     final sub = subscriptions[index];
-                    return SbEntrance(
-                      index: index,
-                      child: _SubscriptionRow(
-                        key: ValueKey(sub.id),
-                        subscription: sub,
-                        currency: settings.displayCurrency,
-                        inrPerUsd: ref.watch(ratesProvider).inrPerUsd,
-                        onTap: () => _openDetail(sub),
-                        onDelete: () => _delete(context, ref, sub),
-                      ),
+                    final row = _SubscriptionRow(
+                      key: ValueKey(sub.id),
+                      subscription: sub,
+                      currency: settings.displayCurrency,
+                      inrPerUsd: ref.watch(ratesProvider).inrPerUsd,
+                      onTap: () => _openDetail(sub),
+                      onDelete: () => _delete(context, ref, sub),
                     );
+                    // Entrance plays once per row, and only for the rows
+                    // visible on first load — recycled items replayed the
+                    // stagger on every scroll-back before this.
+                    if (index >= 8 || !_entrancePlayed.add(sub.id)) return row;
+                    return SbEntrance(index: index, child: row);
                   },
                 ),
               ),
@@ -294,37 +318,45 @@ class _CurrencyChip extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Display currency: ${currency.code}. Tap to switch.',
-      child: InkWell(
-        onTap: onToggleCurrency,
-        borderRadius: BorderRadius.circular(SbRadius.pill),
-        child: Container(
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(SbRadius.pill),
-            color: context.sb.surface,
-            border: Border.all(color: context.sb.border),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const _LiveDot(),
-              const SizedBox(width: 5),
-              Text(
-                '${currency.code} · BURN',
-                style: SbType.micro.copyWith(
-                  fontSize: 8,
-                  color: context.sb.textSecondary,
-                  letterSpacing: 0.08,
-                ),
+      child: SizedBox(
+        // The visual pill stays 32 px, but the hit area grows to 44 — a 32 px
+        // target for the header's only affordance failed every touch-target
+        // guideline.
+        height: 44,
+        child: InkWell(
+          onTap: onToggleCurrency,
+          borderRadius: BorderRadius.circular(SbRadius.pill),
+          child: Center(
+            child: Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(SbRadius.pill),
+                color: context.sb.surface,
+                border: Border.all(color: context.sb.border),
               ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.unfold_more_rounded,
-                size: 11,
-                color: context.sb.textMuted,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const _LiveDot(),
+                  const SizedBox(width: 5),
+                  Text(
+                    '${currency.code} · BURN',
+                    style: SbType.micro.copyWith(
+                      fontSize: 8,
+                      color: context.sb.textSecondary,
+                      letterSpacing: 0.08,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.unfold_more_rounded,
+                    size: 11,
+                    color: context.sb.textMuted,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -402,7 +434,9 @@ class _RenewingRail extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: SbSpace.page),
         child: SurfaceCard(
-          height: 64,
+          // Grows with the OS text scale like every other fixed-height box in
+          // this file; at 200 % the two-line copy overflowed the 64 px card.
+          height: 64 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 28,
           child: Row(
             children: [
               Icon(
@@ -538,9 +572,16 @@ class _RenewalCard extends StatelessWidget {
                 ),
               ],
             ),
-            Text(
-              currency.format(subscription.monthlyIn(currency, inrPerUsd)),
-              style: SbType.moneyMd.copyWith(color: context.sb.text),
+            // Scale-down like the countdown badge below it: long prices
+            // ("₹1,24,000") wrapped mid-number inside the 148 px card at 200 %.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                currency.format(subscription.monthlyIn(currency, inrPerUsd)),
+                maxLines: 1,
+                style: SbType.moneyMd.copyWith(color: context.sb.text),
+              ),
             ),
             FittedBox(
               fit: BoxFit.scaleDown,
@@ -768,7 +809,7 @@ class _GhostCallout extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '$count tools · $yearly/yr you do not use',
+                  '$count ${count == 1 ? 'tool' : 'tools'} · $yearly/yr you do not use',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: SbType.micro.copyWith(

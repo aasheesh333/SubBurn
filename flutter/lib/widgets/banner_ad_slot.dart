@@ -7,13 +7,13 @@ import '../core/theme/theme_tokens.dart';
 import '../services/ads_bootstrap.dart';
 import '../services/ads_service.dart';
 
-/// One adaptive banner, loaded lazily.
+/// One anchored-adaptive banner, loaded lazily.
 ///
 /// Placement rules this widget enforces:
-/// * It renders nothing until Remote Config says ads are on *and* the SDK
-///   initialised, so a misconfigured build never shows a grey box.
-/// * It reserves its height only after a real ad loads, so the layout does not
-///   jump if the fill fails (a blank rectangle is worse than no rectangle).
+/// * It renders nothing — not even its divider — until Remote Config says ads
+///   are on, the SDK initialised, *and* a real ad filled. A stray hairline with
+///   nothing under it reads as a layout bug.
+/// * Debug builds always request Google's test unit, never the live one.
 /// * It is never placed over an interactive element — callers put it below
 ///   content, above the tab bar.
 class BannerAdSlot extends ConsumerStatefulWidget {
@@ -37,12 +37,25 @@ class _BannerAdSlotState extends ConsumerState<BannerAdSlot> {
     if (kIsWeb) return;
     final ads = ref.read(adsServiceProvider);
     if (!ads.canShowBanner) return;
+
+    // Anchored-adaptive needs the real width; measured before any await so the
+    // context use is synchronous.
+    final widthDp = MediaQuery.sizeOf(context).width.truncate();
+    if (widthDp <= 0) return;
+
     if (!AdsBootstrap.isInitialised) await AdsBootstrap.initialise();
     if (!AdsBootstrap.isInitialised || !mounted) return;
 
+    // Anchored adaptive (v9 API): full-width, Google-optimised height, and a
+    // higher-earning format than the legacy fixed 320×50 banner.
+    final size = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(widthDp);
+    if (!mounted) return;
+
     final ad = BannerAd(
-      adUnitId: ads.bannerUnitId ?? AdUnits.banner,
-      size: AdSize.banner,
+      // Test id in debug *first*: the Remote Config default is the live unit,
+      // and requesting it from a debug build is invalid traffic.
+      adUnitId: kDebugMode ? AdUnits.banner : ads.bannerUnitId!,
+      size: size ?? AdSize.largeBanner,
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (_) {
@@ -50,10 +63,11 @@ class _BannerAdSlotState extends ConsumerState<BannerAdSlot> {
           setState(() => _loaded = true);
         },
         onAdFailedToLoad: (ad, error) {
-          // Silence is correct here: a failed fill is normal, and the layout
-          // simply keeps its space. Never retry in a tight loop.
+          // Silence is correct here: a failed fill is normal, and the slot
+          // keeps rendering nothing. Never retry in a tight loop.
           debugPrint('banner failed: ${error.message}');
           ad.dispose();
+          if (_ad == ad) _ad = null;
         },
       ),
     );
@@ -69,21 +83,33 @@ class _BannerAdSlotState extends ConsumerState<BannerAdSlot> {
 
   @override
   Widget build(BuildContext context) {
-    // No reservation until a real ad exists: an empty grey band reads as a bug.
+    // No reservation — and no divider — until a real ad exists.
     if (!_loaded || _ad == null) return const SizedBox.shrink();
     return Semantics(
       label: 'Advertisement',
-      child: SizedBox(
-        height: _ad!.size.height.toDouble(),
-        width: double.infinity,
-        child: AdWidget(ad: _ad!),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: SbSpace.x2),
+          // A thin divider so the ad reads as a separate region rather than
+          // part of the ledger.
+          Container(
+            height: SbSize.hairline,
+            margin: const EdgeInsets.symmetric(horizontal: SbSpace.page),
+            color: context.sb.border,
+          ),
+          SizedBox(
+            height: _ad!.size.height.toDouble(),
+            width: double.infinity,
+            child: AdWidget(ad: _ad!),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// A thin divider above the banner so it reads as a separate region rather than
-/// part of the ledger.
+/// Gate + slot. Renders nothing when ads are disabled or half-configured.
 class BannerAdRegion extends ConsumerWidget {
   const BannerAdRegion({super.key});
 
@@ -91,16 +117,6 @@ class BannerAdRegion extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ads = ref.watch(adsServiceProvider);
     if (!ads.canShowBanner) return const SizedBox.shrink();
-    return Column(
-      children: [
-        const SizedBox(height: SbSpace.x2),
-        Container(
-          height: SbSize.hairline,
-          margin: const EdgeInsets.symmetric(horizontal: SbSpace.page),
-          color: context.sb.border,
-        ),
-        const BannerAdSlot(),
-      ],
-    );
+    return const BannerAdSlot();
   }
 }

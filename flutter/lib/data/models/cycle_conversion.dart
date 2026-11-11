@@ -41,7 +41,10 @@ abstract final class CycleConversion {
     );
   }
 
-  static double _round(double value) => value.roundToDouble();
+  /// Rounds to currency minor units, not whole units: rounding to `1` turned a
+  /// toggled $9.99/mo plan into $10/mo — the exact cent-eating bug the
+  /// formatter layer was fixed for.
+  static double _round(double value) => (value * 100).roundToDouble() / 100;
 }
 
 class ConversionResult {

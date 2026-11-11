@@ -10,8 +10,10 @@ import '../models/usage_guilt.dart';
 ///
 /// Written by hand rather than generated so the on-disk field order is part of
 /// the reviewed source. That order must never change — insert new fields at the
-/// end, and bump [typeIdVersion] only with a migration in
-/// `SubscriptionRepository.migrate`.
+/// end only. The reader loops over the field count *stored in the data*, so
+/// old records read fine with new adapters (missing keys default) and new
+/// records survive a downgrade (unknown keys are ignored). There is no
+/// migration mechanism; never reorder or reuse a field index.
 class SubscriptionAdapter extends TypeAdapter<Subscription> {
   @override
   final int typeId = 1;

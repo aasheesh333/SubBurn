@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app.dart';
+import 'core/motion.dart';
 import 'features/detail/sub_detail_screen.dart';
 import 'data/repositories/subscription_repository.dart';
 import 'services/catalogue_service.dart';
@@ -67,15 +68,12 @@ Future<void> main() async {
             final navigator = rootNavigatorKey.currentState;
             if (navigator == null) return;
             navigator.push(
-              MaterialPageRoute<void>(
+              SbPageRoute<void>(
                 builder: (_) => SubDetailScreen(subscriptionId: subscriptionId),
               ),
             );
           },
         );
-        // Cold start from a tap: the callback above is already set, so this
-        // replays the launch payload exactly once.
-        await notifications.handleLaunchNotification();
       } catch (error) {
         debugPrint('Notifications unavailable: $error');
       }
@@ -99,6 +97,17 @@ Future<void> main() async {
           child: const SubBurnApp(),
         ),
       );
+
+      // Cold start from a reminder tap: replay only after the first frame,
+      // once MaterialApp has attached the root navigator. Doing this before
+      // runApp silently dropped the payload (navigator was still null).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(
+          notifications.handleLaunchNotification().catchError((Object error) {
+            debugPrint('Launch notification replay failed: $error');
+          }),
+        );
+      });
 
       // Ads initialise after the first frame: they are revenue, not a
       // dependency, and the consent form must never delay the UI.

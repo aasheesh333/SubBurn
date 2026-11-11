@@ -44,8 +44,16 @@ class AdsBootstrap {
   /// Set by tests and previews so no test ever depends on the SDK.
   static bool disabled = false;
 
-  static Future<void> initialise() async {
-    if (_initialised || disabled) return;
+  static Future<void>? _inFlight;
+
+  static Future<void> initialise() {
+    if (_initialised || disabled) return Future<void>.value();
+    // Single-flight: main() and the banner slot both call this at boot, and
+    // two concurrent consent flows race each other on the platform side.
+    return _inFlight ??= _initialiseOnce();
+  }
+
+  static Future<void> _initialiseOnce() async {
     try {
       // Request consent first: in the EEA/UK the SDK must not gather ad
       // identifiers before the user answers. `gatherConsent` shows Google's own
@@ -57,6 +65,7 @@ class AdsBootstrap {
     } catch (error) {
       // Ads are optional revenue; a failure here must never affect the app.
       debugPrint('AdMob init skipped: $error');
+      _inFlight = null; // a later caller may retry
     }
   }
 
@@ -90,15 +99,23 @@ class AdsBootstrap {
 
   /// Opens the privacy options entry point. Google requires this to be
   /// reachable from the app whenever a consent form applies.
-  static Future<void> showPrivacyOptions() async {
+  ///
+  /// Returns false when no form could be shown (not required in this region,
+  /// SDK unavailable, …) so callers can tell the user instead of leaving a
+  /// dead button.
+  static Future<bool> showPrivacyOptions() async {
     try {
+      var failed = false;
       await ConsentForm.showPrivacyOptionsForm((formError) {
         if (formError != null) {
+          failed = true;
           debugPrint('Privacy options error: ${formError.message}');
         }
       });
+      return !failed;
     } catch (error) {
       debugPrint('Privacy options unavailable: $error');
+      return false;
     }
   }
 }

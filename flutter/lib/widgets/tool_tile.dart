@@ -27,13 +27,20 @@ class ToolTile extends StatelessWidget {
   /// Platform name, used for the semantic label ("ChatGPT, OpenAI").
   final String? platform;
 
-  /// Mixes [brandColor] toward white — keeps the hue, fixes contrast.
-  static Color _lift(Color c, [double amount = 0.52]) =>
-      Color.lerp(c, const Color(0xFFFFFFFF), amount)!;
+  /// Adjusts [brandColor] for the surface it sits on. On dark surfaces the
+  /// glyph is lifted toward white; on light surfaces that lift made brand
+  /// glyphs effectively invisible (near-white on a white card), so there it is
+  /// pushed toward black instead — keeping the hue, fixing contrast in both.
+  static Color _lift(Color c, bool isDark) => Color.lerp(
+        c,
+        isDark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+        isDark ? 0.52 : 0.30,
+      )!;
 
   @override
   Widget build(BuildContext context) {
     final radius = size * (size >= 44 ? 12 / 44 : 10 / 30);
+    final glyph = _lift(brandColor, context.sb.isDark);
 
     return Container(
       width: size,
@@ -60,11 +67,11 @@ class ToolTile extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.03 * size * 0.32,
                 height: 1,
-                color: _lift(brandColor),
+                color: glyph,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             )
-          : Icon(icon, size: size * 0.46, color: _lift(brandColor)),
+          : Icon(icon, size: size * 0.46, color: glyph),
     );
   }
 }

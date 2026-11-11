@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -32,6 +34,8 @@ class SubDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _SubDetailScreenState extends ConsumerState<SubDetailScreen> {
+  Timer? _tick;
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +43,18 @@ class _SubDetailScreenState extends ConsumerState<SubDetailScreen> {
       if (!mounted) return;
       ref.read(analyticsProvider).logScreenView('subscription_detail');
     });
+    // The hero of this screen is a live countdown ("RENEWS IN 14h 22m") and a
+    // 24h-window ring. Without a tick both froze at whatever they showed when
+    // the route was built.
+    _tick = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
   }
 
   @override
@@ -163,10 +179,27 @@ class _SubDetailScreenState extends ConsumerState<SubDetailScreen> {
                         value: subscription.remindersEnabled &&
                             settings.notificationsEnabled,
                         onChanged: (value) async {
+                          final messenger = ScaffoldMessenger.of(context);
                           if (value && !settings.notificationsEnabled) {
-                            await ref
+                            final granted = await ref
                                 .read(settingsProvider.notifier)
                                 .setNotifications(true);
+                            if (!granted) {
+                              // Do not persist remindersEnabled=true while the
+                              // UI shows the switch off — that silent desync
+                              // made reminders "spontaneously" appear later.
+                              messenger
+                                ..hideCurrentSnackBar()
+                                ..showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Notifications are blocked by the system. '
+                                      'Allow them in system settings to arm reminders.',
+                                    ),
+                                  ),
+                                );
+                              return;
+                            }
                           }
                           await ref
                               .read(subscriptionsProvider.notifier)
@@ -199,13 +232,20 @@ class _SubDetailScreenState extends ConsumerState<SubDetailScreen> {
     WidgetRef ref,
     Subscription subscription,
   ) async {
+    final now = SbClock.now();
+    // Today is selectable: "it renews today" is a real state users correct to.
+    final firstDate = DateTime(now.year, now.month, now.day);
+    var initial = subscription.nextBillingDate.isAfter(now)
+        ? subscription.nextBillingDate
+        : subscription.cycle.nextAfter(subscription.startDate);
+    if (initial.isBefore(firstDate)) {
+      initial = subscription.cycle.nextAfter(subscription.startDate);
+    }
     final picked = await showDatePicker(
       context: context,
-      initialDate: subscription.nextBillingDate.isAfter(SbClock.now())
-          ? subscription.nextBillingDate
-          : subscription.cycle.nextAfter(subscription.startDate),
-      firstDate: SbClock.now().add(const Duration(days: 1)),
-      lastDate: SbClock.now().add(const Duration(days: 365 * 3)),
+      initialDate: initial,
+      firstDate: firstDate,
+      lastDate: now.add(const Duration(days: 365 * 3)),
       helpText: 'Next charge date',
     );
     if (picked == null) return;
@@ -242,10 +282,17 @@ class _SubDetailScreenState extends ConsumerState<SubDetailScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final raw = subscription.cancelUrl.trim();
     final uri = Uri.tryParse(raw);
-    final resolved = uri != null && uri.hasScheme && uri.host.isNotEmpty;
+    // https/http only. The URL comes from the CDN catalogue, so a hijacked
+    // payload must not be able to launch arbitrary app deep-link schemes
+    // through this button ("opens the vendor's cancellation page").
+    final resolved = uri != null &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host.isNotEmpty;
 
+    // Analytics carry the coarse category, never the vendor name: the privacy
+    // copy promises "no names, prices or vendors" and must stay true.
     await ref.read(analyticsProvider).logCancelLinkOpened(
-          vendor: subscription.vendor,
+          category: subscription.category,
           resolved: resolved,
         );
 
@@ -263,8 +310,15 @@ class _SubDetailScreenState extends ConsumerState<SubDetailScreen> {
       return;
     }
 
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!launched && context.mounted) {
+    var launched = false;
+    try {
+      launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+    } catch (error) {
+      // launchUrl throws on malformed URIs and plugin failures; without this
+      // the throw escaped and the fallback snackbar never showed.
+      debugPrint('Cancel link failed to open: $error');
+    }
+    if (!launched) {
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -301,8 +355,30 @@ class _SubDetailScreenState extends ConsumerState<SubDetailScreen> {
       ),
     );
     if (confirmed == true) {
-      await ref.read(subscriptionsProvider.notifier).remove(subscription.id);
-      if (context.mounted) Navigator.of(context).pop();
+      if (!context.mounted) return;
+      // Capture everything before popping: after pop this State is disposed and
+      // `ref`/`context` are unusable. Popping first also stops the screen from
+      // flashing its "This subscription is gone." fallback mid-delete.
+      final notifier = ref.read(subscriptionsProvider.notifier);
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
+      navigator.pop();
+      try {
+        await notifier.remove(subscription.id);
+      } catch (error) {
+        debugPrint('Delete failed (row restored): $error');
+      }
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('${subscription.name} deleted.'),
+            action: SnackBarAction(
+              label: 'UNDO',
+              onPressed: () => notifier.restore(subscription),
+            ),
+          ),
+        );
     }
   }
 }

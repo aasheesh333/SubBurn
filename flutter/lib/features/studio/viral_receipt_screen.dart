@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -33,6 +35,7 @@ class ViralReceiptScreen extends ConsumerStatefulWidget {
 class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
   final GlobalKey _boundaryKey = GlobalKey();
   bool _busy = false;
+  bool _unlocking = false;
   ReceiptTheme _theme = ReceiptTheme.ember;
 
   @override
@@ -58,11 +61,12 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SbHeader(
+            const SbHeader(
               title: 'Card studio',
               subtitle: '1080 × 1920 export',
-              onBack: () => Navigator.of(context).maybePop(),
-              trailing: const StatusBadge('9:16'),
+              // No onBack: this screen is a root tab of the shell, so
+              // maybePop() could never pop — it rendered a dead chevron.
+              trailing: StatusBadge('9:16'),
             ),
             const SizedBox(height: SbSpace.x3),
             Expanded(
@@ -317,29 +321,42 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
 
   /// Rewarded ad in exchange for the extra themes, once, permanently.
   Future<void> _unlockThemes() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final service = ref.read(rewardedAdServiceProvider);
-    await service.load();
-    if (!mounted) return;
+    // Re-entrancy guard: chips stayed tappable during the ad flow, and a second
+    // tap fired a second load/show race.
+    if (_unlocking) return;
+    _unlocking = true;
+    try {
+      final messenger = ScaffoldMessenger.of(context);
+      final service = ref.read(rewardedAdServiceProvider);
+      await service.load();
+      if (!mounted) return;
 
-    final rewarded = await service.show(
-      onReward: () {
-        ref.read(settingsProvider.notifier).unlockReceiptThemes();
-      },
-    );
-    if (!mounted) return;
-
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            rewarded
-                ? 'Themes unlocked. Pick one above.'
-                : 'No ad was available — nothing changed.',
-          ),
-        ),
+      final rewarded = await service.show(
+        onReward: () {
+          // Guard the callback: it fires from the ad SDK, possibly after this
+          // State was disposed, and `ref` throws on a dead element.
+          if (!mounted) return;
+          // Awaited by the surrounding flow's state; fire-and-forget here lost
+          // an earned unlock if the process died mid-write.
+          unawaited(ref.read(settingsProvider.notifier).unlockReceiptThemes());
+        },
       );
+      if (!mounted) return;
+
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              rewarded
+                  ? 'Themes unlocked. Pick one above.'
+                  : 'No ad was available — nothing changed.',
+            ),
+          ),
+        );
+    } finally {
+      _unlocking = false;
+    }
   }
 
   Rect? _origin(BuildContext context) {
@@ -415,7 +432,7 @@ class _ThemeChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(SbRadius.button),
         child: Container(
-          height: 40,
+          height: 44, // SbSize.minTapTarget: 40 was below the app's own floor
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(SbRadius.button),

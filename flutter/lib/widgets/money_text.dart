@@ -37,6 +37,7 @@ class MoneyText extends StatelessWidget {
     this.style,
     this.color,
     this.suffix,
+    this.suffixColor,
     this.gradient,
     this.semanticLabel,
     this.currency,
@@ -50,6 +51,7 @@ class MoneyText extends StatelessWidget {
     this.style,
     this.color,
     this.suffix,
+    this.suffixColor,
     this.gradient,
     this.semanticLabel,
     this.currency,
@@ -63,6 +65,11 @@ class MoneyText extends StatelessWidget {
   /// Defaults to the theme's primary text colour when null.
   final Color? color;
   final String? suffix;
+
+  /// Overrides the suffix colour. The dark-locked share receipt needs this:
+  /// the ambient light theme's muted grey on the receipt's near-black card
+  /// failed contrast and leaked into the exported PNG.
+  final Color? suffixColor;
   final Gradient? gradient;
   final String? semanticLabel;
 
@@ -127,7 +134,11 @@ class MoneyText extends StatelessWidget {
         const SizedBox(width: 3),
         Text(
           suffix!,
-          style: SbType.micro.copyWith(color: context.sb.textMuted, fontSize: 8.5, letterSpacing: 0),
+          style: SbType.micro.copyWith(
+            color: suffixColor ?? context.sb.textMuted,
+            fontSize: 8.5,
+            letterSpacing: 0,
+          ),
           textScaler: scaleWithSystem
               ? MediaQuery.textScalerOf(context)
               : TextScaler.noScaling,

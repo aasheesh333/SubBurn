@@ -122,16 +122,16 @@ class RenewalsScreen extends ConsumerWidget {
                           ..showSnackBar(
                             const SnackBar(
                               content: Text(
-                                'Android is blocking notifications. Allow SubBurn '
-                                'in system settings, then turn this on again.',
+                                'Your system is blocking notifications. Allow '
+                                'SubBurn in system settings, then turn this on '
+                                'again.',
                               ),
                             ),
                           );
-                      } else if (value) {
-                        await ref
-                            .read(subscriptionsProvider.notifier)
-                            .rescheduleAll();
                       }
+                      // No rescheduleAll here: setNotifications(true) already
+                      // re-arms every reminder internally — the duplicate call
+                      // doubled every cancel+schedule platform round-trip.
                     },
                   ),
                 ],
@@ -156,9 +156,10 @@ class RenewalsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: SbSpace.x1),
                     Text(
-                      ordered.isEmpty && subs.isEmpty
-                          ? 'Add a subscription and its charges appear here.'
-                          : 'Nothing is due yet. Charges show up as they approach.',
+                      // `ordered` is a copy of `subs`, so inside this branch the
+                      // ledger is always empty — the old ternary's second string
+                      // was unreachable.
+                      'Add a subscription and its charges appear here.',
                       textAlign: TextAlign.center,
                       style: SbType.micro.copyWith(
                         fontSize: 8.5,

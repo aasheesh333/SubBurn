@@ -43,7 +43,9 @@ class SurfaceCard extends StatelessWidget {
           color: tint?.withValues(alpha: 0.22) ?? context.sb.border,
           width: SbSize.hairline,
         ),
-        boxShadow: const [SbShadow.cardInner],
+        // Per-theme elevation: the dark inner highlight is invisible on the
+        // light palette, which defined its own soft shadows for exactly this.
+        boxShadow: context.sb.cardShadow,
       ),
       child: child,
     );

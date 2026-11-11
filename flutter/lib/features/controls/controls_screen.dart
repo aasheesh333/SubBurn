@@ -7,6 +7,7 @@ import '../../core/app_links.dart';
 import '../../core/motion.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../data/models/currency.dart';
+import '../../data/models/subscription.dart';
 import '../../data/models/theme_preference.dart';
 import '../../services/ads_bootstrap.dart';
 import '../../services/ads_service.dart';
@@ -138,8 +139,9 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                         ..showSnackBar(
                           const SnackBar(
                             content: Text(
-                              'Android is blocking notifications. Allow SubBurn '
-                              'in system settings, then turn this on again.',
+                              'Your system is blocking notifications. Allow '
+                              'SubBurn in system settings, then turn this on '
+                              'again.',
                             ),
                           ),
                         );
@@ -184,7 +186,9 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                       SnackBar(
                         content: Text(
                           armed == 0
-                              ? 'No reminders were armed. Check the permission above.'
+                              ? 'No reminders were armed — either notifications '
+                                  'are blocked above, or nothing renews in the '
+                                  'next ${SbWindow.renewingHours} hours.'
                               : 'Re-armed reminders for $armed subscription'
                                   '${armed == 1 ? '' : 's'}.',
                         ),
@@ -266,12 +270,27 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                 ),
               ),
               if (ads.enabled)
-                const _SettingRow(
+                _SettingRow(
                   title: 'Ad privacy',
                   subtitle: 'Change or withdraw your ad consent at any time.',
                   child: TextButton(
-                    onPressed: AdsBootstrap.showPrivacyOptions,
-                    child: Text('MANAGE'),
+                    onPressed: () async {
+                      final shown = await AdsBootstrap.showPrivacyOptions();
+                      // Outside the EEA/UK (and before consent info loads) no
+                      // form applies — say so instead of being a dead button.
+                      if (shown || !context.mounted) return;
+                      ScaffoldMessenger.of(context)
+                        ..hideCurrentSnackBar()
+                        ..showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'No ad-consent choice is required in your region, '
+                              'so there is nothing to change.',
+                            ),
+                          ),
+                        );
+                    },
+                    child: const Text('MANAGE'),
                   ),
                 ),
             ],

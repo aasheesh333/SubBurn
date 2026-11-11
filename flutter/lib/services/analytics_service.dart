@@ -41,9 +41,12 @@ class AnalyticsService {
 
   Future<void> logSubscriptionDeleted() => _log('sub_deleted');
 
-  Future<void> logCancelLinkOpened({required String vendor, required bool resolved}) {
+  /// [category] is a coarse bucket ('ai', 'streaming', …). The raw vendor name
+  /// must never be sent: the privacy policy promises analytics carry no names,
+  /// prices or vendors.
+  Future<void> logCancelLinkOpened({required String category, required bool resolved}) {
     return _log('cancel_link_opened', <String, Object>{
-      'vendor': vendor,
+      'category': category,
       'resolved': resolved,
     });
   }

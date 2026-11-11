@@ -76,7 +76,7 @@ class _LegalPageState extends ConsumerState<LegalPage> {
               LegalDoc.about => _About(version: _version),
               LegalDoc.privacy => const _PrivacyBody(),
               LegalDoc.terms => const _TermsBody(),
-              LegalDoc.licenses => const _LicensesBody(),
+              LegalDoc.licenses => _LicensesBody(version: _version),
             },
           ],
         ),
@@ -309,8 +309,9 @@ class _PrivacyBody extends StatelessWidget {
           title: 'The short version',
           child: _Body(
             'Your subscriptions never leave your phone. There is no account, no '
-            'cloud database, and no way for us to read your ledger. No ads today, '
-            'and no selling of data — ever.',
+            'cloud database, and no way for us to read your ledger. One small '
+            'banner and an optional rewarded video are the only ads, and we '
+            'never sell data — ever.',
           ),
         ),
         const _Section(
@@ -326,7 +327,7 @@ class _PrivacyBody extends StatelessWidget {
           title: 'What leaves the device',
           child: _Bullets([
             'A plain request to our server for the preset catalogue and the USD→INR rate (cached).',
-            'Two product events (subscription added, receipt shared) with coarse buckets — no names, prices or vendors.',
+            'A few product events (subscription added or deleted, receipt shared, cancel link opened) with coarse buckets — no names, prices or vendors.',
             'Crash reports: stack trace, app version, device model. Never your ledger.',
             'A push token and the random install id, if you allow notifications.',
           ]),
@@ -429,7 +430,11 @@ class _TermsBody extends StatelessWidget {
 }
 
 class _LicensesBody extends StatelessWidget {
-  const _LicensesBody();
+  const _LicensesBody({required this.version});
+
+  /// Real build version. The licence page used to print the publisher name
+  /// where the version belongs.
+  final String version;
 
   @override
   Widget build(BuildContext context) {
@@ -473,7 +478,7 @@ class _LicensesBody extends StatelessWidget {
             onPressed: () => showLicensePage(
               context: context,
               applicationName: 'SubBurn',
-              applicationVersion: 'Dhanuk Softwares',
+              applicationVersion: version.isEmpty ? 'Dhanuk Softwares' : version,
               applicationLegalese: '© Dhanuk Softwares',
             ),
             style: OutlinedButton.styleFrom(

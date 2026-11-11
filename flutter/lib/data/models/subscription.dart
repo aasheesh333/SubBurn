@@ -81,11 +81,12 @@ class Subscription {
   double yearlyIn(CurrencyCode target, double inrPerUsd) =>
       monthlyIn(target, inrPerUsd) * 12;
 
-  /// Total charged between [startDate] and [asOf], prorated to the month.
+  /// Total charged between [startDate] and [asOf] — whole charges only.
   ///
-  /// Prorating is deliberate: a subscription started 2 weeks ago has burned
-  /// half a month, and showing a whole month would overstate the number the
-  /// whole product is about.
+  /// Counted by walking the real billing dates ([chargeCount]) and multiplying
+  /// by the actual per-charge amount, so the figure always agrees with the
+  /// charge count printed beside it. No proration: a subscription started two
+  /// weeks ago has been *charged* once, and that is the honest number.
   double lifetimeIn(
     CurrencyCode target,
     double inrPerUsd, {
@@ -117,15 +118,17 @@ class Subscription {
   /// Counted by walking the real billing dates rather than dividing elapsed
   /// days: an average month is 30.44 days, so dividing reported 9 charges for
   /// ten monthly payments and disagreed with the rupee total printed beside it.
+  /// Dates come from the anchor (`nthAfter`), so a January-31 plan counts March
+  /// correctly instead of drifting to the 28th.
   int chargeCount({DateTime? asOf}) {
     final now = asOf ?? SbClock.now();
     if (now.isBefore(startDate)) return 0;
     var count = 0;
-    var date = startDate;
     // Hard cap: 100 years of weekly billing is 5,200 charges.
-    while (!date.isAfter(now) && count < 6000) {
+    while (count < 6000) {
+      final date = cycle.nthAfter(startDate, count);
+      if (date.isAfter(now)) break;
       count++;
-      date = cycle.advance(date);
     }
     return count;
   }
@@ -136,15 +139,14 @@ class Subscription {
   /// user who opens the app two days after being charged sees "renews now"
   /// forever, the 48-hour rail skips the row, and no reminder is ever
   /// scheduled again — the app silently stops working for that subscription.
+  ///
+  /// Rolled from [startDate], not from the stale date: iterating `advance`
+  /// accumulated short-month clamps (Jan 31 → Feb 28 → Mar 28) and, for weekly
+  /// plans more than ~11 years old, ran off a fixed iteration cap into the past.
   Subscription rolledForward({DateTime? now}) {
     final clock = now ?? SbClock.now();
     if (nextBillingDate.isAfter(clock)) return this;
-    var next = nextBillingDate;
-    // Cap the walk: a weekly plan left for 10 years is ~520 iterations.
-    for (var i = 0; i <= 600 && !next.isAfter(clock); i++) {
-      next = cycle.advance(next);
-    }
-    return copyWith(nextBillingDate: next);
+    return copyWith(nextBillingDate: cycle.nextAfter(startDate, now: clock));
   }
 
   /// True when [nextBillingDate] is in the past and needs [rolledForward].

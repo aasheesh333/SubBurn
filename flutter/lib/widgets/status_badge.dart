@@ -55,6 +55,10 @@ class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStat
   void didUpdateWidget(covariant StatusBadge oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.pulse && !_c.isAnimating) {
+      // Same reduce-motion guard as didChangeDependencies: a badge flipping to
+      // pulse mid-life (a sub crossing the 24 h mark) must not start breathing
+      // on a device set to "remove animations".
+      if (SbMotion.reduced(context)) return;
       _c.repeat(reverse: true);
     } else if (!widget.pulse && _c.isAnimating) {
       _c.stop();
@@ -100,7 +104,10 @@ class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStat
       builder: (context, child) {
         final t = widget.pulse ? Curves.easeInOut.transform(_c.value) : 0.0;
         return Container(
-          height: 19,
+          // Grows with the OS text scale: the fixed 19 px pill was overflowed
+          // by its own 8.5 px label at ~160 % scale and up.
+          height:
+              19 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 12,
           padding: const EdgeInsets.symmetric(horizontal: 7),
           decoration: BoxDecoration(
             color: p.bg,
