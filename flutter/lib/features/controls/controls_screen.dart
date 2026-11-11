@@ -259,9 +259,10 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
               _SettingRow(
                 title: ads.enabled ? 'Ads enabled' : 'No ads',
                 subtitle: ads.enabled
-                    ? 'One banner on the dashboard, plus an optional rewarded '
-                        'video for the extra receipt themes. No interstitials, '
-                        'no ads while you are editing or sharing.'
+                    ? 'One banner above the navigation bar on every main '
+                        'screen, plus an optional rewarded video for the extra '
+                        'receipt themes. No interstitials, no ads while you are '
+                        'editing or sharing.'
                     : 'This build shows no advertising.',
                 child: StatusBadge(
                   ads.enabled ? 'ON' : 'OFF',

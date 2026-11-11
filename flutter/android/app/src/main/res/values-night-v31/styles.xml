@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Night counterpart of values-v31: the UI-mode qualifier outranks the
+         version qualifier, so without this file dark devices on Android 12+
+         would keep the pre-splash theme and lose the branded splash icon. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowSplashScreenBackground">@color/sb_launch_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+    </style>
+</resources>

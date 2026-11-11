@@ -29,7 +29,7 @@ never click a live ad. Invalid traffic is the fastest route to an account ban.
 
 | Format | Used | Why |
 |---|---|---|
-| Banner (anchored adaptive) | **Yes, one** | Predictable revenue, zero policy risk when it sits below content. Placed at the bottom of the dashboard, under the ghost callout, above the tab bar. Requests `AdSize.getLargeAnchoredAdaptiveBannerAdSize` (full-width, Google-optimised height) — the legacy fixed 320×50 letterboxes on wide phones and earns less. |
+| Banner (anchored adaptive) | **Yes, one** | Predictable revenue, zero policy risk when it sits below content. Mounted once at shell level, above the bottom navigation bar, so it is visible on all four tabs, loads once per session and is never reloaded by tab switches (the SDK's own refresh cycle handles timed reloads). Requests `AdSize.getLargeAnchoredAdaptiveBannerAdSize` (full-width, Google-optimised height) — the legacy fixed 320×50 letterboxes on wide phones and earns less. Pushed routes (subscription detail) and modal sheets (add/edit) cover the shell, so no ad is ever visible while editing or sharing. |
 | Rewarded | **Yes, opt-in** | The only format where the interruption is the user's own choice, so it cannot cost retention. The reward is two extra receipt themes — cosmetic, permanent, and nothing else is gated. |
 | Interstitial | **No** | Must not fire at app open, mid-task, or between a tap and its result. In an app opened for seconds it destroys the experience and the highest-risk format for policy action. |
 | App open | **No** | Google requires it not to obscure the first screen's content, and it reads as a toll booth on a utility app. |
@@ -43,9 +43,10 @@ a debug build can never request a live unit even if Remote Config ships one.
 
 ## Policy rules the implementation enforces
 
-1. **No ad on a functional surface.** The banner appears only on the dashboard's
-   scroll tail. Never on the subscription detail screen, in Quick Add, in the
-   edit sheet, on the legal pages, or anywhere inside the receipt.
+1. **No ad on a functional surface.** The single banner lives at shell level,
+   above the bottom navigation bar, on the four main tabs only. Pushed routes
+   (subscription detail, legal pages) and modal sheets (Quick Add, edit) cover
+   the shell, so no ad is ever visible while reading, editing or sharing.
 2. **No ad near a call to action.** The banner sits below all content with a
    divider, so a mis-tap on "Add" or "Review" cannot land on it.
 3. **No ad on the share/export flow.** The receipt is the product; an ad would

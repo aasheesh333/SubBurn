@@ -344,7 +344,8 @@ class _PrivacyBody extends StatelessWidget {
         const _Section(
           title: 'Advertising',
           child: _Bullets([
-            'One banner sits at the bottom of the dashboard, below all content.',
+            'One banner sits at the bottom of the screen, above the navigation '
+                'bar, on the app\'s four main tabs.',
             'An optional rewarded video unlocks two extra receipt themes. They '
                 'are cosmetic: no feature and no data is locked behind an ad.',
             'No interstitial or app-open ads, and none on the detail screen, in '

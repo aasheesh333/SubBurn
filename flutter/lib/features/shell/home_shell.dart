@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
+import '../../widgets/banner_ad_slot.dart';
 import '../dashboard/burn_dashboard_screen.dart';
 import '../controls/controls_screen.dart';
 import '../quick_add/quick_add_sheet.dart';
@@ -123,14 +124,25 @@ class _HomeShellState extends ConsumerState<HomeShell>
             const _OfflineStrip(),
         ],
       ),
-      bottomNavigationBar: _BottomBar(
-        index: _index,
-        onSelect: (i) {
-          if (i == _index) return;
-          HapticFeedback.selectionClick();
-          setState(() => _index = i);
-        },
-        onAdd: _openQuickAdd,
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // One banner for the whole app, living at shell level: it loads once
+          // per session and survives every tab switch, so switching screens
+          // never reloads it. The SDK's own refresh cycle handles timed
+          // reloads. Sits above the tab bar on every screen, never over
+          // content.
+          const BannerAdRegion(),
+          _BottomBar(
+            index: _index,
+            onSelect: (i) {
+              if (i == _index) return;
+              HapticFeedback.selectionClick();
+              setState(() => _index = i);
+            },
+            onAdd: _openQuickAdd,
+          ),
+        ],
       ),
     );
   }

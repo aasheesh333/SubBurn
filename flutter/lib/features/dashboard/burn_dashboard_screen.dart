@@ -8,7 +8,6 @@ import '../../core/utils/formatters.dart';
 import '../../data/models/currency.dart';
 import '../../data/models/subscription.dart';
 import '../../state/providers.dart';
-import '../../widgets/banner_ad_slot.dart';
 import '../../widgets/burn_hero_card.dart';
 import '../../widgets/money_text.dart';
 import '../../widgets/primary_button.dart';
@@ -235,10 +234,10 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
                   ),
                 ),
               ],
-              // One banner, below every piece of content and above the tab
-              // bar. Never over a row, never on the detail screen, never in
-              // the receipt — that is where AdMob policy complaints start.
-              const SliverToBoxAdapter(child: BannerAdRegion()),
+              // Bottom slack so the last row clears the shell-level banner
+              // and the tab bar. The banner itself lives in HomeShell now:
+              // one instance for the whole app, loaded once, never reloaded
+              // by tab switches, visible on every screen.
               const SliverToBoxAdapter(child: SizedBox(height: 96)),
             ],
           ],

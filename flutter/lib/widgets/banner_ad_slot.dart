@@ -7,15 +7,20 @@ import '../core/theme/theme_tokens.dart';
 import '../services/ads_bootstrap.dart';
 import '../services/ads_service.dart';
 
-/// One anchored-adaptive banner, loaded lazily.
+/// One anchored-adaptive banner for the entire app, loaded lazily and once.
 ///
-/// Placement rules this widget enforces:
-/// * It renders nothing — not even its divider — until Remote Config says ads
-///   are on, the SDK initialised, *and* a real ad filled. A stray hairline with
-///   nothing under it reads as a layout bug.
-/// * Debug builds always request Google's test unit, never the live one.
-/// * It is never placed over an interactive element — callers put it below
-///   content, above the tab bar.
+/// The slot is mounted by [HomeShell] above the bottom navigation bar, which
+/// gives it three properties the old per-screen placement could not:
+/// * **Static** — a single instance lives as long as the shell, so switching
+///   tabs never disposes or reloads it. Timed reloads are left to the SDK's
+///   own refresh cycle ("reload, but on time").
+/// * **Always at the bottom** — same position and height on every screen,
+///   above the tab bar, never over content or a tap target.
+/// * **No layout jump per screen** — height is reserved once, when the first
+///   real ad fills, and then stays constant everywhere. A failed fill keeps
+///   rendering nothing rather than an empty grey band.
+///
+/// Debug builds always request Google's test unit, never the live one.
 class BannerAdSlot extends ConsumerStatefulWidget {
   const BannerAdSlot({super.key});
 
