@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/subburn_tokens.dart';
+import 'press_scale.dart';
 
 /// Segmented pill group used for Billing cycle / Currency / Usage guilt.
 ///
@@ -84,75 +85,81 @@ class _Segment extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: SbMotion.of(context, SbMotion.quick),
-          height: SbSize.minTapTarget,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(9),
-            gradient: selected
-                ? LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: context.sb.segmentSelected,
-                  )
-                : null,
-            border: Border.all(
-              color: selected ? context.sb.accentAlt.withValues(alpha: 0.36) : Colors.transparent,
-            ),
-            boxShadow: selected
-                ? [
-                    const BoxShadow(
-                      color: Color(0x4DFF4500),
-                      offset: Offset(0, 4),
-                      blurRadius: 14,
-                      spreadRadius: -8,
-                    ),
-                    SbShadow.cardInner,
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (dot != null) ...[
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: dot,
-                    shape: BoxShape.circle,
-                    boxShadow: dotShadow,
-                  ),
-                ),
-                const SizedBox(width: 6),
-              ],
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: SbType.caption.copyWith(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.01 * 11,
-                    color: selected ? context.sb.text : context.sb.textMuted,
-                  ),
-                ),
+        child: PressScale(
+          child: AnimatedContainer(
+            duration: SbMotion.of(context, SbMotion.quick),
+            height: SbSize.minTapTarget,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(SbRadius.tile),
+              gradient: selected
+                  ? LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: context.sb.segmentSelected,
+                    )
+                  : null,
+              border: Border.all(
+                color: selected
+                    ? context.sb.accentAlt.withValues(alpha: 0.36)
+                    : Colors.transparent,
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 5),
-                Text(
-                  trailing!,
-                  maxLines: 1,
-                  style: SbType.micro.copyWith(
-                    fontSize: 8,
-                    letterSpacing: 0.02,
-                    color: selected ? context.sb.accentWarm : context.sb.textMuted,
+              boxShadow: selected
+                  ? [
+                      const BoxShadow(
+                        color: Color(0x4DFF4500),
+                        offset: Offset(0, 4),
+                        blurRadius: 14,
+                        spreadRadius: -8,
+                      ),
+                      SbShadow.cardInner,
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (dot != null) ...[
+                  Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: dot,
+                      shape: BoxShape.circle,
+                      boxShadow: dotShadow,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: SbType.caption.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.01 * 11,
+                      color: selected ? context.sb.text : context.sb.textMuted,
+                    ),
                   ),
                 ),
+                if (trailing != null) ...[
+                  const SizedBox(width: 5),
+                  Text(
+                    trailing!,
+                    maxLines: 1,
+                    style: SbType.micro.copyWith(
+                      fontSize: 9,
+                      letterSpacing: 0.02,
+                      color: selected
+                          ? context.sb.accentWarm
+                          : context.sb.textMuted,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

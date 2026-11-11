@@ -18,6 +18,7 @@ import 'package:subburn/features/detail/sub_detail_screen.dart';
 import 'package:subburn/features/legal/legal_page.dart';
 import 'package:subburn/features/quick_add/quick_add_sheet.dart';
 import 'package:subburn/features/renewals/renewals_screen.dart';
+import 'package:subburn/features/shell/home_shell.dart';
 import 'package:subburn/features/studio/viral_receipt_screen.dart';
 import 'package:subburn/services/analytics_service.dart';
 import 'package:subburn/services/catalogue_service.dart';
@@ -297,6 +298,136 @@ void main() {
         initial: [for (var i = 0; i < 3; i++) _sub(i * 3)],
       );
       await render(tester, const ViralReceiptScreen(), const Size(320, 640));
+    });
+  });
+
+  // States the first sweep never pumped: search results, the shell's own
+  // bottom bar, 200 % on the remaining screens, and the confirm dialogs.
+  // Each of these broke (or was predicted to break) at 320 dp / 200 % text.
+  group('previously uncovered states', () {
+    Future<void> settleAndAssert(WidgetTester tester) async {
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 90));
+      }
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'threw after interaction\n${captured.join('\n---\n')}',
+      );
+      expect(
+        captured.where((e) => e.contains('overflowed')).toList(),
+        isEmpty,
+        reason: 'overflowed after interaction',
+      );
+    }
+
+    testWidgets('quick add with search results at 320 dp / 200 %',
+        (tester) async {
+      await render(
+        tester,
+        const QuickAddSheet(),
+        const Size(320, 640),
+        textScale: 2,
+      );
+      await tester.enterText(find.byType(TextField).first, 'a');
+      await settleAndAssert(tester);
+    });
+
+    testWidgets('shell bottom bar at 320 dp / 200 %', (tester) async {
+      await render(tester, const HomeShell(), const Size(320, 640),
+          textScale: 2);
+    });
+
+    testWidgets('renewals at 320 dp / 200 %', (tester) async {
+      await render(
+        tester,
+        RenewalsScreen(onAddSubscription: () {}),
+        const Size(320, 640),
+        textScale: 2,
+      );
+    });
+
+    testWidgets('renewals empty with CTA at 320 dp / 200 %', (tester) async {
+      repo = SubscriptionRepository.inMemory();
+      await render(
+        tester,
+        RenewalsScreen(onAddSubscription: () {}),
+        const Size(320, 640),
+        textScale: 2,
+      );
+    });
+
+    testWidgets('studio at 320 dp / 200 %', (tester) async {
+      await render(
+        tester,
+        const ViralReceiptScreen(),
+        const Size(320, 640),
+        textScale: 2,
+      );
+    });
+
+    testWidgets('edit sheet at 320 dp / 200 %', (tester) async {
+      await render(
+        tester,
+        EditSubscriptionSheet(subscription: _sub(0)),
+        const Size(320, 640),
+        textScale: 2,
+      );
+    });
+
+    testWidgets('every legal doc at 320 dp / 200 %', (tester) async {
+      for (final doc in LegalDoc.values) {
+        await render(
+          tester,
+          LegalPage(doc: doc),
+          const Size(320, 640),
+          textScale: 2,
+        );
+      }
+    });
+
+    testWidgets('delete dialog with a 60-char name at 320 dp / 200 %',
+        (tester) async {
+      final long = Subscription(
+        id: 'long',
+        name: 'Adobe Creative Cloud Photography Plan Enterprise Edition',
+        vendor: 'ADOBE SYSTEMS INCORPORATED',
+        monogram: 'AC',
+        brandColor: 0xFF10A37F,
+        amount: 1660,
+        currency: CurrencyCode.inr,
+        cycle: BillingCycle.monthly,
+        guilt: UsageGuilt.dailyDriver,
+        category: 'design',
+        startDate: DateTime(2024, 3, 31),
+        nextBillingDate: DateTime.now().add(const Duration(hours: 30)),
+        cancelUrl: 'https://example.com/cancel',
+      );
+      expect(long.name.length, greaterThanOrEqualTo(55));
+      repo = SubscriptionRepository.inMemory(initial: [long]);
+      await render(
+        tester,
+        const SubDetailScreen(subscriptionId: 'long'),
+        const Size(320, 640),
+        textScale: 2,
+      );
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+      await settleAndAssert(tester);
+      await tester.tap(find.text('Delete subscription'));
+      await settleAndAssert(tester);
+    });
+
+    testWidgets('duplicate dialog at 320 dp / 200 %', (tester) async {
+      await render(
+        tester,
+        const QuickAddSheet(),
+        const Size(320, 640),
+        textScale: 2,
+      );
+      await tester.enterText(find.byType(TextField).at(1), 'ChatGPT Plus');
+      await tester.enterText(find.byType(TextField).at(2), '1660');
+      await tester.tap(find.text('Add to burn tracker'));
+      await settleAndAssert(tester);
     });
   });
 }

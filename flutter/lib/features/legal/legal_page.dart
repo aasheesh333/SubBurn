@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_links.dart';
 import '../../core/theme/theme_tokens.dart';
+import '../../widgets/press_scale.dart';
 import '../../widgets/sb_header.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/surface_card.dart';
@@ -100,7 +101,8 @@ class _Section extends StatelessWidget {
         children: [
           Text(
             title.toUpperCase(),
-            style: SbType.label.copyWith(color: context.sb.textMuted, fontSize: 9),
+            style:
+                SbType.label.copyWith(color: context.sb.textMuted, fontSize: 9),
           ),
           const SizedBox(height: SbSpace.x2),
           SurfaceCard(
@@ -189,26 +191,28 @@ class _LinkRow extends StatelessWidget {
     return InkWell(
       onTap: () => launchUrl(url, mode: LaunchMode.externalApplication),
       borderRadius: BorderRadius.circular(SbRadius.button),
-      child: Container(
-        height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(SbRadius.button),
-          border: Border.all(color: context.sb.border),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: SbType.body.copyWith(
-                  fontSize: 12,
-                  color: context.sb.text,
+      child: PressScale(
+        child: Container(
+          height: SbSize.minTapTarget,
+          padding: const EdgeInsets.symmetric(horizontal: SbSpace.x3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(SbRadius.button),
+            border: Border.all(color: context.sb.border),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: SbType.body.copyWith(
+                    fontSize: 12,
+                    color: context.sb.text,
+                  ),
                 ),
               ),
-            ),
-            Icon(icon, size: 13, color: context.sb.textMuted),
-          ],
+              Icon(icon, size: 13, color: context.sb.textMuted),
+            ],
+          ),
         ),
       ),
     );
@@ -232,7 +236,7 @@ class _About extends StatelessWidget {
               height: 48,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(SbRadius.button),
-                gradient: SbGradients.burn,
+                gradient: context.sb.cta,
               ),
               child: Icon(
                 Icons.local_fire_department_rounded,
@@ -245,11 +249,14 @@ class _About extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('SubBurn', style: SbType.h3.copyWith(color: context.sb.text)),
+                  Text('SubBurn',
+                      style: SbType.h3.copyWith(color: context.sb.text)),
                   Text(
-                    version.isEmpty ? AppLinks.publisher : 'v$version · ${AppLinks.publisher}',
+                    version.isEmpty
+                        ? AppLinks.publisher
+                        : 'v$version · ${AppLinks.publisher}',
                     style: SbType.micro.copyWith(
-                      fontSize: 8.5,
+                      fontSize: 9,
                       color: context.sb.textMuted,
                       letterSpacing: 0.04,
                     ),
@@ -479,7 +486,8 @@ class _LicensesBody extends StatelessWidget {
             onPressed: () => showLicensePage(
               context: context,
               applicationName: 'SubBurn',
-              applicationVersion: version.isEmpty ? 'Dhanuk Softwares' : version,
+              applicationVersion:
+                  version.isEmpty ? 'Dhanuk Softwares' : version,
               applicationLegalese: '© Dhanuk Softwares',
             ),
             style: OutlinedButton.styleFrom(

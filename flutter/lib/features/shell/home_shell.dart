@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../core/utils/formatters.dart';
 import '../../widgets/banner_ad_slot.dart';
+import '../../widgets/press_scale.dart';
 import '../dashboard/burn_dashboard_screen.dart';
 import '../controls/controls_screen.dart';
 import '../quick_add/quick_add_sheet.dart';
@@ -168,7 +169,8 @@ class _BottomBar extends StatelessWidget {
       ),
       padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
       child: SizedBox(
-        height: 64,
+        // Grows with the text scale so the fitted labels keep vertical room.
+        height: 64 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 10,
         child: Row(
           children: [
             Expanded(
@@ -201,7 +203,7 @@ class _BottomBar extends StatelessWidget {
                       height: 52,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: SbGradients.burn,
+                        gradient: context.sb.cta,
                         // Same guard PrimaryButton uses: the orange bloom reads
                         // as a dirty smudge on a light bottom bar.
                         boxShadow:
@@ -262,20 +264,31 @@ class _NavItem extends StatelessWidget {
       label: label,
       child: InkWell(
         onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: SbType.micro.copyWith(
-                fontSize: 7.5,
-                color: color,
-                letterSpacing: 0.06,
+        child: PressScale(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 20, color: color),
+              const SizedBox(height: 2),
+              // FittedBox, not wrapping: at 200 % text "Renewals" is wider than
+              // its ~59 dp slot on a 320 dp phone, and a second line would burst
+              // the fixed-height bar. Scaling down keeps the whole word.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    style: SbType.micro.copyWith(
+                      fontSize: 9,
+                      color: color,
+                      letterSpacing: 0.06,
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -288,13 +301,17 @@ class _OfflineStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 22,
+      // minHeight, not height: the 7.5 px line becomes ~19 px at 200 % and a
+      // fixed 22 px box left it zero headroom.
+      constraints: BoxConstraints(
+        minHeight: 22 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 8,
+      ),
       color: context.sb.surfaceHi,
       alignment: Alignment.center,
       child: Text(
         'Offline · using bundled presets',
         style: SbType.micro.copyWith(
-          fontSize: 7.5,
+          fontSize: 9,
           color: context.sb.textMuted,
           letterSpacing: 0.04,
         ),

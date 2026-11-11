@@ -60,7 +60,8 @@ class AdsBootstrap {
       // message when one is required and returns immediately otherwise.
       await _gatherConsent();
       final status = await MobileAds.instance.initialize();
-      debugPrint('AdMob initialised: ${status.adapterStatuses.keys.join(', ')}');
+      debugPrint(
+          'AdMob initialised: ${status.adapterStatuses.keys.join(', ')}');
       _initialised = true;
     } catch (error) {
       // Ads are optional revenue; a failure here must never affect the app.

@@ -11,6 +11,7 @@ import '../../data/models/cycle_conversion.dart';
 import '../../data/models/subscription.dart';
 import '../../data/models/usage_guilt.dart';
 import '../../state/providers.dart';
+import '../../widgets/press_scale.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/segment_pills.dart';
 import '../../widgets/tool_tile.dart';
@@ -130,9 +131,8 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
     });
     // A cycle change re-anchors the next charge. Without this the row said
     // "yearly" while its reminders still fired on the old monthly date.
-    final nextCharge = _cycle == s.cycle
-        ? s.nextBillingDate
-        : _cycle.nextAfter(s.startDate);
+    final nextCharge =
+        _cycle == s.cycle ? s.nextBillingDate : _cycle.nextAfter(s.startDate);
 
     // A rename must carry the identity with it: the old monogram ("N" for
     // Netflix) used to survive a rename to Hulu.
@@ -255,7 +255,7 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
                         Text(
                           '${s.vendor} · since ${formatChargeDate(s.startDate)}',
                           style: SbType.micro.copyWith(
-                            fontSize: 8,
+                            fontSize: 9,
                             color: context.sb.textMuted,
                             letterSpacing: 0.02,
                           ),
@@ -265,7 +265,8 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    icon: Icon(Icons.close_rounded, color: context.sb.textSecondary),
+                    icon: Icon(Icons.close_rounded,
+                        color: context.sb.textSecondary),
                     tooltip: 'Close',
                   ),
                 ],
@@ -378,7 +379,7 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
                       '${formatChargeDate(_cycle == s.cycle ? s.nextBillingDate : _cycle.nextAfter(s.startDate))} · '
                       'adjust the date from the detail screen.',
                       style: SbType.micro.copyWith(
-                        fontSize: 8,
+                        fontSize: 9,
                         color: context.sb.textMuted,
                         letterSpacing: 0,
                         height: 1.5,
@@ -449,7 +450,7 @@ class _EditSubscriptionSheetState extends ConsumerState<EditSubscriptionSheet> {
     final amount = parseAmount(_price.text);
     if (amount == null || amount <= 0) return '—';
     final monthly = amount * _cycle.monthlyFactor;
-    return '${_currency.format(monthly.roundToDouble())} /mo';
+    return '${_currency.format(monthly)} /mo';
   }
 
   static String _periodNoun(BillingCycle cycle) => switch (cycle) {
@@ -485,21 +486,23 @@ class _CurrencyToggle extends StatelessWidget {
               child: InkWell(
                 onTap: () => onChanged(code),
                 borderRadius: BorderRadius.circular(SbRadius.tile),
-                child: Container(
-                  width: 40,
-                  height: 44,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(SbRadius.tile),
-                    gradient: value == code ? SbGradients.burn : null,
-                  ),
-                  child: Text(
-                    code.symbol,
-                    style: SbType.moneyMd.copyWith(
-                      fontSize: 15,
-                      color: value == code
-                          ? context.sb.onAccent
-                          : context.sb.textSecondary,
+                child: PressScale(
+                  child: Container(
+                    width: 44,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(SbRadius.tile),
+                      gradient: value == code ? context.sb.cta : null,
+                    ),
+                    child: Text(
+                      code.symbol,
+                      style: SbType.moneyMd.copyWith(
+                        fontSize: 15,
+                        color: value == code
+                            ? context.sb.onAccent
+                            : context.sb.textSecondary,
+                      ),
                     ),
                   ),
                 ),

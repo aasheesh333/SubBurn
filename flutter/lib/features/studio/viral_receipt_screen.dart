@@ -12,6 +12,7 @@ import '../../data/models/billing_cycle.dart';
 import '../../data/models/currency.dart';
 import '../../data/models/subscription.dart';
 import '../../state/providers.dart';
+import '../../widgets/press_scale.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/receipt_card.dart';
 import '../../widgets/sb_header.dart';
@@ -46,7 +47,8 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
     final subs = ref.watch(subscriptionsProvider);
 
     final roast = _roastFor(summary, settings.displayCurrency, rates.inrPerUsd);
-    final lines = _receiptLines(subs, settings.displayCurrency, rates.inrPerUsd);
+    final lines =
+        _receiptLines(subs, settings.displayCurrency, rates.inrPerUsd);
     final hidden = subs.length > lines.length ? subs.length - lines.length : 0;
 
     return SafeArea(
@@ -80,7 +82,8 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
                         roastLine: roast.line,
                         ghostShare: summary.ghostShare,
                         ghostAmount: summary.ghostYearly,
-                        receiptNo: 'No. ${_receiptNo(summary, settings.installId)}',
+                        receiptNo:
+                            'No. ${_receiptNo(summary, settings.installId)}',
                         verdict: roast.verdict,
                         roastIntensity: roast.intensity,
                         currency: settings.displayCurrency,
@@ -95,24 +98,31 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
               ),
             ),
             const SizedBox(height: SbSpace.x2),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.check_rounded,
-                  size: 11,
-                  color: context.sb.safe,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'One isolated frame · exports at 3×',
-                  style: SbType.micro.copyWith(
-                    fontSize: 8,
-                    color: context.sb.textMuted,
-                    letterSpacing: 0.02,
+            // Wraps instead of overflowing: as a Row this caption burst the
+            // 320 dp width by 232 px at 200 % text.
+            Text.rich(
+              TextSpan(
+                children: [
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Icon(
+                      Icons.check_rounded,
+                      size: 11,
+                      color: context.sb.safe,
+                    ),
                   ),
-                ),
-              ],
+                  const TextSpan(text: ' '),
+                  TextSpan(
+                    text: 'One isolated frame · exports at 3×',
+                    style: SbType.micro.copyWith(
+                      fontSize: 9,
+                      color: context.sb.textMuted,
+                      letterSpacing: 0.02,
+                    ),
+                  ),
+                ],
+              ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: SbSpace.x2),
             _ThemePicker(
@@ -151,7 +161,7 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
               'subscriptions is uploaded.',
               textAlign: TextAlign.center,
               style: SbType.micro.copyWith(
-                fontSize: 8,
+                fontSize: 9,
                 color: context.sb.textMuted,
                 letterSpacing: 0.02,
                 height: 1.5,
@@ -166,9 +176,8 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
 
   Roast _roastFor(BurnSummary summary, CurrencyCode currency, double rate) {
     if (summary.count == 0) return Roast.empty;
-    final yearlyInr = currency == CurrencyCode.inr
-        ? summary.yearly
-        : summary.yearly * rate;
+    final yearlyInr =
+        currency == CurrencyCode.inr ? summary.yearly : summary.yearly * rate;
     final monthlyInr = yearlyInr / 12;
     return const RoastEngine().generate(
       RoastInput(
@@ -192,9 +201,8 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
     double rate,
   ) {
     final ranked = [...subs]..sort(
-        (a, b) => b
-            .monthlyIn(currency, rate)
-            .compareTo(a.monthlyIn(currency, rate)),
+        (a, b) =>
+            b.monthlyIn(currency, rate).compareTo(a.monthlyIn(currency, rate)),
       );
     return ranked.take(6).map((s) {
       return ReceiptLine(
@@ -210,7 +218,8 @@ class _ViralReceiptScreenState extends ConsumerState<ViralReceiptScreen> {
   String _receiptNo(BurnSummary summary, String? installId) {
     final seed = installId ?? 'subburn';
     var hash = 0x811C9DC5;
-    for (final unit in '$seed|${summary.yearly.round()}|${summary.count}'.codeUnits) {
+    for (final unit
+        in '$seed|${summary.yearly.round()}|${summary.count}'.codeUnits) {
       hash ^= unit;
       hash = (hash * 0x01000193) & 0x7FFFFFFF;
     }
@@ -431,51 +440,54 @@ class _ThemeChip extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(SbRadius.button),
-        child: Container(
-          height: 44, // SbSize.minTapTarget: 40 was below the app's own floor
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(SbRadius.button),
-            color: context.sb.surface,
-            border: Border.all(
-              color: selected ? theme.accent : context.sb.border,
+        child: PressScale(
+          child: Container(
+            height: SbSize.minTapTarget,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(SbRadius.button),
+              color: context.sb.surface,
+              border: Border.all(
+                color: selected ? theme.accent : context.sb.border,
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [theme.heroTop, theme.accent],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [theme.heroTop, theme.accent],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  theme.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: SbType.micro.copyWith(
-                    fontSize: 8.5,
-                    color: selected ? context.sb.text : context.sb.textSecondary,
-                    letterSpacing: 0.04,
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    theme.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: SbType.micro.copyWith(
+                      fontSize: 9,
+                      color:
+                          selected ? context.sb.text : context.sb.textSecondary,
+                      letterSpacing: 0.04,
+                    ),
                   ),
                 ),
-              ),
-              if (locked) ...[
-                const SizedBox(width: 3),
-                Icon(
-                  Icons.play_circle_outline_rounded,
-                  size: 11,
-                  color: context.sb.warn,
-                ),
+                if (locked) ...[
+                  const SizedBox(width: 3),
+                  Icon(
+                    Icons.play_circle_outline_rounded,
+                    size: 11,
+                    color: context.sb.warn,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

@@ -68,7 +68,8 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
     final ghosts = _ghostOnly
         ? allSubscriptions.where((s) => s.isGhost).toList(growable: false)
         : const <Subscription>[];
-    final filterStale = _ghostOnly && ghosts.isEmpty && allSubscriptions.isNotEmpty;
+    final filterStale =
+        _ghostOnly && ghosts.isEmpty && allSubscriptions.isNotEmpty;
     if (filterStale) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _ghostOnly) setState(() => _ghostOnly = false);
@@ -172,11 +173,17 @@ class _BurnDashboardScreenState extends ConsumerState<BurnDashboardScreen> {
               ),
               const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x2)),
               SliverToBoxAdapter(
-                child: _RenewingRail(
-                  subscriptions: railSubs,
-                  currency: settings.displayCurrency,
-                  inrPerUsd: ref.watch(ratesProvider).inrPerUsd,
-                  onOpen: _openDetail,
+                // One entrance for the rail as a block: per-card SbEntrance
+                // replayed its stagger every time a card recycled back into
+                // view while flinging horizontally.
+                child: SbEntrance(
+                  index: 1,
+                  child: _RenewingRail(
+                    subscriptions: railSubs,
+                    currency: settings.displayCurrency,
+                    inrPerUsd: ref.watch(ratesProvider).inrPerUsd,
+                    onOpen: _openDetail,
+                  ),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: SbSpace.x4)),
@@ -342,7 +349,7 @@ class _CurrencyChip extends StatelessWidget {
                   Text(
                     '${currency.code} · BURN',
                     style: SbType.micro.copyWith(
-                      fontSize: 8,
+                      fontSize: 9,
                       color: context.sb.textSecondary,
                       letterSpacing: 0.08,
                     ),
@@ -481,14 +488,11 @@ class _RenewingRail extends StatelessWidget {
           ),
           itemCount: subscriptions.length,
           separatorBuilder: (_, __) => const SizedBox(width: SbSpace.x2),
-          itemBuilder: (context, index) => SbEntrance(
-            index: index,
-            child: _RenewalCard(
-              subscription: subscriptions[index],
-              currency: currency,
-              inrPerUsd: inrPerUsd,
-              onTap: () => onOpen(subscriptions[index]),
-            ),
+          itemBuilder: (context, index) => _RenewalCard(
+            subscription: subscriptions[index],
+            currency: currency,
+            inrPerUsd: inrPerUsd,
+            onTap: () => onOpen(subscriptions[index]),
           ),
         ),
       ),
@@ -536,7 +540,6 @@ class _RenewalCard extends StatelessWidget {
                     name: subscription.name,
                     category: subscription.category,
                   ),
-                  platform: subscription.name,
                   brandColor: Color(subscription.brandColor),
                   size: 28,
                 ),
@@ -561,7 +564,7 @@ class _RenewalCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         softWrap: false,
                         style: SbType.micro.copyWith(
-                          fontSize: 7.5,
+                          fontSize: 9,
                           color: context.sb.textMuted,
                           letterSpacing: 0,
                         ),
@@ -660,7 +663,6 @@ class _SubscriptionRow extends StatelessWidget {
                       name: subscription.name,
                       category: subscription.category,
                     ),
-                    platform: subscription.name,
                     brandColor: Color(subscription.brandColor),
                     size: 30,
                   ),
@@ -687,7 +689,7 @@ class _SubscriptionRow extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: SbType.micro.copyWith(
-                          fontSize: 7.5,
+                          fontSize: 9,
                           color: context.sb.textMuted,
                           letterSpacing: 0.04,
                         ),
@@ -724,7 +726,7 @@ class _SubscriptionRow extends StatelessWidget {
                         Text(
                           subscription.isGhost ? 'GHOST' : 'DAILY USE',
                           style: SbType.micro.copyWith(
-                            fontSize: 7.5,
+                            fontSize: 9,
                             letterSpacing: 0.06,
                             color: subscription.isGhost
                                 ? context.sb.warn
@@ -812,7 +814,7 @@ class _GhostCallout extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: SbType.micro.copyWith(
-                    fontSize: 8,
+                    fontSize: 9,
                     color: context.sb.textMuted,
                     letterSpacing: 0,
                   ),
@@ -823,7 +825,7 @@ class _GhostCallout extends StatelessWidget {
           Text(
             active ? 'SHOW ALL' : 'REVIEW',
             style: SbType.micro.copyWith(
-              fontSize: 8.5,
+              fontSize: 9,
               color: context.sb.warn,
               letterSpacing: 0.05,
             ),
@@ -909,7 +911,7 @@ class _EmptyState extends StatelessWidget {
                 child: Text(
                   'Stored on this device. No account needed.',
                   style: SbType.micro.copyWith(
-                    fontSize: 8,
+                    fontSize: 9,
                     color: context.sb.textMuted,
                     letterSpacing: 0.02,
                   ),

@@ -71,7 +71,8 @@ class NotificationService {
   /// later call returned early, and the only symptom was "not initialised on
   /// this device" in the UI. Now each call re-attempts while uninitialised, so a
   /// transient failure (or a fixed resource after an update) heals itself.
-  Future<void> initialize({void Function(String subscriptionId)? onOpen}) async {
+  Future<void> initialize(
+      {void Function(String subscriptionId)? onOpen}) async {
     if (_initialized) return;
     if (onOpen != null) onOpenSubscription = onOpen;
 
@@ -186,8 +187,7 @@ class NotificationService {
         final ios = _plugin.resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>();
         final options = await ios?.checkPermissions();
-        _permissionGranted =
-            options?.isEnabled ?? false;
+        _permissionGranted = options?.isEnabled ?? false;
       } else {
         _permissionGranted = false;
       }
@@ -247,9 +247,7 @@ class NotificationService {
         id: testNotificationId,
         scheduledDate: tz.TZDateTime.fromMillisecondsSinceEpoch(
           tz.local,
-          SbClock.now()
-              .add(const Duration(seconds: 8))
-              .millisecondsSinceEpoch,
+          SbClock.now().add(const Duration(seconds: 8)).millisecondsSinceEpoch,
         ),
         notificationDetails: _details(
           'This is what a renewal reminder looks like. It will fire 48 h and '

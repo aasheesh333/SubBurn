@@ -35,7 +35,6 @@ class ShareService {
   ///
   /// Every share used to leave a 1080 × 1920 PNG behind in the cache directory
   /// forever. A user who shares weekly accumulates hundreds of megabytes.
-  static final List<String> _recent = [];
 
   /// Deletes everything this service wrote, except the newest [keep].
   ///
@@ -67,7 +66,6 @@ class ShareService {
     } catch (error) {
       debugPrint('prune skipped: $error');
     }
-    _recent.clear();
   }
 
   /// Saves the PNG to the user's photo gallery via the system share sheet's

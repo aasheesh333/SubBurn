@@ -26,7 +26,8 @@ class StatusBadge extends StatefulWidget {
   State<StatusBadge> createState() => _StatusBadgeState();
 }
 
-class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStateMixin {
+class _StatusBadgeState extends State<StatusBadge>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: SbMotion.pulse,
@@ -106,8 +107,7 @@ class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStat
         return Container(
           // Grows with the OS text scale: the fixed 19 px pill was overflowed
           // by its own 8.5 px label at ~160 % scale and up.
-          height:
-              19 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 12,
+          height: 19 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 12,
           padding: const EdgeInsets.symmetric(horizontal: 7),
           decoration: BoxDecoration(
             color: p.bg,
@@ -134,7 +134,7 @@ class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStat
           ],
           Text(
             widget.label,
-            style: SbType.micro.copyWith(color: p.fg, fontSize: 8.5),
+            style: SbType.micro.copyWith(color: p.fg, fontSize: 9),
           ),
         ],
       ),
@@ -143,7 +143,8 @@ class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStat
 }
 
 class _Dot extends StatelessWidget {
-  const _Dot({required this.color, required this.pulse, required this.progress});
+  const _Dot(
+      {required this.color, required this.pulse, required this.progress});
 
   final Color color;
   final bool pulse;

@@ -46,7 +46,7 @@ abstract final class SbColors {
   /// Active / daily driver.
   static const safe = Color(0xFF10B981);
 
-  /// Renewal inside 72 h.
+  /// Renewal inside 48 h — see `SbWindow.renewingHours`.
   static const warn = Color(0xFFF59E0B);
 
   /// Ghost spend / over budget / cancel.
@@ -93,15 +93,14 @@ abstract final class SbRadius {
 
 abstract final class SbSize {
   static const canvas = Size(393, 852);
-  static const minTapTarget = 44.0;
+  // Material's minimum tap target. 44 (the old value) is the iOS figure;
+  // Android guidance and the Play accessibility sweep expect 48.
+  static const minTapTarget = 48.0;
   static const hairline = 1.0;
 
   /// The share card is authored at 360 × 640 and exported at 3×.
   static const shareCard = Size(360, 640);
   static const shareCardPixelRatio = 3.0;
-
-  /// Renewing-soon window, in hours.
-  static const renewingWindowHours = 72;
 }
 
 abstract final class SbFonts {
@@ -239,6 +238,16 @@ abstract final class SbGradients {
     colors: [Color(0x57FF4500), Color(0x1AFF8C00), Color(0x00000000)],
     stops: [0.0, 0.45, 0.7],
   );
+
+  /// CTA fill for surfaces that carry text (buttons, FAB, currency toggle,
+  /// logo mark). Dark keeps the electric burn gradient — its label is near-
+  /// black there (6.5:1). Light uses a deeper solid orange: white label on the
+  /// old #E63E00→#EA7A00 burn measured 4.16:1 / ~3:1, under WCAG AA.
+  static const ctaLight = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFFD63A00), Color(0xFFC33300)],
+  );
 }
 
 /// Elevation in a dark UI is an inner top highlight plus a coloured bloom —
@@ -264,8 +273,6 @@ abstract final class SbShadow {
     spreadRadius: -12,
   );
 }
-
-
 
 /// Resolved colour set for one [Brightness].
 ///
@@ -334,6 +341,10 @@ class SbPalette extends ThemeExtension<SbPalette> {
   final Gradient heroAmount;
 
   final List<BoxShadow> cardShadow;
+
+  /// Fill for surfaces that carry text (CTA, FAB, currency toggle, logo mark):
+  /// the burn gradient in dark, a deeper AA-passing orange in light.
+  Gradient get cta => isDark ? SbGradients.burn : SbGradients.ctaLight;
   final bool isDark;
 
   static const dark = SbPalette(
@@ -375,8 +386,10 @@ class SbPalette extends ThemeExtension<SbPalette> {
     surfaceHi: Color(0xFFF2F2F4),
     border: Color(0xFFE4E4E7),
     borderHi: Color(0xFFD4D4D8),
-    accent: Color(0xFFE63E00),
-    accentAlt: Color(0xFFEA7A00),
+    // Deepened from #E63E00: white CTA labels on the old accent measured
+    // 4.16:1, under the 4.5:1 AA floor for 13 px bold text.
+    accent: Color(0xFFD63A00),
+    accentAlt: Color(0xFFD97000),
     accentWarm: Color(0xFFB4340A),
     safe: Color(0xFF047857),
     warn: Color(0xFFA35A05),
@@ -489,6 +502,5 @@ class SbPalette extends ThemeExtension<SbPalette> {
 
 /// `context.sb.text` — the only way a widget should read a semantic colour.
 extension SbThemeContext on BuildContext {
-  SbPalette get sb =>
-      Theme.of(this).extension<SbPalette>() ?? SbPalette.dark;
+  SbPalette get sb => Theme.of(this).extension<SbPalette>() ?? SbPalette.dark;
 }

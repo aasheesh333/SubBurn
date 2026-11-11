@@ -79,8 +79,7 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
             children: [
               _SettingRow(
                 title: 'Theme',
-                subtitle:
-                    'Device follows your phone\'s light or dark setting. '
+                subtitle: 'Device follows your phone\'s light or dark setting. '
                     'A manual choice is remembered on this device.',
                 child: SizedBox(
                   width: 190,
@@ -173,7 +172,9 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                   await ref
                       .read(settingsProvider.notifier)
                       .setNotifications(true);
-                  await ref.read(subscriptionsProvider.notifier).rescheduleAll();
+                  await ref
+                      .read(subscriptionsProvider.notifier)
+                      .rescheduleAll();
                 },
                 onReschedule: () async {
                   final armed = await ref
@@ -240,7 +241,7 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                         'Fetched from our server and cached for 7 days. The '
                         'bundled copy covers you offline.',
                         style: SbType.micro.copyWith(
-                          fontSize: 7.5,
+                          fontSize: 9,
                           color: context.sb.textMuted,
                           letterSpacing: 0,
                           height: 1.5,
@@ -394,7 +395,7 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
             'joke, not financial advice.',
             textAlign: TextAlign.center,
             style: SbType.micro.copyWith(
-              fontSize: 7.5,
+              fontSize: 9,
               color: context.sb.textMuted,
               letterSpacing: 0,
               height: 1.6,
@@ -451,7 +452,6 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
       SbPageRoute<void>(builder: (_) => LegalPage(doc: doc)),
     );
   }
-
 }
 
 /// Honest reminder state: is the OS allowed to deliver, and how many alarms are
@@ -511,7 +511,8 @@ class _ReminderDiagnostics extends StatelessWidget {
                     onPressed: onGrant,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.sb.danger,
-                      side: BorderSide(color: context.sb.danger.withValues(alpha: 0.4)),
+                      side: BorderSide(
+                          color: context.sb.danger.withValues(alpha: 0.4)),
                       minimumSize: const Size.fromHeight(44),
                     ),
                     child: const Text('ALLOW'),
@@ -564,7 +565,8 @@ class _Group extends StatelessWidget {
           padding: const EdgeInsets.only(left: 2, bottom: SbSpace.x2),
           child: Text(
             title.toUpperCase(),
-            style: SbType.label.copyWith(color: context.sb.textMuted, fontSize: 9),
+            style:
+                SbType.label.copyWith(color: context.sb.textMuted, fontSize: 9),
           ),
         ),
         SurfaceCard(
@@ -617,7 +619,7 @@ class _SettingRow extends StatelessWidget {
                 Text(
                   subtitle,
                   style: SbType.micro.copyWith(
-                    fontSize: 8,
+                    fontSize: 9,
                     color: context.sb.textMuted,
                     letterSpacing: 0,
                     height: 1.45,

@@ -14,7 +14,6 @@ class ToolTile extends StatelessWidget {
     required this.brandColor,
     this.size = 30,
     this.icon,
-    this.platform,
   });
 
   final String mark;
@@ -23,9 +22,6 @@ class ToolTile extends StatelessWidget {
 
   /// Real brand glyph when the vendor has one; falls back to [mark].
   final IconData? icon;
-
-  /// Platform name, used for the semantic label ("ChatGPT, OpenAI").
-  final String? platform;
 
   /// Adjusts [brandColor] for the surface it sits on. On dark surfaces the
   /// glyph is lifted toward white; on light surfaces that lift made brand

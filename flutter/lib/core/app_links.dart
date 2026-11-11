@@ -5,8 +5,7 @@
 abstract final class AppLinks {
   static const supportEmail = 'support@dhanuksoftwares.com';
 
-  static const privacyPolicy =
-      'https://dhanuk.page.gd/SubBurn/privacy.html';
+  static const privacyPolicy = 'https://dhanuk.page.gd/SubBurn/privacy.html';
 
   static const privacyPolicyMirror =
       'https://pub-8fbd857d2069417ab8436546106f26b3.r2.dev/privacy.html';

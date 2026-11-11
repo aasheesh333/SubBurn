@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/theme_tokens.dart';
+import '../widgets/press_scale.dart';
 
 /// The one header used by every screen.
 ///
@@ -67,7 +68,7 @@ class SbHeader extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(SbRadius.tile),
-                gradient: SbGradients.burn,
+                gradient: context.sb.cta,
               ),
               child: Icon(
                 Icons.local_fire_department_rounded,
@@ -108,7 +109,7 @@ class SbHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: SbType.micro.copyWith(
-                        fontSize: 8,
+                        fontSize: 9,
                         color: context.sb.textMuted,
                         letterSpacing: 0.02,
                       ),
@@ -178,15 +179,17 @@ class _IconTap extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(SbRadius.tile),
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: context.sb.surface,
-            borderRadius: BorderRadius.circular(SbRadius.tile),
-            border: Border.all(color: context.sb.border),
+        child: PressScale(
+          child: Container(
+            width: SbSize.minTapTarget,
+            height: SbSize.minTapTarget,
+            decoration: BoxDecoration(
+              color: context.sb.surface,
+              borderRadius: BorderRadius.circular(SbRadius.tile),
+              border: Border.all(color: context.sb.border),
+            ),
+            child: Icon(icon, size: 20, color: context.sb.text),
           ),
-          child: Icon(icon, size: 20, color: context.sb.text),
         ),
       ),
     );

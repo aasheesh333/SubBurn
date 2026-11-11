@@ -138,7 +138,8 @@ enum BillingCycle {
     return DateTime(year, month, day);
   }
 
-  static BillingCycle fromStorage(String value) => BillingCycle.values.firstWhere(
+  static BillingCycle fromStorage(String value) =>
+      BillingCycle.values.firstWhere(
         (c) => c.name == value,
         orElse: () => BillingCycle.monthly,
       );

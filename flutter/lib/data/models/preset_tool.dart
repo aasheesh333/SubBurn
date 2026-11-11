@@ -41,7 +41,8 @@ class PresetTool {
       id: json['id'] as String,
       name: json['name'] as String,
       vendor: (json['vendor'] as String?) ?? '',
-      monogram: (json['monogram'] as String?) ?? _fallbackMonogram(json['name'] as String),
+      monogram: (json['monogram'] as String?) ??
+          _fallbackMonogram(json['name'] as String),
       brandColor: parseHexColor(json['brandColor'] as String?),
       category: (json['category'] as String?) ?? 'other',
       defaultPrice: (json['defaultPrice'] as num?)?.toDouble() ?? 0,
@@ -216,7 +217,8 @@ class ExchangeRates {
     final rate = (json['inrPerUsd'] as num?)?.toDouble();
     return ExchangeRates(
       inrPerUsd: (rate == null || rate <= 0) ? 83 : rate,
-      asOf: DateTime.tryParse((json['asOf'] as String?) ?? '') ?? DateTime.now(),
+      asOf:
+          DateTime.tryParse((json['asOf'] as String?) ?? '') ?? DateTime.now(),
       fromCache: fromCache,
     );
   }

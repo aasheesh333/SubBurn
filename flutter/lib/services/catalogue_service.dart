@@ -62,7 +62,7 @@ class CatalogueService {
     final prefs = await SharedPreferences.getInstance();
     final cachedAt = DateTime.tryParse(prefs.getString(_presetsStampKey) ?? '');
     final cacheFresh = cachedAt != null &&
-        DateTime.now().difference(cachedAt) < cacheTtl &&
+        SbClock.now().difference(cachedAt) < cacheTtl &&
         prefs.containsKey(_presetsKey);
 
     if (!forceRefresh && cacheFresh) {
@@ -80,7 +80,8 @@ class CatalogueService {
       final fetched = await _fetchCatalogue();
       if (fetched != null) {
         await prefs.setString(_presetsKey, jsonEncode(fetched.toJson()));
-        await prefs.setString(_presetsStampKey, DateTime.now().toIso8601String());
+        await prefs.setString(
+            _presetsStampKey, SbClock.now().toIso8601String());
         return CatalogueSnapshot(
           catalogue: fetched,
           rates: await _loadRates(prefs, preferCache: false),
@@ -191,7 +192,7 @@ class CatalogueService {
     final catalogue = PresetCatalogue.fromJson(
       json,
       fromCache: false,
-      fetchedAt: DateTime.now(),
+      fetchedAt: SbClock.now(),
     );
     // A payload with no tools is worse than the bundled copy.
     return catalogue.tools.isEmpty ? null : catalogue;
@@ -289,8 +290,9 @@ class RemoteConfigService {
     }
   }
 
-  String get cdnBaseUrl =>
-      _config.getString('cdn_base_url').ifEmpty(_defaults['cdn_base_url'] as String);
+  String get cdnBaseUrl => _config
+      .getString('cdn_base_url')
+      .ifEmpty(_defaults['cdn_base_url'] as String);
 
   String get oneSignalAppId => _config.getString('onesignal_app_id');
 

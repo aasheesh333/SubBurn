@@ -217,9 +217,8 @@ abstract final class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected)
-              ? p.accent
-              : p.textMuted,
+          (states) =>
+              states.contains(WidgetState.selected) ? p.accent : p.textMuted,
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)

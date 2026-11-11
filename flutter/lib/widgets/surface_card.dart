@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/subburn_tokens.dart';
+import 'press_scale.dart';
 
 /// The base surface used by every card and row: 1 px hairline, inner top
 /// highlight (that's how a dark UI reads depth), optional brand tint.
@@ -35,7 +36,10 @@ class SurfaceCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            if (tint != null) tint!.withValues(alpha: 0.07) else context.sb.surfaceHi,
+            if (tint != null)
+              tint!.withValues(alpha: 0.07)
+            else
+              context.sb.surfaceHi,
             context.sb.surface,
           ],
         ),
@@ -73,7 +77,7 @@ class SurfaceCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(radius),
-          child: _PressScale(child: outlined),
+          child: PressScale(child: outlined),
         ),
       ),
     );
@@ -115,37 +119,6 @@ class _DashedBorderPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DashedBorderPainter old) => old.color != color || old.radius != radius;
-}
-
-
-/// Subtle press-in for tappable surfaces. Disabled when the OS asks for less
-/// motion, and never on hover-less desktop where there is no tap feedback need.
-class _PressScale extends StatefulWidget {
-  const _PressScale({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_PressScale> createState() => _PressScaleState();
-}
-
-class _PressScaleState extends State<_PressScale> {
-  bool _down = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final animate = !SbMotion.reduced(context);
-    return Listener(
-      onPointerDown: (_) => setState(() => _down = true),
-      onPointerUp: (_) => setState(() => _down = false),
-      onPointerCancel: (_) => setState(() => _down = false),
-      child: AnimatedScale(
-        scale: _down ? 0.985 : 1,
-        duration: animate ? SbMotion.press : Duration.zero,
-        curve: Curves.easeOut,
-        child: widget.child,
-      ),
-    );
-  }
+  bool shouldRepaint(_DashedBorderPainter old) =>
+      old.color != color || old.radius != radius;
 }

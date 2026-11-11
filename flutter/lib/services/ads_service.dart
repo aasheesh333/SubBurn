@@ -16,7 +16,8 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 /// Debug builds never use these ids: both slots swap in Google's official test
 /// units so a developer cannot generate invalid traffic on a live unit.
 class AdsService {
-  const AdsService({required this.enabled, this.bannerUnitId, this.rewardedUnitId});
+  const AdsService(
+      {required this.enabled, this.bannerUnitId, this.rewardedUnitId});
 
   final bool enabled;
   final String? bannerUnitId;

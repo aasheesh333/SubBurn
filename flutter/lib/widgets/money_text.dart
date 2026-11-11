@@ -62,6 +62,7 @@ class MoneyText extends StatelessWidget {
   final num? amount;
   final String? rawValue;
   final TextStyle? style;
+
   /// Defaults to the theme's primary text colour when null.
   final Color? color;
   final String? suffix;
@@ -136,7 +137,7 @@ class MoneyText extends StatelessWidget {
           suffix!,
           style: SbType.micro.copyWith(
             color: suffixColor ?? context.sb.textMuted,
-            fontSize: 8.5,
+            fontSize: 9,
             letterSpacing: 0,
           ),
           textScaler: scaleWithSystem

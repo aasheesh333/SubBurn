@@ -68,7 +68,8 @@ class RoastEngine {
     final count = yearly / unit;
     if (count < 1) return 'That is less than $noun.';
     if (count < 10) {
-      final rounded = count >= 3 ? count.round().toString() : count.toStringAsFixed(1);
+      final rounded =
+          count >= 3 ? count.round().toString() : count.toStringAsFixed(1);
       final plural = rounded == '1' ? noun : _plural(noun);
       return 'That is $rounded $plural.';
     }

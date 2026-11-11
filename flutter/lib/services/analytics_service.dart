@@ -15,7 +15,8 @@ class AnalyticsService {
 
   bool get enabled => _analytics != null;
 
-  Future<void> logSubAdded(Subscription subscription, {required bool fromPreset}) {
+  Future<void> logSubAdded(Subscription subscription,
+      {required bool fromPreset}) {
     return _log('sub_added', <String, Object>{
       'category': subscription.category,
       'cycle': subscription.cycle.name,
@@ -44,7 +45,8 @@ class AnalyticsService {
   /// [category] is a coarse bucket ('ai', 'streaming', …). The raw vendor name
   /// must never be sent: the privacy policy promises analytics carry no names,
   /// prices or vendors.
-  Future<void> logCancelLinkOpened({required String category, required bool resolved}) {
+  Future<void> logCancelLinkOpened(
+      {required String category, required bool resolved}) {
     return _log('cancel_link_opened', <String, Object>{
       'category': category,
       'resolved': resolved,

@@ -281,83 +281,20 @@ void main() {
     await _settle(tester);
   }
 
-  testWidgets('dashboard · light', (tester) async {
-    await pump(
-      tester,
-      BurnDashboardScreen(onAddSubscription: () {}),
-      themeMode: ThemeMode.light,
-    );
+
+  testWidgets('renewals · light', (tester) async {
+    await pump(tester, const RenewalsScreen(), themeMode: ThemeMode.light);
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/09-dashboard-light.png'),
+      matchesGoldenFile('goldens/13-renewals-light.png'),
     );
   });
 
-  testWidgets('studio · light', (tester) async {
-    await pump(
-      tester,
-      const ViralReceiptScreen(),
-      themeMode: ThemeMode.light,
-    );
+  testWidgets('quick add · light', (tester) async {
+    await pump(tester, const QuickAddSheet(), themeMode: ThemeMode.light);
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/10-studio-light.png'),
-    );
-  });
-
-  testWidgets('detail · light', (tester) async {
-    await pump(
-      tester,
-      const SubDetailScreen(subscriptionId: 'preview_0'),
-      themeMode: ThemeMode.light,
-    );
-    await expectLater(
-      find.byType(MaterialApp),
-      matchesGoldenFile('goldens/12-detail-light.png'),
-    );
-  });
-
-  testWidgets('controls · light', (tester) async {
-    await pump(tester, const ControlsScreen(), themeMode: ThemeMode.light);
-    await expectLater(
-      find.byType(MaterialApp),
-      matchesGoldenFile('goldens/11-controls-light.png'),
-    );
-  });
-
-  testWidgets('dashboard · first run (empty)', (tester) async {
-    final empty = SubscriptionRepository.inMemory();
-    tester.view.physicalSize = const Size(393 * 2, 852 * 2);
-    tester.view.devicePixelRatio = 2;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          repositoryProvider.overrideWithValue(empty),
-          catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
-          analyticsProvider.overrideWithValue(AnalyticsService(null)),
-          notificationServiceProvider.overrideWithValue(NotificationService()),
-      reminderHealthProvider.overrideWith((ref) async => const ReminderHealth(
-            wantsReminders: true,
-            status: ReminderStatus.ready,
-            pending: 4,
-            lastError: null,
-          )),
-        ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.dark,
-          home: Scaffold(
-            backgroundColor: SbColors.bg,
-            body: BurnDashboardScreen(onAddSubscription: () {}),
-          ),
-        ),
-      ),
-    );
-    await _settle(tester);
-    await expectLater(
-      find.byType(MaterialApp),
-      matchesGoldenFile('goldens/08-first-run.png'),
+      matchesGoldenFile('goldens/14-quick-add-light.png'),
     );
   });
 

@@ -137,7 +137,8 @@ class _SubDetailScreenState extends ConsumerState<SubDetailScreen> {
                       title: 'Next charge',
                       subtitle:
                           '${formatChargeDate(subscription.nextBillingDate)} · tap to correct',
-                      trailing: const StatusBadge('EDIT', tone: BadgeTone.neutral),
+                      trailing:
+                          const StatusBadge('EDIT', tone: BadgeTone.neutral),
                       onTap: () => _pickNextCharge(context, ref, subscription!),
                     ),
                     const SizedBox(height: SbSpace.x2),
@@ -145,7 +146,8 @@ class _SubDetailScreenState extends ConsumerState<SubDetailScreen> {
                       title: 'Subscription start',
                       subtitle:
                           '${formatChargeDate(subscription.startDate)} · drives lifetime spend',
-                      trailing: const StatusBadge('EDIT', tone: BadgeTone.neutral),
+                      trailing:
+                          const StatusBadge('EDIT', tone: BadgeTone.neutral),
                       onTap: () => _pickStartDate(context, ref, subscription!),
                     ),
                     const SizedBox(height: SbSpace.x2),
@@ -173,8 +175,7 @@ class _SubDetailScreenState extends ConsumerState<SubDetailScreen> {
                     const SizedBox(height: SbSpace.x2),
                     _RowCard(
                       title: 'Renewal reminder',
-                      subtitle:
-                          'Local push · 48h and 24h before the charge',
+                      subtitle: 'Local push · 48h and 24h before the charge',
                       trailing: Switch.adaptive(
                         value: subscription.remindersEnabled &&
                             settings.notificationsEnabled,
@@ -439,11 +440,10 @@ class _IdentityCard extends StatelessWidget {
           ToolTile(
             mark: subscription.monogram,
             icon: BrandIcons.resolve(
-                  presetId: subscription.presetId,
-                  name: subscription.name,
-                  category: subscription.category,
-                ),
-            platform: subscription.name,
+              presetId: subscription.presetId,
+              name: subscription.name,
+              category: subscription.category,
+            ),
             brandColor: Color(subscription.brandColor),
             size: 42,
           ),
@@ -464,7 +464,7 @@ class _IdentityCard extends StatelessWidget {
                 Text(
                   '${subscription.vendor} · ${subscription.cycle.label.toLowerCase()} · ${formatSince(subscription.startDate)}',
                   style: SbType.micro.copyWith(
-                    fontSize: 8.5,
+                    fontSize: 9,
                     color: context.sb.textMuted,
                     letterSpacing: 0.02,
                   ),
@@ -767,7 +767,7 @@ class _RowCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: SbType.micro.copyWith(
-                    fontSize: 8,
+                    fontSize: 9,
                     color: context.sb.textMuted,
                     letterSpacing: 0,
                     height: 1.4,
@@ -943,7 +943,7 @@ class _TimelinePoint extends StatelessWidget {
                 Text(
                   title,
                   style: SbType.micro.copyWith(
-                    fontSize: 8.5,
+                    fontSize: 9,
                     color: muted ? context.sb.textMuted : context.sb.text,
                     letterSpacing: 0.05,
                   ),
@@ -951,7 +951,7 @@ class _TimelinePoint extends StatelessWidget {
                 Text(
                   detail,
                   style: SbType.micro.copyWith(
-                    fontSize: 8,
+                    fontSize: 9,
                     color: context.sb.textMuted,
                     letterSpacing: 0,
                     height: 1.5,
@@ -1013,7 +1013,7 @@ class _BottomDock extends StatelessWidget {
                   'Opens the vendor’s official cancellation page. '
                   'SubBurn never touches your credentials.',
                   style: SbType.micro.copyWith(
-                    fontSize: 7.5,
+                    fontSize: 9,
                     color: context.sb.textMuted,
                     letterSpacing: 0,
                     height: 1.4,

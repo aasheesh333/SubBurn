@@ -17,7 +17,9 @@ String formatCountdown(Duration remaining) {
     return hours > 0 ? '${days}d ${hours}h' : '${days}d';
   }
   if (hours >= 1) {
-    return minutes > 0 ? '${hours}h ${minutes.toString().padLeft(2, '0')}m' : '${hours}h';
+    return minutes > 0
+        ? '${hours}h ${minutes.toString().padLeft(2, '0')}m'
+        : '${hours}h';
   }
   return '${minutes}m';
 }
@@ -44,11 +46,22 @@ String formatRenewalDay(DateTime date, {DateTime? now}) {
 /// the pickers span 2000 → now+3y, so a bare day+month is ambiguous.
 String formatChargeDate(DateTime date, {DateTime? now}) {
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  final base = '${weekdays[date.weekday - 1]} ${date.day} ${months[date.month - 1]}';
+  final base =
+      '${weekdays[date.weekday - 1]} ${date.day} ${months[date.month - 1]}';
   final clock = now ?? SbClock.now();
   if (date.year == clock.year) return base;
   return "$base ’${(date.year % 100).toString().padLeft(2, '0')}";
@@ -57,8 +70,18 @@ String formatChargeDate(DateTime date, {DateTime? now}) {
 String _weekday(DateTime date) {
   const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   return '${weekdays[date.weekday - 1]} ${date.day} ${months[date.month - 1]}';
 }
@@ -83,8 +106,18 @@ int workdaysInMonth(DateTime month) {
 /// `since Oct ’25`
 String formatSince(DateTime start) {
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   final year = (start.year % 100).toString().padLeft(2, '0');
   return 'since ${months[start.month - 1]} ’$year';

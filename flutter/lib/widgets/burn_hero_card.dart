@@ -97,7 +97,8 @@ class BurnHeroCard extends StatelessWidget {
                     // Flexible + ellipsis: both ends of this row are intrinsic
                     // and overflowed by ~100 px at 200 % text scale.
                     if (delta != null)
-                      Flexible(child: _Delta(delta: delta!, currency: currency)),
+                      Flexible(
+                          child: _Delta(delta: delta!, currency: currency)),
                   ],
                 ),
                 const SizedBox(height: SbSpace.x1),
@@ -116,8 +117,7 @@ class BurnHeroCard extends StatelessWidget {
                     gradient: context.sb.heroAmount,
                     suffix: '/ mo',
                     currency: currency,
-                    semanticLabel:
-                        '${currency.format(monthlyTotal)} per month',
+                    semanticLabel: '${currency.format(monthlyTotal)} per month',
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -225,7 +225,7 @@ class _Delta extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: SbType.micro.copyWith(
-              fontSize: 8,
+              fontSize: 9,
               color: context.sb.accentWarm,
               letterSpacing: 0.02,
             ),
@@ -261,7 +261,7 @@ class _CaretPainter extends CustomPainter {
   bool shouldRepaint(_CaretPainter old) => false;
 }
 
-class _SplitBar extends StatelessWidget {
+class _SplitBar extends StatefulWidget {
   const _SplitBar({required this.activeFraction, required this.ghostPercent});
 
   final double activeFraction;
@@ -271,18 +271,31 @@ class _SplitBar extends StatelessWidget {
   final String ghostPercent;
 
   @override
+  State<_SplitBar> createState() => _SplitBarState();
+}
+
+class _SplitBarState extends State<_SplitBar> {
+  /// The split the bar last rendered. The grow-from-zero entrance runs once;
+  /// later changes animate from the previous value. A fresh
+  /// `Tween(begin: 0)` on every rebuild made the bar regrow from empty on
+  /// unrelated rebuilds (e.g. toggling the display currency).
+  double? _from;
+
+  @override
   Widget build(BuildContext context) {
-    final active = activeFraction.clamp(0.0, 1.0);
+    final active = widget.activeFraction.clamp(0.0, 1.0);
     final reduce = SbMotion.reduced(context);
+    final begin = _from ?? (reduce ? active : 0.0);
+    _from = active;
 
     return Semantics(
       // ghostPercent already carries its '%' — the old label made screen
       // readers announce "26.0% percent".
       label:
-          'Active use ${(active * 100).toStringAsFixed(1)} percent, ghost subscriptions ${ghostPercent.replaceAll('%', '')} percent',
+          'Active use ${(active * 100).toStringAsFixed(1)} percent, ghost subscriptions ${widget.ghostPercent.replaceAll('%', '')} percent',
       child: TweenAnimationBuilder<double>(
-        // Grows from the left once, and animates any change in the split.
-        tween: Tween<double>(begin: reduce ? active : 0, end: active),
+        // Grows from the left once, then animates between splits.
+        tween: Tween<double>(begin: begin, end: active),
         duration: SbMotion.of(context, SbMotion.value),
         curve: SbMotion.curve,
         builder: (context, value, _) => ClipRRect(
@@ -365,7 +378,8 @@ class _Legend extends StatelessWidget {
         const SizedBox(width: 3),
         Text(
           value,
-          style: SbType.micro.copyWith(fontSize: 9, color: context.sb.textMuted),
+          style:
+              SbType.micro.copyWith(fontSize: 9, color: context.sb.textMuted),
         ),
       ],
     );

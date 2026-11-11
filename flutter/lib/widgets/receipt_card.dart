@@ -40,9 +40,12 @@ class ReceiptLine {
 /// The viral artefact.
 ///
 /// **Handoff invariant:** this widget is *self-contained*. It draws to its own
-/// 360×640 box, uses no shadows that bleed outside its bounds, and never reads
-/// ambient theme/inherited widgets. That is what makes it safe to wrap in a
-/// single [RepaintBoundary] and export at 3× → 1080×1920 PNG with no clipping.
+/// 360×640 box and uses no shadows that bleed outside its bounds. It pins its
+/// own typography scale (OS text scaling cannot reflow the artwork) and its
+/// own dark palette, and carries its colour treatment through the
+/// [ReceiptThemeScope] it provides itself. That is what makes it safe to wrap
+/// in a single [RepaintBoundary] and export at 3× → 1080×1920 PNG with no
+/// clipping, identical in light and dark mode.
 ///
 /// ```dart
 /// final key = GlobalKey();
@@ -121,143 +124,151 @@ class SubBurnReceiptCard extends StatelessWidget {
     // white-on-white.
     // One label for the whole card: as loose text nodes it read as forty
     // disconnected fragments in TalkBack.
-    return ReceiptThemeScope(
-      theme: theme,
-      child: Semantics(
-        container: true,
-        label: 'AI tax receipt: ${currency.format(_total)} per year, '
-            '$roastTier. $verdict',
-        child: ExcludeSemantics(
-          child: SizedBox(
-            width: SbSize.shareCard.width,
-            height: SbSize.shareCard.height,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(SbRadius.composite),
-              child: DecoratedBox(
-                decoration: const BoxDecoration(color: Color(0xFF0B0B0E)),
-                child: Stack(
-                  children: [
-                    // glows live *inside* the clip, so the export has clean edges
-                    Positioned(
-                      left: -90,
-                      top: -230,
-                      child: Container(
-                        width: 420,
-                        height: 360,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          // Derived from the active receipt theme — a hardcoded
-                          // ember bloom contradicted every themed element under
-                          // Mono/Gold, on screen and in the exported PNG. This
-                          // is built above the scope, so it reads `theme`
-                          // directly rather than ReceiptThemeScope.of().
-                          gradient: RadialGradient(
-                            colors: [
-                              theme.accent.withValues(alpha: 0.30),
-                              theme.accentAlt.withValues(alpha: 0.08),
-                              const Color(0x00000000),
-                            ],
-                            stops: const [0, 0.46, 0.68],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: -80,
-                      bottom: -235,
-                      child: Container(
-                        width: 520,
-                        height: 340,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              theme.accent.withValues(alpha: 0.24),
-                              const Color(0x00000000),
-                            ],
-                            stops: const [0, 0.64],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      // Bottom inset reserves the barcode strip, which is pinned to
-                      // the edge so it never floats mid-card.
-                      padding: const EdgeInsets.fromLTRB(22, 24, 22, 88),
-                      child: FittedBox(
-                        // Authored at 316 px wide. If a long roast or a sixth line
-                        // makes the column taller than the export box, the content
-                        // scales down by a fraction instead of overflowing.
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.topLeft,
-                        child: SizedBox(
-                          width: 316,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _BrandRow(year: year, receiptNo: receiptNo),
-                              const SizedBox(height: 10),
-                              _Title(
-                                headline: headline,
-                                accent: headlineAccent,
-                                subline: subline,
-                              ),
-                              const SizedBox(height: 10),
-                              const _DashedRule(),
-                              const SizedBox(height: 9),
-                              const _ColumnHeads(),
-                              const SizedBox(height: 7),
-                              for (final l in lines) ...[
-                                _LineRow(line: l, currency: currency),
-                                const SizedBox(height: 7),
+    // The receipt is a fixed-format export artefact (1080×1920 at 3×). Its
+    // typography is part of the artwork: OS text scaling used to reflow rows
+    // past the 316 px column and clip stat digits inside the exported PNG.
+    // The on-screen stage scales the whole card visually instead, which is
+    // also the accessible path — the surrounding UI still scales.
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+      child: ReceiptThemeScope(
+        theme: theme,
+        child: Semantics(
+          container: true,
+          label: 'AI tax receipt: ${currency.format(_total)} per year, '
+              '$roastTier. $verdict',
+          child: ExcludeSemantics(
+            child: SizedBox(
+              width: SbSize.shareCard.width,
+              height: SbSize.shareCard.height,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(SbRadius.composite),
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(color: Color(0xFF0B0B0E)),
+                  child: Stack(
+                    children: [
+                      // glows live *inside* the clip, so the export has clean edges
+                      Positioned(
+                        left: -90,
+                        top: -230,
+                        child: Container(
+                          width: 420,
+                          height: 360,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            // Derived from the active receipt theme — a hardcoded
+                            // ember bloom contradicted every themed element under
+                            // Mono/Gold, on screen and in the exported PNG. This
+                            // is built above the scope, so it reads `theme`
+                            // directly rather than ReceiptThemeScope.of().
+                            gradient: RadialGradient(
+                              colors: [
+                                theme.accent.withValues(alpha: 0.30),
+                                theme.accentAlt.withValues(alpha: 0.08),
+                                const Color(0x00000000),
                               ],
-                              if (hiddenLineCount > 0) ...[
-                                Text(
-                                  '+ $hiddenLineCount MORE TOOLS · STILL BURNING',
-                                  style: SbType.micro.copyWith(
-                                    fontSize: 6.5,
-                                    color: const Color(0xFF6E6E78),
-                                    letterSpacing: 0.12 * 6.5,
-                                  ),
+                              stops: const [0, 0.46, 0.68],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: -80,
+                        bottom: -235,
+                        child: Container(
+                          width: 520,
+                          height: 340,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                theme.accent.withValues(alpha: 0.24),
+                                const Color(0x00000000),
+                              ],
+                              stops: const [0, 0.64],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        // Bottom inset reserves the barcode strip, which is pinned to
+                        // the edge so it never floats mid-card.
+                        padding: const EdgeInsets.fromLTRB(22, 24, 22, 88),
+                        child: FittedBox(
+                          // Authored at 316 px wide. If a long roast or a sixth line
+                          // makes the column taller than the export box, the content
+                          // scales down by a fraction instead of overflowing.
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.topLeft,
+                          child: SizedBox(
+                            width: 316,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _BrandRow(year: year, receiptNo: receiptNo),
+                                const SizedBox(height: 10),
+                                _Title(
+                                  headline: headline,
+                                  accent: headlineAccent,
+                                  subline: subline,
                                 ),
+                                const SizedBox(height: 10),
+                                const _DashedRule(),
+                                const SizedBox(height: 9),
+                                const _ColumnHeads(),
                                 const SizedBox(height: 7),
+                                for (final l in lines) ...[
+                                  _LineRow(line: l, currency: currency),
+                                  const SizedBox(height: 7),
+                                ],
+                                if (hiddenLineCount > 0) ...[
+                                  Text(
+                                    '+ $hiddenLineCount MORE TOOLS · STILL BURNING',
+                                    style: SbType.micro.copyWith(
+                                      fontSize: 6.5,
+                                      color: const Color(0xFF6E6E78),
+                                      letterSpacing: 0.12 * 6.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 7),
+                                ],
+                                const SizedBox(height: 1),
+                                _GhostStrip(
+                                  share: ghostShare,
+                                  amount: ghostAmount ??
+                                      (_total * ghostShare).round(),
+                                  currency: currency,
+                                ),
+                                const SizedBox(height: 9),
+                                _StatsStrip(
+                                  total: _total,
+                                  toolCount: lines.length + hiddenLineCount,
+                                  currency: currency,
+                                  workdays: workdays,
+                                ),
+                                const SizedBox(height: 9),
+                                _TotalBlock(total: _total, currency: currency),
+                                const SizedBox(height: 8),
+                                _RoastBlock(
+                                  tier: roastTier,
+                                  line: roastLine,
+                                  intensity: roastIntensity,
+                                ),
+                                const SizedBox(height: 8),
+                                _VerdictStrip(verdict: verdict),
                               ],
-                              const SizedBox(height: 1),
-                              _GhostStrip(
-                                share: ghostShare,
-                                amount: ghostAmount ??
-                                    (_total * ghostShare).round(),
-                                currency: currency,
-                              ),
-                              const SizedBox(height: 9),
-                              _StatsStrip(
-                                total: _total,
-                                toolCount: lines.length + hiddenLineCount,
-                                currency: currency,
-                                workdays: workdays,
-                              ),
-                              const SizedBox(height: 9),
-                              _TotalBlock(total: _total, currency: currency),
-                              const SizedBox(height: 8),
-                              _RoastBlock(
-                                tier: roastTier,
-                                line: roastLine,
-                                intensity: roastIntensity,
-                              ),
-                              const SizedBox(height: 8),
-                              _VerdictStrip(verdict: verdict),
-                            ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const Positioned(
-                      left: 22,
-                      right: 22,
-                      bottom: 20,
-                      child: _ReceiptFooterStrip(),
-                    ),
-                  ],
+                      const Positioned(
+                        left: 22,
+                        right: 22,
+                        bottom: 20,
+                        child: _ReceiptFooterStrip(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -330,7 +341,8 @@ class _Title extends StatelessWidget {
             ),
             TextSpan(
               text: accent,
-              style: SbType.h1.copyWith(color: ReceiptThemeScope.of(context).accent),
+              style: SbType.h1
+                  .copyWith(color: ReceiptThemeScope.of(context).accent),
             ),
           ]),
         ),
@@ -600,15 +612,20 @@ class _Stat extends StatelessWidget {
               textBaseline: TextBaseline.alphabetic,
               children: [
                 Flexible(
-                  child: Text(
-                    v,
-                    maxLines: 1,
-                    overflow: TextOverflow.clip,
-                    style: SbType.micro.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFFE4E4E8),
-                      letterSpacing: -0.03 * 12,
+                  // scaleDown, never clip: a clipped digit inside the
+                  // exported PNG is a wrong number on a shareable artefact.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      v,
+                      maxLines: 1,
+                      style: SbType.micro.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFE4E4E8),
+                        letterSpacing: -0.03 * 12,
+                      ),
                     ),
                   ),
                 ),
@@ -692,12 +709,9 @@ class _RoastBlock extends StatelessWidget {
             ReceiptThemeScope.of(context).accentAlt.withValues(alpha: 0.03),
           ],
         ),
-        border:
-            Border.all(
-              color: ReceiptThemeScope.of(context)
-                  .accent
-                  .withValues(alpha: 0.38),
-            ),
+        border: Border.all(
+          color: ReceiptThemeScope.of(context).accent.withValues(alpha: 0.38),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

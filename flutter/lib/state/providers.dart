@@ -30,7 +30,8 @@ final notificationServiceProvider = Provider<NotificationService>(
   (ref) => NotificationService(),
 );
 
-final shareServiceProvider = Provider<ShareService>((ref) => const ShareService());
+final shareServiceProvider =
+    Provider<ShareService>((ref) => const ShareService());
 
 /// The live subscription list. Every mutation writes Hive first, then updates
 /// state from the store, so the UI can never show something that was not saved.
@@ -51,7 +52,9 @@ class SubscriptionsNotifier extends Notifier<List<Subscription>> {
     state = _sorted([...state, subscription]);
     await repo.put(subscription);
     await _scheduleReminder(subscription);
-    ref.read(analyticsProvider).logSubAdded(subscription, fromPreset: fromPreset);
+    ref
+        .read(analyticsProvider)
+        .logSubAdded(subscription, fromPreset: fromPreset);
     state = repo.all();
   }
 
@@ -253,7 +256,6 @@ class SettingsNotifier extends Notifier<AppSettings> {
     return false;
   }
 
-
   /// One anonymous id per install, created lazily and reused forever.
   Future<String> ensureInstallId() async {
     // `ref.read(settingsProvider)` here would be a provider depending on
@@ -359,7 +361,8 @@ class ReminderHealth {
 
 /// Cached for a short window: it performs two platform calls, and without
 /// keepAlive every rebuild of the Controls screen re-queried the OS.
-final reminderHealthProvider = FutureProvider.autoDispose<ReminderHealth>((ref) async {
+final reminderHealthProvider =
+    FutureProvider.autoDispose<ReminderHealth>((ref) async {
   ref.keepAlive();
   final settings = ref.watch(settingsProvider);
   final service = ref.watch(notificationServiceProvider);

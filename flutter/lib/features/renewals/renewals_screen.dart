@@ -97,7 +97,7 @@ class RenewalsScreen extends ConsumerWidget {
                         Text(
                           '48 hours and 24 hours before every charge.',
                           style: SbType.micro.copyWith(
-                            fontSize: 8,
+                            fontSize: 9,
                             color: context.sb.textMuted,
                             letterSpacing: 0,
                           ),
@@ -162,7 +162,7 @@ class RenewalsScreen extends ConsumerWidget {
                       'Add a subscription and its charges appear here.',
                       textAlign: TextAlign.center,
                       style: SbType.micro.copyWith(
-                        fontSize: 8.5,
+                        fontSize: 9,
                         color: context.sb.textMuted,
                         letterSpacing: 0,
                         height: 1.5,
@@ -233,7 +233,6 @@ class _RenewalRow extends StatelessWidget {
               name: subscription.name,
               category: subscription.category,
             ),
-            platform: subscription.name,
             brandColor: Color(subscription.brandColor),
             size: 32,
           ),
@@ -244,6 +243,8 @@ class _RenewalRow extends StatelessWidget {
               children: [
                 Text(
                   subscription.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: SbType.body.copyWith(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -252,8 +253,10 @@ class _RenewalRow extends StatelessWidget {
                 ),
                 Text(
                   '${formatChargeDate(subscription.nextBillingDate)} · ${formatCountdownLeft(remaining)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: SbType.micro.copyWith(
-                    fontSize: 8,
+                    fontSize: 9,
                     color: urgent ? context.sb.warn : context.sb.textMuted,
                     letterSpacing: 0,
                   ),
@@ -261,23 +264,31 @@ class _RenewalRow extends StatelessWidget {
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              MoneyText(
-                subscription.monthlyIn(currency, inrPerUsd),
-                style: SbType.moneySm,
-                currency: currency,
+          // Shrinks as a block when the row is tight (320 dp at 200 % text):
+          // an intrinsic money column used to push the row 16 px past the card.
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  MoneyText(
+                    subscription.monthlyIn(currency, inrPerUsd),
+                    style: SbType.moneySm,
+                    currency: currency,
+                  ),
+                  Text(
+                    '/mo',
+                    style: SbType.micro.copyWith(
+                      fontSize: 7,
+                      color: context.sb.textMuted,
+                      letterSpacing: 0.06,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                '/mo',
-                style: SbType.micro.copyWith(
-                  fontSize: 7,
-                  color: context.sb.textMuted,
-                  letterSpacing: 0.06,
-                ),
-              ),
-            ],
+            ),
           ),
           const SizedBox(width: SbSpace.x2),
           Padding(

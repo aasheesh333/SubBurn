@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/subburn_tokens.dart';
+import 'press_scale.dart';
 
 /// Primary CTA: burn gradient, 52 px tall, orange bloom underneath.
 ///
@@ -41,80 +42,88 @@ class PrimaryButton extends StatelessWidget {
           child: InkWell(
             onTap: onPressed,
             borderRadius: BorderRadius.circular(SbRadius.button),
-            child: Container(
-              height: height,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(SbRadius.button),
-                gradient:
-                    variant == ButtonVariant.primary ? SbGradients.burn : null,
-                border: variant == ButtonVariant.primary
-                    ? null
-                    : Border.all(
-                        color: variant == ButtonVariant.danger
-                            ? context.sb.danger.withValues(alpha: 0.34)
-                            : context.sb.border,
-                      ),
-                boxShadow: variant == ButtonVariant.primary
-                    ? [
-                        SbShadow.cardInner,
-                        // The bloom is a dark-UI device; on white it reads as a
-                        // dirty smudge and costs contrast.
-                        if (context.sb.isDark) SbShadow.ctaGlow,
-                      ]
-                    : null,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (icon != null) ...[
-                    Icon(
-                      icon,
-                      size: 15,
-                      color: variant == ButtonVariant.primary
-                          ? context.sb.onAccent
-                          : variant == ButtonVariant.danger
-                              ? context.sb.danger
-                              : context.sb.text,
-                    ),
-                    const SizedBox(width: SbSpace.x2),
-                  ],
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: SbType.section.copyWith(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.015 * 13,
-                        color: switch (variant) {
-                          ButtonVariant.primary => context.sb.onAccent,
-                          ButtonVariant.danger => context.sb.danger,
-                          ButtonVariant.outline => context.sb.text,
-                        },
-                      ),
-                    ),
-                  ),
-                  if (trailing != null) ...[
-                    const SizedBox(width: 9),
-                    Container(
-                      padding: const EdgeInsets.only(left: 9),
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          left: BorderSide(color: Color(0x33000000)),
+            child: PressScale(
+              child: Container(
+                height: height,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(SbRadius.button),
+                  gradient:
+                      variant == ButtonVariant.primary ? context.sb.cta : null,
+                  border: variant == ButtonVariant.primary
+                      ? null
+                      : Border.all(
+                          color: variant == ButtonVariant.danger
+                              ? context.sb.danger.withValues(alpha: 0.34)
+                              : context.sb.border,
                         ),
+                  boxShadow: variant == ButtonVariant.primary
+                      ? [
+                          SbShadow.cardInner,
+                          // The bloom is a dark-UI device; on white it reads as a
+                          // dirty smudge and costs contrast.
+                          if (context.sb.isDark) SbShadow.ctaGlow,
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(
+                        icon,
+                        size: 15,
+                        color: variant == ButtonVariant.primary
+                            ? context.sb.onAccent
+                            : variant == ButtonVariant.danger
+                                ? context.sb.danger
+                                : context.sb.text,
                       ),
+                      const SizedBox(width: SbSpace.x2),
+                    ],
+                    Flexible(
                       child: Text(
-                        trailing!,
-                        style: SbType.micro.copyWith(
-                          fontSize: 10.5,
-                          color: context.sb.onAccent.withValues(alpha: 0.7),
-                          letterSpacing: -0.02,
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: SbType.section.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.015 * 13,
+                          color: switch (variant) {
+                            ButtonVariant.primary => context.sb.onAccent,
+                            ButtonVariant.danger => context.sb.danger,
+                            ButtonVariant.outline => context.sb.text,
+                          },
                         ),
                       ),
                     ),
+                    if (trailing != null) ...[
+                      const SizedBox(width: 9),
+                      // Flexible: at 200 % text the mono price chip plus the
+                      // label's longest word exceeded a 320 dp sheet's button.
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.only(left: 9),
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              left: BorderSide(color: Color(0x33000000)),
+                            ),
+                          ),
+                          child: Text(
+                            trailing!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: SbType.micro.copyWith(
+                              fontSize: 10.5,
+                              color: context.sb.onAccent.withValues(alpha: 0.7),
+                              letterSpacing: -0.02,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

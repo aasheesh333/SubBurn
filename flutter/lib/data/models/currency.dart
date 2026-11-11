@@ -30,14 +30,17 @@ enum CurrencyCode {
   String format(num amount) {
     final pattern = this == CurrencyCode.inr ? 'en_IN' : 'en_US';
     final isWhole = amount == amount.roundToDouble();
+    // intl puts its minus after our prefix ('₹-5.50'); formatting the magnitude
+    // and prefixing our own sign reads correctly ('−₹5.50').
     final digits = NumberFormat.decimalPatternDigits(
       locale: pattern,
       decimalDigits: isWhole ? 0 : 2,
-    ).format(amount);
-    return '$symbol$digits';
+    ).format(amount.abs());
+    return '${amount < 0 ? '−' : ''}$symbol$digits';
   }
 
-  static CurrencyCode fromStorage(String value) => CurrencyCode.values.firstWhere(
+  static CurrencyCode fromStorage(String value) =>
+      CurrencyCode.values.firstWhere(
         (c) => c.name == value,
         orElse: () => CurrencyCode.inr,
       );
