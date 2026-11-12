@@ -36,8 +36,11 @@ class CatalogueService {
   static const _liveRatesKey = 'cache.fx.live.v1';
   static const _liveRatesStampKey = 'cache.fx.liveAt';
 
-  static const _presetsKey = 'cache.presets.v1';
-  static const _presetsStampKey = 'cache.presets.fetchedAt';
+  // v2: the cancel-link curation pass changed 24 preset URLs; bumping the key
+  // invalidates every stale on-device cache in one shot instead of waiting
+  // out the 7-day TTL.
+  static const _presetsKey = 'cache.presets.v2';
+  static const _presetsStampKey = 'cache.presets.fetchedAt.v2';
   static const _ratesKey = 'cache.rates.v1';
 
   static const _presetsAsset = 'assets/json/presets_v1.json';

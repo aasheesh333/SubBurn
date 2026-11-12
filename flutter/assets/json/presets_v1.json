@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "generatedAt": "2026-11-09",
+  "version": 2,
+  "generatedAt": "2026-11-12",
   "currency": "INR",
   "tools": [
     {
@@ -13,7 +13,7 @@
       "defaultPrice": 1660,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://chatgpt.com/#settings/Subscription",
+      "cancelUrl": "https://chatgpt.com/#settings/Billing",
       "popular": true
     },
     {
@@ -26,7 +26,7 @@
       "defaultPrice": 1660,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.anthropic.com/settings/billing",
+      "cancelUrl": "https://claude.ai/settings/billing",
       "popular": true
     },
     {
@@ -117,7 +117,7 @@
       "defaultPrice": 415,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://platform.deepseek.com/top_up",
+      "cancelUrl": "https://platform.deepseek.com",
       "popular": false
     },
     {
@@ -624,7 +624,7 @@
       "defaultPrice": 500,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.canva.com/settings/purchases",
+      "cancelUrl": "https://www.canva.com/settings/billing",
       "popular": true
     },
     {
@@ -676,7 +676,7 @@
       "defaultPrice": 1660,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://affinity.serif.com/account/",
+      "cancelUrl": "",
       "popular": false
     },
     {
@@ -715,7 +715,7 @@
       "defaultPrice": 2499,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://submit.shutterstock.com/account/subscriptions",
+      "cancelUrl": "https://www.shutterstock.com/account/subscriptions",
       "popular": false
     },
     {
@@ -897,7 +897,7 @@
       "defaultPrice": 1245,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://filmora.wondershare.com/user/order.html",
+      "cancelUrl": "https://id.wondershare.com/",
       "popular": false
     },
     {
@@ -910,7 +910,7 @@
       "defaultPrice": 2499,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.blackmagicdesign.com/order",
+      "cancelUrl": "",
       "popular": false
     },
     {
@@ -962,7 +962,7 @@
       "defaultPrice": 299,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.hotstar.com/in/subscribe",
+      "cancelUrl": "https://www.hotstar.com/in/",
       "popular": false
     },
     {
@@ -988,7 +988,7 @@
       "defaultPrice": 1499,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.amazon.in/gp/css/account/prime",
+      "cancelUrl": "https://www.amazon.in/gp/css/memberships",
       "popular": true
     },
     {
@@ -1001,7 +1001,7 @@
       "defaultPrice": 299,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.jiocinema.com/account",
+      "cancelUrl": "https://www.jiocinema.com/",
       "popular": false
     },
     {
@@ -1014,7 +1014,7 @@
       "defaultPrice": 599,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.zee5.com/account",
+      "cancelUrl": "https://www.zee5.com/",
       "popular": false
     },
     {
@@ -1027,7 +1027,7 @@
       "defaultPrice": 999,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.sonyliv.com/account",
+      "cancelUrl": "https://www.sonyliv.com/",
       "popular": false
     },
     {
@@ -1040,7 +1040,7 @@
       "defaultPrice": 399,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.aha.video/account",
+      "cancelUrl": "https://www.aha.video/",
       "popular": false
     },
     {
@@ -1053,7 +1053,7 @@
       "defaultPrice": 99,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://appleid.apple.com/",
+      "cancelUrl": "https://play.google.com/store/account/subscriptions",
       "popular": false
     },
     {
@@ -1092,7 +1092,7 @@
       "defaultPrice": 299,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.amazon.in/kindle-dbs/hz/subscribe",
+      "cancelUrl": "https://www.amazon.in/gp/css/memberships",
       "popular": false
     },
     {
@@ -1157,7 +1157,7 @@
       "defaultPrice": 549,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.duolingo.com/settings/super",
+      "cancelUrl": "https://www.duolingo.com/settings",
       "popular": false
     },
     {
@@ -1313,7 +1313,7 @@
       "defaultPrice": 649,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://appleid.apple.com/",
+      "cancelUrl": "https://apps.apple.com/account/subscriptions",
       "popular": false
     },
     {
@@ -1326,7 +1326,7 @@
       "defaultPrice": 415,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://my.1password.com/",
+      "cancelUrl": "https://my.1password.com/profile/payment",
       "popular": false
     },
     {
@@ -1378,7 +1378,7 @@
       "defaultPrice": 999,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://account.proton.me/u/0/mail/account-password",
+      "cancelUrl": "https://account.proton.me/u/0/dashboard",
       "popular": false
     },
     {
@@ -1417,7 +1417,7 @@
       "defaultPrice": 830,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://slack.com/account/settings",
+      "cancelUrl": "https://slack.com/account/billing",
       "popular": false
     },
     {
@@ -1482,7 +1482,7 @@
       "defaultPrice": 996,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://auth.monday.com/users/sign_in",
+      "cancelUrl": "",
       "popular": false
     },
     {
@@ -1599,7 +1599,7 @@
       "defaultPrice": 830,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://www.evernote.com/Billing.action",
+      "cancelUrl": "https://accounts.evernote.com/settings/account/billing",
       "popular": false
     },
     {
@@ -1612,7 +1612,7 @@
       "defaultPrice": 249,
       "currency": "INR",
       "cycle": "monthly",
-      "cancelUrl": "https://bear.app/account",
+      "cancelUrl": "https://apps.apple.com/account/subscriptions",
       "popular": false
     }
   ]

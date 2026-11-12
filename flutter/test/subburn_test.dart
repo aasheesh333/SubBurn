@@ -407,7 +407,7 @@ void main() {
   });
 
   group('catalogue', () {
-    test('bundled presets parse, are unique and have cancel links', () {
+    test('bundled presets parse, are unique and have usable cancel links', () {
       final raw = File('assets/json/presets_v1.json').readAsStringSync();
       final catalogue = PresetCatalogue.fromJson(
         jsonDecode(raw) as Map<String, dynamic>,
@@ -418,10 +418,32 @@ void main() {
       expect(catalogue.tools.map((t) => t.id).toSet().length,
           catalogue.tools.length);
       for (final tool in catalogue.tools) {
-        expect(tool.cancelUrl.startsWith('https://'), isTrue,
-            reason: '${tool.name} has no cancel URL');
+        // Empty is honest (one-time licences have nothing to cancel);
+        // anything present must be a real https manage page.
+        expect(
+          tool.cancelUrl.isEmpty || tool.cancelUrl.startsWith('https://'),
+          isTrue,
+          reason: '${tool.name} has an unusable cancel URL',
+        );
         expect(tool.name, isNotEmpty);
         expect(tool.defaultPrice, greaterThanOrEqualTo(0));
+      }
+
+      // Regression: the 2026-11 curation pass. These patterns were the
+      // "wrong redirection" class — purchase pages, sign-in walls, wrong
+      // domains and legacy-dead routes.
+      final byName = {for (final t in catalogue.tools) t.name: t.cancelUrl};
+      expect(byName['Claude Pro'], 'https://claude.ai/settings/billing');
+      expect(byName['Apple Music'],
+          'https://play.google.com/store/account/subscriptions');
+      expect(byName['DaVinci Resolve Studio'], isEmpty);
+      for (final url in byName.values) {
+        expect(url.contains('/top_up'), isFalse, reason: url);
+        expect(url.contains('appleid.apple.com'), isFalse, reason: url);
+        expect(url.contains('/users/sign_in'), isFalse, reason: url);
+        expect(url.contains('/Billing.action'), isFalse, reason: url);
+        expect(url.contains('submit.shutterstock'), isFalse, reason: url);
+        expect(url.contains('anthropic.com/settings'), isFalse, reason: url);
       }
       expect(catalogue.popular.length, greaterThan(0));
     });
