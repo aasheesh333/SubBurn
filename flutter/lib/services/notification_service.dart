@@ -54,7 +54,6 @@ class NotificationService {
   void Function(String subscriptionId)? onOpenSubscription;
 
   /// Stable id for the in-app test notification.
-  static const testNotificationId = 990001;
 
   bool get isInitialized => _initialized;
 
@@ -230,41 +229,6 @@ class NotificationService {
     return false;
   }
 
-  /// Fires one notification ~8 seconds from now. Used by Controls → "Send test
-  /// reminder" so a user can prove the channel works without waiting 48 hours.
-  Future<bool> sendTestNotification() async {
-    if (!_initialized) await initialize();
-    if (!_initialized) {
-      lastError ??= 'Notifications could not start on this device.';
-      return false;
-    }
-    if (!await refreshPermission()) {
-      lastError = 'Notification permission is not granted.';
-      return false;
-    }
-    try {
-      await _plugin.zonedSchedule(
-        id: testNotificationId,
-        scheduledDate: tz.TZDateTime.fromMillisecondsSinceEpoch(
-          tz.local,
-          SbClock.now().add(const Duration(seconds: 8)).millisecondsSinceEpoch,
-        ),
-        notificationDetails: _details(
-          'This is what a renewal reminder looks like. It will fire 48 h and '
-          '24 h before every charge.',
-        ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        title: 'SubBurn reminders are working',
-        body: 'You will be warned before every renewal.',
-      );
-      return true;
-    } catch (error) {
-      lastError = 'Test reminder failed: $error';
-      debugPrint(lastError);
-      return false;
-    }
-  }
-
   /// Schedules both reminders for [subscription], replacing any previous pair.
   Future<bool> scheduleFor(
     Subscription subscription, {
@@ -367,15 +331,12 @@ class NotificationService {
   }
 
   /// How many reminders are actually queued — the honest answer to "is it
-  /// working?", shown in Controls. The scheduled test notification is excluded:
-  /// it used to linger in the count for its whole 8 s fuse (and the health
-  /// provider is keepAlive), so Controls claimed "1 reminder queued" on a
-  /// device with zero subscriptions.
+  /// working?", shown in Controls.
   Future<int> pendingCount() async {
     if (!_initialized) return 0;
     try {
       final pending = await _plugin.pendingNotificationRequests();
-      return pending.where((p) => p.id != testNotificationId).length;
+      return pending.length;
     } catch (error) {
       debugPrint('pendingNotificationRequests failed: $error');
       return 0;

@@ -355,7 +355,7 @@ class _PrivacyBody extends StatelessWidget {
                 'bar, on the app\'s four main tabs.',
             'An app-open ad may appear on some launches and returns from the '
                 'background — never on the first launch after install, and at '
-                'most once every 3 hours.',
+                'most once every 2 hours.',
             'Rewarded videos are always opt-in: extra receipt themes or a '
                 'plain thank-you for supporting the developer. Nothing is '
                 'locked behind an ad, and the banner itself never goes away.',

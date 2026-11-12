@@ -16,7 +16,7 @@ import 'ads_service.dart';
 /// The gates below are the entire user-experience contract:
 /// * **Never on the first launch after install** — Google's guidance, and a
 ///   new user has not received any value yet.
-/// * **At most once per 3 hours**, cold starts and resumes combined.
+/// * **At most once per 2 hours**, cold starts and resumes combined.
 /// * **Only after a real absence** on resume (≥1 min in background), so task
 ///   switchers never trigger it.
 /// * **Never stacked** with another app-open show in progress.
@@ -27,7 +27,7 @@ import 'ads_service.dart';
 class AppOpenAdService {
   AppOpenAdService(this._ref);
 
-  static const frequencyCap = Duration(hours: 3);
+  static const frequencyCap = Duration(hours: 2);
   static const minBackground = Duration(minutes: 1);
   static const coldStartBudget = Duration(seconds: 4);
   static const resumeBudget = Duration(seconds: 3);

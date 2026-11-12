@@ -235,9 +235,9 @@ void main() {
       );
     });
 
-    test('the 3-hour cap covers cold starts and resumes alike', () {
-      final inside = noon.subtract(const Duration(hours: 2, minutes: 59));
-      final outside = noon.subtract(const Duration(hours: 3, minutes: 1));
+    test('the 2-hour cap covers cold starts and resumes alike', () {
+      final inside = noon.subtract(const Duration(hours: 1, minutes: 59));
+      final outside = noon.subtract(const Duration(hours: 2, minutes: 1));
       expect(
         AppOpenAdService.allowed(
           now: noon,

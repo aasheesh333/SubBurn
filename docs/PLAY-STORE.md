@@ -121,7 +121,7 @@ files, health, financial info, messages, or browsing history.
 - Is data sold? **No.** (Note: sharing an advertising ID with AdMob counts as
   "shared with third parties" in the Data Safety form, not as a sale.)
 - Does the app contain ads? **Yes** — one dashboard banner, an app-open ad
-  capped at one per 3 hours (never on first launch after install), and opt-in
+  capped at one per 2 hours (never on first launch after install), and opt-in
   rewarded videos. No interstitials and no timed full-screen ads.
 - Is data used for advertising? **No.**
 - Is data used to track users across apps/sites? **No.**

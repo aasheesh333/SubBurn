@@ -7,7 +7,6 @@ import '../../core/app_links.dart';
 import '../../core/motion.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../data/models/currency.dart';
-import '../../data/models/subscription.dart';
 import '../../data/models/theme_preference.dart';
 import '../../services/ads_bootstrap.dart';
 import '../../services/ads_service.dart';
@@ -151,24 +150,6 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
               ),
               _ReminderDiagnostics(
                 health: health,
-                onTest: () async {
-                  final service = ref.read(notificationServiceProvider);
-                  final ok = await service.sendTestNotification();
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          ok
-                              ? 'Test reminder scheduled — it fires in a few seconds.'
-                              : service.lastError ??
-                                  'Could not schedule a test reminder.',
-                        ),
-                      ),
-                    );
-                  ref.invalidate(reminderHealthProvider);
-                },
                 onGrant: () async {
                   await ref
                       .read(settingsProvider.notifier)
@@ -176,26 +157,6 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                   await ref
                       .read(subscriptionsProvider.notifier)
                       .rescheduleAll();
-                },
-                onReschedule: () async {
-                  final armed = await ref
-                      .read(subscriptionsProvider.notifier)
-                      .rescheduleAll();
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          armed == 0
-                              ? 'No reminders were armed — either notifications '
-                                  'are blocked above, or nothing renews in the '
-                                  'next ${SbWindow.renewingHours} hours.'
-                              : 'Re-armed reminders for $armed subscription'
-                                  '${armed == 1 ? '' : 's'}.',
-                        ),
-                      ),
-                    );
                 },
               ),
             ],
@@ -475,15 +436,11 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
 class _ReminderDiagnostics extends StatelessWidget {
   const _ReminderDiagnostics({
     required this.health,
-    required this.onTest,
     required this.onGrant,
-    required this.onReschedule,
   });
 
   final AsyncValue<ReminderHealth> health;
-  final VoidCallback onTest;
   final VoidCallback onGrant;
-  final VoidCallback onReschedule;
 
   @override
   Widget build(BuildContext context) {
@@ -511,55 +468,31 @@ class _ReminderDiagnostics extends StatelessWidget {
             leadingDot: true,
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            SbSpace.x3,
-            0,
-            SbSpace.x3,
-            SbSpace.x3,
-          ),
-          child: Row(
-            children: [
-              if (blocked)
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onGrant,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: context.sb.danger,
-                      side: BorderSide(
-                          color: context.sb.danger.withValues(alpha: 0.4)),
-                      minimumSize: const Size.fromHeight(44),
-                    ),
-                    child: const Text('ALLOW'),
-                  ),
-                )
-              else
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onTest,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: context.sb.text,
-                      side: BorderSide(color: context.sb.border),
-                      minimumSize: const Size.fromHeight(44),
-                    ),
-                    child: const Text('SEND TEST'),
-                  ),
+        // ALLOW is a fix-it action for a blocked OS permission, so it stays.
+        // The old SEND TEST / RE-ARM buttons were development diagnostics and
+        // have no place in a production build.
+        if (blocked)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              SbSpace.x3,
+              0,
+              SbSpace.x3,
+              SbSpace.x3,
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: onGrant,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.sb.danger,
+                  side: BorderSide(
+                      color: context.sb.danger.withValues(alpha: 0.4)),
+                  minimumSize: const Size.fromHeight(44),
                 ),
-              const SizedBox(width: SbSpace.x2),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onReschedule,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.sb.text,
-                    side: BorderSide(color: context.sb.border),
-                    minimumSize: const Size.fromHeight(44),
-                  ),
-                  child: const Text('RE-ARM'),
-                ),
+                child: const Text('ALLOW'),
               ),
-            ],
+            ),
           ),
-        ),
       ],
     );
   }
