@@ -298,33 +298,6 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                 ),
               if (ads.canShowRewarded)
                 _SettingRow(
-                  title: 'Hide the banner for 24 h',
-                  subtitle: settings.bannerPaused
-                      ? 'The banner is resting. It returns tomorrow — or '
-                          'whenever you come back after the pause ends.'
-                      : 'Watch one rewarded ad and the banner stays gone for '
-                          'a full day. The ad-you-can-remove ad.',
-                  child: settings.bannerPaused
-                      ? StatusBadge(
-                          '${((settings.bannerPauseUntil - DateTime.now().millisecondsSinceEpoch) / 3600000).ceil()}H LEFT',
-                          tone: BadgeTone.safe,
-                          leadingDot: true,
-                        )
-                      : TextButton(
-                          onPressed: () => _watchRewarded(
-                            context,
-                            ref,
-                            success:
-                                'Banner hidden for 24 hours. Enjoy the quiet.',
-                            onReward: () => ref
-                                .read(settingsProvider.notifier)
-                                .pauseBannerFor24h(),
-                          ),
-                          child: const Text('WATCH'),
-                        ),
-                ),
-              if (ads.canShowRewarded)
-                _SettingRow(
                   title: 'Support the developer',
                   subtitle: 'One optional rewarded ad. No reward except our '
                       'gratitude — SubBurn stays fully free either way.',

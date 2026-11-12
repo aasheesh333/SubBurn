@@ -202,15 +202,6 @@ class SettingsNotifier extends Notifier<AppSettings> {
   Future<void> unlockReceiptThemes() =>
       _mutate((s) => s.copyWith(receiptThemesUnlocked: true));
 
-  /// The rewarded perk that *removes* advertising: one watched ad hides the
-  /// banner for 24 hours. Users must always have a path to fewer ads.
-  Future<void> pauseBannerFor24h() => _mutate(
-        (s) => s.copyWith(
-          bannerPauseUntil:
-              DateTime.now().millisecondsSinceEpoch + 24 * 60 * 60 * 1000,
-        ),
-      );
-
   Future<void> recordAppOpenShown() => _mutate(
         (s) => s.copyWith(
           appOpenLastShownAt: DateTime.now().millisecondsSinceEpoch,

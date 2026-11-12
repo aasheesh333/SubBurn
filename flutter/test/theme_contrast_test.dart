@@ -13,7 +13,9 @@ import 'package:subburn/core/theme/theme_tokens.dart';
 double _luminance(Color c) {
   double channel(double v) {
     final s = v;
-    return s <= 0.03928 ? s / 12.92 : math.pow((s + 0.055) / 1.055, 2.4) as double;
+    return s <= 0.03928
+        ? s / 12.92
+        : math.pow((s + 0.055) / 1.055, 2.4) as double;
   }
 
   return 0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b);

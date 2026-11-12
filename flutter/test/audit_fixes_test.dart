@@ -14,7 +14,6 @@ import 'package:subburn/data/models/currency.dart';
 import 'package:subburn/data/models/subscription.dart';
 import 'package:subburn/data/models/usage_guilt.dart';
 import 'package:subburn/data/repositories/subscription_repository.dart';
-import 'package:subburn/data/hive/local_adapters.dart';
 import 'package:subburn/services/ads_service.dart';
 import 'package:subburn/services/app_open_ad_service.dart';
 
@@ -258,16 +257,6 @@ void main() {
     });
   });
 
-  group('banner pause perk', () {
-    test('bannerPaused tracks the rewarded 24 h window', () {
-      // Real clock on purpose: the getter compares against DateTime.now().
-      final now = DateTime.now().millisecondsSinceEpoch;
-      expect(const AppSettings().bannerPaused, isFalse);
-      expect(AppSettings(bannerPauseUntil: now + 3600000).bannerPaused, isTrue);
-      expect(AppSettings(bannerPauseUntil: now - 1).bannerPaused, isFalse);
-    });
-  });
-
   group('settings adapter', () {
     test('receiptThemesUnlocked round-trips through Hive', () async {
       final dir = await Directory.systemTemp.createTemp('subburn_audit_');
@@ -292,7 +281,6 @@ void main() {
       // The ad-stack fields ride the same append-only adapter.
       await reopened.saveSettings(
         reopened.settings.copyWith(
-          bannerPauseUntil: 123456789,
           appOpenLastShownAt: 987654321,
           launchCount: 7,
         ),
@@ -300,7 +288,6 @@ void main() {
       await reopened.close();
       final third = await SubscriptionRepository.openTest(dir.path);
       addTearDown(third.close);
-      expect(third.settings.bannerPauseUntil, 123456789);
       expect(third.settings.appOpenLastShownAt, 987654321);
       expect(third.settings.launchCount, 7);
     });

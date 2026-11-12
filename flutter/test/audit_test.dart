@@ -179,7 +179,9 @@ void main() {
       expect(ok.asOf.year, greaterThanOrEqualTo(2026));
 
       expect(
-        ExchangeRates.fromErApi({'rates': {'INR': 1}}),
+        ExchangeRates.fromErApi({
+          'rates': {'INR': 1}
+        }),
         isNull,
         reason: 'a 1:1 rate is a broken feed, not a real rate',
       );
@@ -256,7 +258,8 @@ void main() {
             repositoryProvider.overrideWithValue(repo),
             catalogueProvider.overrideWith(() => _FixedCatalogue(_snapshot)),
             analyticsProvider.overrideWithValue(AnalyticsService(null)),
-            notificationServiceProvider.overrideWithValue(NotificationService()),
+            notificationServiceProvider
+                .overrideWithValue(NotificationService()),
           ],
           child: MaterialApp(
             theme: AppTheme.dark,
@@ -288,7 +291,8 @@ void main() {
             repositoryProvider.overrideWithValue(repo),
             catalogueProvider.overrideWith(() => _FixedCatalogue(_snapshot)),
             analyticsProvider.overrideWithValue(AnalyticsService(null)),
-            notificationServiceProvider.overrideWithValue(NotificationService()),
+            notificationServiceProvider
+                .overrideWithValue(NotificationService()),
           ],
           child: MaterialApp(
             theme: AppTheme.dark,
@@ -315,9 +319,11 @@ void main() {
       );
       final rolled = sub.rolledForward();
       expect(rolled.nextBillingDate.isAfter(DateTime.now()), isTrue);
-      expect(rolled.nextBillingDate.isBefore(
-        DateTime.now().add(const Duration(days: 32)),
-      ), isTrue);
+      expect(
+          rolled.nextBillingDate.isBefore(
+            DateTime.now().add(const Duration(days: 32)),
+          ),
+          isTrue);
     });
 
     test('rolling keeps the billing day of month', () {
@@ -357,7 +363,8 @@ void main() {
     test('charge count and rupees never disagree', () {
       // 10 complete monthly periods billed since signup.
       final start = BillingCycle.addMonths(DateTime.now(), -10);
-      final sub = _sub(start: start, next: DateTime.now().add(const Duration(hours: 9)));
+      final sub = _sub(
+          start: start, next: DateTime.now().add(const Duration(hours: 9)));
       final charges = sub.chargeCount();
       final lifetime = sub.lifetimeIn(CurrencyCode.inr, 83);
       expect(lifetime, charges * 1660);
@@ -464,7 +471,8 @@ void main() {
             repositoryProvider.overrideWithValue(repo),
             catalogueProvider.overrideWith(() => _FixedCatalogue(_snapshot)),
             analyticsProvider.overrideWithValue(AnalyticsService(null)),
-            notificationServiceProvider.overrideWithValue(NotificationService()),
+            notificationServiceProvider
+                .overrideWithValue(NotificationService()),
           ],
           child: MediaQuery(
             data: const MediaQueryData(
@@ -477,7 +485,7 @@ void main() {
                 backgroundColor: SbColors.bg,
                 body: BurnDashboardScreen(
                   onAddSubscription: () {},
-                          ),
+                ),
               ),
             ),
           ),
@@ -566,7 +574,8 @@ void main() {
       expect(later.lifetimeIn(CurrencyCode.inr, 83), greaterThanOrEqualTo(0));
     });
 
-    test('reminder health tells the truth when the OS blocks delivery', () async {
+    test('reminder health tells the truth when the OS blocks delivery',
+        () async {
       final repo = SubscriptionRepository.inMemory();
       final container = ProviderContainer(
         overrides: [
@@ -589,7 +598,8 @@ void main() {
       expect(health.pending, 0);
     });
 
-    test('switching reminders on reports failure instead of faking success', () async {
+    test('switching reminders on reports failure instead of faking success',
+        () async {
       final repo = SubscriptionRepository.inMemory();
       final container = ProviderContainer(
         overrides: [
@@ -601,8 +611,9 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final enabled =
-          await container.read(settingsProvider.notifier).setNotifications(true);
+      final enabled = await container
+          .read(settingsProvider.notifier)
+          .setNotifications(true);
       expect(enabled, isFalse, reason: 'no plugin, so it cannot be true');
       expect(container.read(settingsProvider).notificationsEnabled, isFalse);
     });
@@ -626,7 +637,8 @@ void main() {
       await container.read(catalogueProvider.notifier).refresh();
 
       final after = container.read(catalogueProvider);
-      expect(after.hasValue, isTrue, reason: 'a failed refresh must not blank data');
+      expect(after.hasValue, isTrue,
+          reason: 'a failed refresh must not blank data');
       expect(after.value!.catalogue.tools.length, first.catalogue.tools.length);
       expect(container.read(catalogueRefreshingProvider), isFalse);
       expect(container.read(ratesProvider).inrPerUsd, first.rates.inrPerUsd);
@@ -800,7 +812,8 @@ void main() {
       final saved = repo.byId('sub_audit')!;
       expect(saved.name, 'ChatGPT Team');
       expect(saved.amount, 2499);
-      expect(saved.id, 'sub_audit', reason: 'editing must not create a new row');
+      expect(saved.id, 'sub_audit',
+          reason: 'editing must not create a new row');
       expect(saved.startDate, DateTime(2025, 10, 9),
           reason: 'lifetime history survives an edit');
     });
@@ -821,8 +834,7 @@ void main() {
       final sub = _sub(cycle: BillingCycle.monthly);
       final yearly = sub.copyWith(
         cycle: BillingCycle.yearly,
-        nextBillingDate:
-            BillingCycle.yearly.nextAfter(sub.startDate),
+        nextBillingDate: BillingCycle.yearly.nextAfter(sub.startDate),
       );
       expect(
         yearly.nextBillingDate.difference(DateTime.now()).inDays,
@@ -874,7 +886,8 @@ void main() {
       expect(sub.isGhost, isFalse);
     });
 
-    test('renewals toggle reports a blocked permission instead of lying', () async {
+    test('renewals toggle reports a blocked permission instead of lying',
+        () async {
       final repo = SubscriptionRepository.inMemory();
       final container = ProviderContainer(
         overrides: [
@@ -886,8 +899,9 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final enabled =
-          await container.read(settingsProvider.notifier).setNotifications(true);
+      final enabled = await container
+          .read(settingsProvider.notifier)
+          .setNotifications(true);
       expect(enabled, isFalse, reason: 'no plugin => cannot be true');
       expect(container.read(settingsProvider).notificationsEnabled, isFalse);
     });
@@ -923,7 +937,8 @@ class _StubCatalogueService extends CatalogueService {
   _StubCatalogueService() : super(baseUrl: 'https://example.invalid');
 
   @override
-  Future<CatalogueSnapshot> load({bool forceRefresh = false}) async => _snapshot;
+  Future<CatalogueSnapshot> load({bool forceRefresh = false}) async =>
+      _snapshot;
 }
 
 class _FlakyCatalogue extends CatalogueService {
@@ -949,7 +964,6 @@ class _FixedCatalogue extends CatalogueNotifier {
   @override
   Future<void> refresh() async {}
 }
-
 
 /// Shared fixture for probe tests.
 Subscription subFixture() => Subscription(

@@ -31,7 +31,7 @@ never click a live ad. Invalid traffic is the fastest route to an account ban.
 | Format | Used | Why |
 |---|---|---|
 | Banner (anchored adaptive) | **Yes, one** | Predictable revenue, zero policy risk when it sits below content. Mounted once at shell level, above the bottom navigation bar, so it is visible on all four tabs, loads once per session and is never reloaded by tab switches (the SDK's own refresh cycle handles timed reloads). Requests the **standard** anchored-adaptive size (~50 dp on phones) — the large ~100 dp variant took too much of the screen for a utility app, and the legacy fixed 320×50 letterboxes on wide phones. Pushed routes (subscription detail) and modal sheets (add/edit) cover the shell, so no ad is ever visible while editing or sharing. |
-| Rewarded | **Yes, opt-in, three entry points** | The only format where the interruption is the user's own choice, so it cannot cost retention and carries the highest eCPM. Rewards: (1) two extra receipt themes — cosmetic, permanent; (2) **hide the banner for 24 h** — a rewarded view that *removes* advertising, so users always have a path to fewer ads; (3) a plain "support the developer" thank-you. Nothing is gated behind any of them. |
+| Rewarded | **Yes, opt-in, two entry points** | The only format where the interruption is the user's own choice, so it cannot cost retention and carries the highest eCPM. Rewards: (1) two extra receipt themes — cosmetic, permanent; (2) a plain "support the developer" thank-you. Nothing is gated behind either. The banner is permanent by product decision: no perk, toggle or pause ever removes it, so the base revenue floor never disappears. |
 | Interstitial | **No** | Must not fire at app open, mid-task, or between a tap and its result. A timed interstitial ("every 3 minutes") is policy abuse and the fastest route to an account ban; in an app opened for seconds it also destroys retention, which is the lever that compounds. |
 | App open | **Yes, hard-capped** | The only full-screen format Google designs for the open/resume moment, and the compliant substitute for timed interstitials: it monetises session starts without interrupting any task. Gates enforced in `AppOpenAdService`: never on the first launch after install, at most once per 3 h (cold starts and resumes share the cap), resume shows only after ≥1 min in background, load budgets of 4 s (cold) / 3 s (resume) drop the opportunity instead of popping in late, and never stacked with another show. |
 | Native advanced | **No** | Needs bespoke layout work to look native; not worth the complexity at this stage. |
@@ -72,9 +72,11 @@ a debug build can never request a live unit even if Remote Config ships one.
     a pure function (unit-tested) implementing the first-launch skip and the
     3 h cap; the shell supplies the lifecycle moments. A future contributor
     cannot "just show it more often" without editing a tested gate.
-12. **A rewarded perk removes ads.** The 24 h banner pause means the ad stack
-    always offers the user a way to *reduce* advertising, which is the single
-    best defence against "too many ads" reviews and uninstall spikes.
+12. **The banner never disappears.** No perk, consent state or config flag
+    other than the master `ads_enabled` kill-switch removes the banner; the
+    earlier 24 h pause perk was withdrawn so the revenue floor is permanent.
+    UX pressure is handled by the banner's placement (below all content,
+    ~50 dp) and by the opt-in rewarded perks instead.
 
 ---
 

@@ -104,7 +104,8 @@ void main() {
     });
 
     test('formats countdowns', () {
-      expect(formatCountdown(const Duration(hours: 14, minutes: 22)), '14h 22m');
+      expect(
+          formatCountdown(const Duration(hours: 14, minutes: 22)), '14h 22m');
       expect(formatCountdown(const Duration(days: 1, hours: 11)), '1d 11h');
       expect(formatCountdown(const Duration(minutes: 7)), '7m');
       expect(formatCountdown(const Duration(minutes: -1)), 'now');
@@ -134,7 +135,8 @@ void main() {
     });
 
     test('lifetime spend is prorated, never overstated', () {
-      final sub = _sub(start: DateTime.now().subtract(const Duration(days: 30)));
+      final sub =
+          _sub(start: DateTime.now().subtract(const Duration(days: 30)));
       final lifetime = sub.lifetimeIn(CurrencyCode.inr, 83);
       expect(lifetime, closeTo(1660, 40));
     });
@@ -260,7 +262,8 @@ void main() {
           const SubBurnReceiptCard(
             lines: lines,
             roastTier: 'Silicon Valley Paypig',
-            roastLine: 'Paying ₹58,200/yr to generate memes and fix center divs.',
+            roastLine:
+                'Paying ₹58,200/yr to generate memes and fix center divs.',
             ghostShare: 0.2567,
             ghostAmount: 14940,
             receiptNo: 'No. 00412',
@@ -319,7 +322,8 @@ void main() {
             child: const SubBurnReceiptCard(
               lines: lines,
               roastTier: 'Silicon Valley Paypig',
-              roastLine: 'Paying ₹58,200/yr to generate memes and fix center divs.',
+              roastLine:
+                  'Paying ₹58,200/yr to generate memes and fix center divs.',
               ghostShare: 0.2567,
               ghostAmount: 14940,
               receiptNo: 'No. 00412',
@@ -331,7 +335,8 @@ void main() {
 
       final boundary =
           key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-      final image = await tester.runAsync(() => boundary.toImage(pixelRatio: 3));
+      final image =
+          await tester.runAsync(() => boundary.toImage(pixelRatio: 3));
       expect(image!.width, 1080);
       expect(image.height, 1920);
       image.dispose();
@@ -486,7 +491,8 @@ void main() {
         _app(
           SizedBox(
             width: 361,
-            child: PrimaryButton(label: 'Add to burn tracker', onPressed: () {}),
+            child:
+                PrimaryButton(label: 'Add to burn tracker', onPressed: () {}),
           ),
         ),
       );

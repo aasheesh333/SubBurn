@@ -97,7 +97,8 @@ Future<void> _loadFonts() async {
 
 /// Locates `MaterialIcons-Regular.otf` inside the active Flutter SDK.
 File? _materialIconsFile() {
-  const relative = 'bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf';
+  const relative =
+      'bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf';
 
   final roots = <String>[
     if (Platform.environment['FLUTTER_ROOT'] case final root?) root,
@@ -281,7 +282,6 @@ void main() {
     await _settle(tester);
   }
 
-
   testWidgets('renewals · light', (tester) async {
     await pump(tester, const RenewalsScreen(), themeMode: ThemeMode.light);
     await expectLater(
@@ -386,12 +386,13 @@ void main() {
           catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
           analyticsProvider.overrideWithValue(AnalyticsService(null)),
           notificationServiceProvider.overrideWithValue(NotificationService()),
-      reminderHealthProvider.overrideWith((ref) async => const ReminderHealth(
-            wantsReminders: true,
-            status: ReminderStatus.ready,
-            pending: 4,
-            lastError: null,
-          )),
+          reminderHealthProvider
+              .overrideWith((ref) async => const ReminderHealth(
+                    wantsReminders: true,
+                    status: ReminderStatus.ready,
+                    pending: 4,
+                    lastError: null,
+                  )),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -465,12 +466,13 @@ void main() {
           catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
           analyticsProvider.overrideWithValue(AnalyticsService(null)),
           notificationServiceProvider.overrideWithValue(NotificationService()),
-      reminderHealthProvider.overrideWith((ref) async => const ReminderHealth(
-            wantsReminders: true,
-            status: ReminderStatus.ready,
-            pending: 4,
-            lastError: null,
-          )),
+          reminderHealthProvider
+              .overrideWith((ref) async => const ReminderHealth(
+                    wantsReminders: true,
+                    status: ReminderStatus.ready,
+                    pending: 4,
+                    lastError: null,
+                  )),
         ],
         child: MediaQuery(
           data: const MediaQueryData(
@@ -507,12 +509,13 @@ void main() {
           catalogueProvider.overrideWith(() => _FixedCatalogue(snapshot)),
           analyticsProvider.overrideWithValue(AnalyticsService(null)),
           notificationServiceProvider.overrideWithValue(NotificationService()),
-      reminderHealthProvider.overrideWith((ref) async => const ReminderHealth(
-            wantsReminders: true,
-            status: ReminderStatus.ready,
-            pending: 4,
-            lastError: null,
-          )),
+          reminderHealthProvider
+              .overrideWith((ref) async => const ReminderHealth(
+                    wantsReminders: true,
+                    status: ReminderStatus.ready,
+                    pending: 4,
+                    lastError: null,
+                  )),
         ],
         child: const SubBurnApp(),
       ),
