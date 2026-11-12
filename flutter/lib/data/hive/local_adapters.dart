@@ -93,6 +93,9 @@ class AppSettings {
     this.notificationsPermissionAsked = false,
     this.receiptThemesUnlocked = false,
     this.installId,
+    this.bannerPauseUntil = 0,
+    this.appOpenLastShownAt = 0,
+    this.launchCount = 0,
   });
 
   final CurrencyCode displayCurrency;
@@ -114,6 +117,22 @@ class AppSettings {
   /// person.
   final String? installId;
 
+  /// Epoch-ms until which the dashboard banner stays hidden — the reward for
+  /// watching one rewarded ad ("hide the banner for 24 h"). 0 = not paused.
+  /// A rewarded opt-in that *removes* advertising: the user always has a
+  /// path to fewer ads, never only to more.
+  final int bannerPauseUntil;
+
+  /// Epoch-ms of the last app-open ad show, for the 3-hour frequency cap.
+  final int appOpenLastShownAt;
+
+  /// Process launches counted on this install. App-open ads skip the first
+  /// launch after install (Google's guidance, and basic decency).
+  final int launchCount;
+
+  bool get bannerPaused =>
+      bannerPauseUntil > DateTime.now().millisecondsSinceEpoch;
+
   AppSettings copyWith({
     CurrencyCode? displayCurrency,
     ThemePreference? themePreference,
@@ -121,6 +140,9 @@ class AppSettings {
     bool? notificationsPermissionAsked,
     bool? receiptThemesUnlocked,
     String? installId,
+    int? bannerPauseUntil,
+    int? appOpenLastShownAt,
+    int? launchCount,
   }) {
     return AppSettings(
       displayCurrency: displayCurrency ?? this.displayCurrency,
@@ -131,6 +153,9 @@ class AppSettings {
       receiptThemesUnlocked:
           receiptThemesUnlocked ?? this.receiptThemesUnlocked,
       installId: installId ?? this.installId,
+      bannerPauseUntil: bannerPauseUntil ?? this.bannerPauseUntil,
+      appOpenLastShownAt: appOpenLastShownAt ?? this.appOpenLastShownAt,
+      launchCount: launchCount ?? this.launchCount,
     );
   }
 }
@@ -154,13 +179,16 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       installId: fields[3] as String?,
       themePreference: ThemePreference.fromStorage(fields[4] as String?),
       receiptThemesUnlocked: (fields[5] as bool?) ?? false,
+      bannerPauseUntil: (fields[6] as int?) ?? 0,
+      appOpenLastShownAt: (fields[7] as int?) ?? 0,
+      launchCount: (fields[8] as int?) ?? 0,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.displayCurrency.name)
       ..writeByte(1)
@@ -172,6 +200,12 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(4)
       ..write(obj.themePreference.name)
       ..writeByte(5)
-      ..write(obj.receiptThemesUnlocked);
+      ..write(obj.receiptThemesUnlocked)
+      ..writeByte(6)
+      ..write(obj.bannerPauseUntil)
+      ..writeByte(7)
+      ..write(obj.appOpenLastShownAt)
+      ..writeByte(8)
+      ..write(obj.launchCount);
   }
 }

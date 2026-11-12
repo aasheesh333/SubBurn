@@ -266,6 +266,7 @@ class RemoteConfigService {
     'ads_enabled': true,
     'admob_banner_unit': 'ca-app-pub-4285271252655677/4419017228',
     'admob_rewarded_unit': 'ca-app-pub-4285271252655677/5895575414',
+    'admob_appopen_unit': 'ca-app-pub-4285271252655677/3390744697',
   };
 
   static const minimumFetchInterval = Duration(hours: 12);

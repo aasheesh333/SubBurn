@@ -13,6 +13,7 @@ was chosen, and the policy rules the implementation follows.
 | App ID | `ca-app-pub-4285271252655677~8713310448` |
 | Banner unit | `ca-app-pub-4285271252655677/4419017228` — `SubBurn_Dashboard_Banner` |
 | Rewarded unit | `ca-app-pub-4285271252655677/5895575414` — `SubBurn_UnlockTheme_Rewarded` |
+| App-open unit | `ca-app-pub-4285271252655677/3390744697` — `SubBurn_AppOpen_Launch` |
 | App store status | **Not yet listed** — marked "No" at creation, so AdMob is doing its review. Ad serving is limited until the app is published to Play and approved. |
 
 The App ID lives in `android/app/src/main/AndroidManifest.xml`
@@ -30,9 +31,9 @@ never click a live ad. Invalid traffic is the fastest route to an account ban.
 | Format | Used | Why |
 |---|---|---|
 | Banner (anchored adaptive) | **Yes, one** | Predictable revenue, zero policy risk when it sits below content. Mounted once at shell level, above the bottom navigation bar, so it is visible on all four tabs, loads once per session and is never reloaded by tab switches (the SDK's own refresh cycle handles timed reloads). Requests the **standard** anchored-adaptive size (~50 dp on phones) — the large ~100 dp variant took too much of the screen for a utility app, and the legacy fixed 320×50 letterboxes on wide phones. Pushed routes (subscription detail) and modal sheets (add/edit) cover the shell, so no ad is ever visible while editing or sharing. |
-| Rewarded | **Yes, opt-in** | The only format where the interruption is the user's own choice, so it cannot cost retention. The reward is two extra receipt themes — cosmetic, permanent, and nothing else is gated. |
-| Interstitial | **No** | Must not fire at app open, mid-task, or between a tap and its result. In an app opened for seconds it destroys the experience and the highest-risk format for policy action. |
-| App open | **No** | Google requires it not to obscure the first screen's content, and it reads as a toll booth on a utility app. |
+| Rewarded | **Yes, opt-in, three entry points** | The only format where the interruption is the user's own choice, so it cannot cost retention and carries the highest eCPM. Rewards: (1) two extra receipt themes — cosmetic, permanent; (2) **hide the banner for 24 h** — a rewarded view that *removes* advertising, so users always have a path to fewer ads; (3) a plain "support the developer" thank-you. Nothing is gated behind any of them. |
+| Interstitial | **No** | Must not fire at app open, mid-task, or between a tap and its result. A timed interstitial ("every 3 minutes") is policy abuse and the fastest route to an account ban; in an app opened for seconds it also destroys retention, which is the lever that compounds. |
+| App open | **Yes, hard-capped** | The only full-screen format Google designs for the open/resume moment, and the compliant substitute for timed interstitials: it monetises session starts without interrupting any task. Gates enforced in `AppOpenAdService`: never on the first launch after install, at most once per 3 h (cold starts and resumes share the cap), resume shows only after ≥1 min in background, load budgets of 4 s (cold) / 3 s (resume) drop the opportunity instead of popping in late, and never stacked with another show. |
 | Native advanced | **No** | Needs bespoke layout work to look native; not worth the complexity at this stage. |
 
 Debug builds always request Google's official test unit ids — the swap happens
@@ -65,8 +66,15 @@ a debug build can never request a live unit even if Remote Config ships one.
    frame, and the consent call has a 6 s timeout that fails open.
 9. **No ad refresh loop.** A failed fill is logged and dropped; there is no retry
    storm.
-10. **The privacy policy names AdMob**, the two formats, the data involved, and
+10. **The privacy policy names AdMob**, every format, the data involved, and
     the opt-out path. Play's Data Safety form must be updated to match (below).
+11. **App-open gates are code, not convention.** `AppOpenAdService.allowed()` is
+    a pure function (unit-tested) implementing the first-launch skip and the
+    3 h cap; the shell supplies the lifecycle moments. A future contributor
+    cannot "just show it more often" without editing a tested gate.
+12. **A rewarded perk removes ads.** The 24 h banner pause means the ad stack
+    always offers the user a way to *reduce* advertising, which is the single
+    best defence against "too many ads" reviews and uninstall spikes.
 
 ---
 

@@ -11,6 +11,7 @@ import '../../data/models/subscription.dart';
 import '../../data/models/theme_preference.dart';
 import '../../services/ads_bootstrap.dart';
 import '../../services/ads_service.dart';
+import '../../services/rewarded_ad_service.dart';
 import '../../services/catalogue_service.dart';
 import '../../state/providers.dart';
 import '../legal/legal_page.dart';
@@ -260,10 +261,10 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
               _SettingRow(
                 title: ads.enabled ? 'Ads enabled' : 'No ads',
                 subtitle: ads.enabled
-                    ? 'One banner above the navigation bar on every main '
-                        'screen, plus an optional rewarded video for the extra '
-                        'receipt themes. No interstitials, no ads while you are '
-                        'editing or sharing.'
+                    ? 'One banner above the navigation bar, an app-open ad on '
+                        'some launches (capped at one per 3 hours), and '
+                        'opt-in rewarded videos. No interstitials, no ads '
+                        'while you are editing or sharing.'
                     : 'This build shows no advertising.',
                 child: StatusBadge(
                   ads.enabled ? 'ON' : 'OFF',
@@ -293,6 +294,47 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                         );
                     },
                     child: const Text('MANAGE'),
+                  ),
+                ),
+              if (ads.canShowRewarded)
+                _SettingRow(
+                  title: 'Hide the banner for 24 h',
+                  subtitle: settings.bannerPaused
+                      ? 'The banner is resting. It returns tomorrow — or '
+                          'whenever you come back after the pause ends.'
+                      : 'Watch one rewarded ad and the banner stays gone for '
+                          'a full day. The ad-you-can-remove ad.',
+                  child: settings.bannerPaused
+                      ? StatusBadge(
+                          '${((settings.bannerPauseUntil - DateTime.now().millisecondsSinceEpoch) / 3600000).ceil()}H LEFT',
+                          tone: BadgeTone.safe,
+                          leadingDot: true,
+                        )
+                      : TextButton(
+                          onPressed: () => _watchRewarded(
+                            context,
+                            ref,
+                            success:
+                                'Banner hidden for 24 hours. Enjoy the quiet.',
+                            onReward: () => ref
+                                .read(settingsProvider.notifier)
+                                .pauseBannerFor24h(),
+                          ),
+                          child: const Text('WATCH'),
+                        ),
+                ),
+              if (ads.canShowRewarded)
+                _SettingRow(
+                  title: 'Support the developer',
+                  subtitle: 'One optional rewarded ad. No reward except our '
+                      'gratitude — SubBurn stays fully free either way.',
+                  child: TextButton(
+                    onPressed: () => _watchRewarded(
+                      context,
+                      ref,
+                      success: 'Thank you. That one genuinely helps.',
+                    ),
+                    child: const Text('WATCH'),
                   ),
                 ),
             ],
@@ -634,4 +676,37 @@ class _SettingRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Runs one opt-in rewarded ad and reports the outcome honestly.
+///
+/// Shared by every rewarded entry point (theme unlock has its own older call
+/// site in the studio): the reward is applied only when the SDK confirms it
+/// was earned, and a missing ad is reported rather than hidden.
+Future<void> _watchRewarded(
+  BuildContext context,
+  WidgetRef ref, {
+  required String success,
+  VoidCallback? onReward,
+}) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final service = ref.read(rewardedAdServiceProvider);
+  await service.load();
+  if (!context.mounted) return;
+  final rewarded = await service.show(
+    onReward: () {
+      if (!context.mounted) return;
+      onReward?.call();
+    },
+  );
+  if (!context.mounted) return;
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          rewarded ? success : 'No ad was available — nothing changed.',
+        ),
+      ),
+    );
 }

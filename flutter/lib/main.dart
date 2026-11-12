@@ -48,6 +48,14 @@ Future<void> main() async {
       // Nothing is written to the ledger on install. The app opens on the
       // empty state and the user adds their own subscriptions.
 
+      // Launch counter: app-open ads skip the very first launch after
+      // install, and this is the only place that knows it is a launch.
+      await repository.saveSettings(
+        repository.settings.copyWith(
+          launchCount: repository.settings.launchCount + 1,
+        ),
+      );
+
       // One anonymous id per install, created before the first frame so no
       // provider has to mutate another during build.
       if (repository.settings.installId == null) {

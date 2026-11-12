@@ -16,12 +16,17 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 /// Debug builds never use these ids: both slots swap in Google's official test
 /// units so a developer cannot generate invalid traffic on a live unit.
 class AdsService {
-  const AdsService(
-      {required this.enabled, this.bannerUnitId, this.rewardedUnitId});
+  const AdsService({
+    required this.enabled,
+    this.bannerUnitId,
+    this.rewardedUnitId,
+    this.appOpenUnitId,
+  });
 
   final bool enabled;
   final String? bannerUnitId;
   final String? rewardedUnitId;
+  final String? appOpenUnitId;
 
   /// True only when the flag is on *and* a unit id exists. A half-configured
   /// ad surface renders nothing rather than an empty grey box.
@@ -31,6 +36,10 @@ class AdsService {
   /// console clears this id, the unlock flow reports "no ad available" instead
   /// of pretending a reward was earned.
   bool get canShowRewarded => enabled && (rewardedUnitId?.isNotEmpty ?? false);
+
+  /// App-open is gated further at show time (first-launch skip, 3 h cap);
+  /// this only says the format is configured at all.
+  bool get canShowAppOpen => enabled && (appOpenUnitId?.isNotEmpty ?? false);
 
   static const disabled = AdsService(enabled: false);
 
@@ -43,6 +52,7 @@ class AdsService {
         enabled: true,
         bannerUnitId: config.getString('admob_banner_unit'),
         rewardedUnitId: config.getString('admob_rewarded_unit'),
+        appOpenUnitId: config.getString('admob_appopen_unit'),
       );
     } catch (error) {
       debugPrint('Ads config unavailable: $error');

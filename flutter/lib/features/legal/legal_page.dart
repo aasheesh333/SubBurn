@@ -353,10 +353,14 @@ class _PrivacyBody extends StatelessWidget {
           child: _Bullets([
             'One banner sits at the bottom of the screen, above the navigation '
                 'bar, on the app\'s four main tabs.',
-            'An optional rewarded video unlocks two extra receipt themes. They '
-                'are cosmetic: no feature and no data is locked behind an ad.',
-            'No interstitial or app-open ads, and none on the detail screen, in '
-                'the add flow, or on the receipt itself.',
+            'An app-open ad may appear on some launches and returns from the '
+                'background — never on the first launch after install, and at '
+                'most once every 3 hours.',
+            'Rewarded videos are always opt-in: extra receipt themes, a '
+                '24-hour banner pause, or a plain thank-you for supporting the '
+                'developer. Nothing is locked behind an ad.',
+            'No interstitial or timed full-screen ads, and none on the detail '
+                'screen, in the add flow, or on the receipt itself.',
             'Change or withdraw ad consent any time in Controls → Ads → Manage.',
           ]),
         ),

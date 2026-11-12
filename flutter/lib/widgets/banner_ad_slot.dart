@@ -6,6 +6,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../core/theme/theme_tokens.dart';
 import '../services/ads_bootstrap.dart';
 import '../services/ads_service.dart';
+import '../state/providers.dart';
 
 /// One anchored-adaptive banner for the entire app, loaded lazily and once.
 ///
@@ -44,6 +45,9 @@ class _BannerAdSlotState extends ConsumerState<BannerAdSlot> {
     if (kIsWeb) return;
     final ads = ref.read(adsServiceProvider);
     if (!ads.canShowBanner) return;
+    // The rewarded "hide the banner for 24 h" perk outranks revenue: an ad
+    // the user paid for with their attention must actually stay gone.
+    if (ref.read(settingsProvider).bannerPaused) return;
 
     // Anchored-adaptive needs the real width; measured before any await so the
     // context use is synchronous.
@@ -129,7 +133,12 @@ class BannerAdRegion extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ads = ref.watch(adsServiceProvider);
-    if (!ads.canShowBanner) return const SizedBox.shrink();
+    // Watching settings means the banner disappears the moment the pause
+    // perk is redeemed; it returns on the next rebuild after the pause
+    // expires (tab switch or refresh), which is soon enough for a 24 h perk.
+    if (!ads.canShowBanner || ref.watch(settingsProvider).bannerPaused) {
+      return const SizedBox.shrink();
+    }
     return const BannerAdSlot();
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +13,7 @@ import '../controls/controls_screen.dart';
 import '../quick_add/quick_add_sheet.dart';
 import '../renewals/renewals_screen.dart';
 import '../studio/viral_receipt_screen.dart';
+import '../../services/app_open_ad_service.dart';
 import '../../services/catalogue_service.dart';
 import '../../state/providers.dart';
 
@@ -40,6 +43,9 @@ class _HomeShellState extends ConsumerState<HomeShell>
       final armed =
           await ref.read(subscriptionsProvider.notifier).rescheduleAll();
       if (armed > 0) ref.invalidate(reminderHealthProvider);
+      // App-open ad opportunity #1: the cold start, after the first frame so
+      // the UI is never held hostage by an ad load.
+      unawaited(ref.read(appOpenAdServiceProvider).maybeShowOnColdStart());
     });
   }
 
@@ -51,7 +57,14 @@ class _HomeShellState extends ConsumerState<HomeShell>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      ref.read(appOpenAdServiceProvider).noteBackgrounded();
+      return;
+    }
     if (state != AppLifecycleState.resumed) return;
+    // App-open ad opportunity #2: returning after a real absence, gated by
+    // the 3-hour cap inside the service.
+    unawaited(ref.read(appOpenAdServiceProvider).maybeShowOnResume());
     // Coming back from the background is when the ledger is most likely stale:
     // a charge may have landed while the app was asleep, which rolls the next
     // date forward, drops the old alarms and needs a fresh pair. Doing this on

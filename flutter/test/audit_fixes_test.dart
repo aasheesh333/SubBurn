@@ -14,7 +14,9 @@ import 'package:subburn/data/models/currency.dart';
 import 'package:subburn/data/models/subscription.dart';
 import 'package:subburn/data/models/usage_guilt.dart';
 import 'package:subburn/data/repositories/subscription_repository.dart';
+import 'package:subburn/data/hive/local_adapters.dart';
 import 'package:subburn/services/ads_service.dart';
+import 'package:subburn/services/app_open_ad_service.dart';
 
 Subscription _sub({
   required String id,
@@ -210,6 +212,62 @@ void main() {
     });
   });
 
+  group('app-open ad policy', () {
+    final noon = DateTime(2026, 11, 12, 12);
+
+    test('the first launch after install never shows an app-open ad', () {
+      // Regression guard: app-open on first launch is against Google's
+      // guidance and hostile to a user who has received zero value yet.
+      expect(
+        AppOpenAdService.allowed(
+          now: noon,
+          lastShownAt: 0,
+          launchCount: 1,
+        ),
+        isFalse,
+      );
+      expect(
+        AppOpenAdService.allowed(
+          now: noon,
+          lastShownAt: 0,
+          launchCount: 2,
+        ),
+        isTrue,
+      );
+    });
+
+    test('the 3-hour cap covers cold starts and resumes alike', () {
+      final inside = noon.subtract(const Duration(hours: 2, minutes: 59));
+      final outside = noon.subtract(const Duration(hours: 3, minutes: 1));
+      expect(
+        AppOpenAdService.allowed(
+          now: noon,
+          lastShownAt: inside.millisecondsSinceEpoch,
+          launchCount: 5,
+        ),
+        isFalse,
+      );
+      expect(
+        AppOpenAdService.allowed(
+          now: noon,
+          lastShownAt: outside.millisecondsSinceEpoch,
+          launchCount: 5,
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('banner pause perk', () {
+    test('bannerPaused tracks the rewarded 24 h window', () {
+      // Real clock on purpose: the getter compares against DateTime.now().
+      final now = DateTime.now().millisecondsSinceEpoch;
+      expect(const AppSettings().bannerPaused, isFalse);
+      expect(AppSettings(bannerPauseUntil: now + 3600000).bannerPaused, isTrue);
+      expect(AppSettings(bannerPauseUntil: now - 1).bannerPaused, isFalse);
+    });
+  });
+
   group('settings adapter', () {
     test('receiptThemesUnlocked round-trips through Hive', () async {
       final dir = await Directory.systemTemp.createTemp('subburn_audit_');
@@ -230,6 +288,21 @@ void main() {
       final reopened = await SubscriptionRepository.openTest(dir.path);
       addTearDown(reopened.close);
       expect(reopened.settings.receiptThemesUnlocked, isTrue);
+
+      // The ad-stack fields ride the same append-only adapter.
+      await reopened.saveSettings(
+        reopened.settings.copyWith(
+          bannerPauseUntil: 123456789,
+          appOpenLastShownAt: 987654321,
+          launchCount: 7,
+        ),
+      );
+      await reopened.close();
+      final third = await SubscriptionRepository.openTest(dir.path);
+      addTearDown(third.close);
+      expect(third.settings.bannerPauseUntil, 123456789);
+      expect(third.settings.appOpenLastShownAt, 987654321);
+      expect(third.settings.launchCount, 7);
     });
   });
 }

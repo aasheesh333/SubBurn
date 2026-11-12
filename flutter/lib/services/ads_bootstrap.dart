@@ -26,14 +26,17 @@ abstract final class AdUnits {
   /// Live unit ids from the AdMob console (public identifiers, not secrets).
   static const bannerAndroid = 'ca-app-pub-4285271252655677/4419017228';
   static const rewardedAndroid = 'ca-app-pub-4285271252655677/5895575414';
+  static const appOpenAndroid = 'ca-app-pub-4285271252655677/3390744697';
 
   /// Google's official test ids. Always used in debug so a real developer
   /// never clicks a live ad — invalid traffic is the fastest way to a ban.
   static const _testBanner = 'ca-app-pub-3940256099942544/6300978111';
   static const _testRewarded = 'ca-app-pub-3940256099942544/5224354917';
+  static const _testAppOpen = 'ca-app-pub-3940256099942544/9257395921';
 
   static String get banner => kDebugMode ? _testBanner : bannerAndroid;
   static String get rewarded => kDebugMode ? _testRewarded : rewardedAndroid;
+  static String get appOpen => kDebugMode ? _testAppOpen : appOpenAndroid;
 }
 
 /// Initialises the Mobile Ads SDK once, with UMP consent where required.

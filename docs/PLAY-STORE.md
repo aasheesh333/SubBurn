@@ -120,8 +120,9 @@ files, health, financial info, messages, or browsing history.
   subscriptions*; email for server-side deletion.
 - Is data sold? **No.** (Note: sharing an advertising ID with AdMob counts as
   "shared with third parties" in the Data Safety form, not as a sale.)
-- Does the app contain ads? **Yes** — one dashboard banner plus an optional
-  rewarded video. No interstitials, no app-open ads.
+- Does the app contain ads? **Yes** — one dashboard banner, an app-open ad
+  capped at one per 3 hours (never on first launch after install), and opt-in
+  rewarded videos. No interstitials and no timed full-screen ads.
 - Is data used for advertising? **No.**
 - Is data used to track users across apps/sites? **No.**
 - Committed to the Play Families policy? **N/A** (not targeted at children).
