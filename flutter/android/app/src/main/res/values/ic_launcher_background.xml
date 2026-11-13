@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FF4500</color>
+    <!-- Mid tone of the icon artwork's mint gradient, so masked edges
+         and parallax bleed match the art instead of the old ember. -->
+    <color name="ic_launcher_background">#90F2BD</color>
 </resources>
