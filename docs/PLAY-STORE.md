@@ -89,7 +89,7 @@ Light and dark, following the device. Made for people with too many tabs.
 | Asset | Spec | Status |
 |---|---|---|
 | App icon | 512 × 512 PNG, 32-bit, no alpha | **to produce** |
-| Feature graphic | 1024 × 500 PNG/JPEG | **to produce** |
+| Feature graphic | 1024 × 500 PNG/JPEG | `store/assets/feature-graphic-1024x500.png` |
 | Phone screenshots | ≥ 2, 16:9 or 9:16, 320–3840 px | ready: `flutter/test/goldens/*.png` |
 | Tablet screenshots | optional | — |
 
@@ -177,7 +177,7 @@ camera, microphone, or `QUERY_ALL_PACKAGES`.
 
 ## 7. Known gaps before production
 
-- [ ] App icon + feature graphic (512² and 1024×500)
+- [x] App icon + feature graphic (512² and 1024×500) — `store/assets/`
 - [ ] iOS build (`GoogleService-Info.plist`, APNs key) — Android-only launch is fine
 - [ ] Screen-reader + 200 % text pass on a physical device
 - [x] `flutter build appbundle` verified by CI (signed AAB artifact)
@@ -189,3 +189,12 @@ camera, microphone, or `QUERY_ALL_PACKAGES`.
 - [x] Backups disabled (`allowBackup=false`, data extraction rules)
 - [x] Privacy policy hosted over HTTPS
 - [x] OneSignal app id configured
+---
+
+## Latest requirement check (2026-11-13)
+
+`store/PLAY-READINESS.md` records the current submission gate and every item
+verified from the built artifact: target API 36 (Play's 31 Aug 2026 gate), AAB
+only, v1/v2/v3 signing, 16 KB page-size alignment, ads/data-safety
+declarations, and the listing assets — including the 2:1 screenshot rule that
+the raw goldens (2.17:1) would have failed.
