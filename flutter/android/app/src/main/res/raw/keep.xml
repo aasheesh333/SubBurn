@@ -13,4 +13,4 @@
   Verified by inspecting resources.arsc in the built APK.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@drawable/ic_stat_subburn,@drawable/splash_mark,@mipmap/ic_launcher,@mipmap/ic_launcher_round,@drawable/ic_launcher_foreground,@drawable/ic_launcher_monochrome" />
+    tools:keep="@drawable/ic_stat_subburn,@drawable/splash_mark,@mipmap/ic_launcher,@mipmap/ic_launcher_round,@drawable/ic_launcher_foreground" />
