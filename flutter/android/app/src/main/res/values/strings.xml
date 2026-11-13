@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Single source of truth for the app name: the manifest label, the
+         recents task description and the share sheet all read this. -->
+    <string name="app_name">SubBurn</string>
+</resources>

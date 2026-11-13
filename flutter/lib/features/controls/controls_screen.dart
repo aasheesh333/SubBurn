@@ -153,6 +153,13 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
               _ReminderDiagnostics(
                 health: health,
                 onGrant: () async {
+                  // Two different fixes: the channel/notification toggle lives
+                  // in system settings (a re-prompt is silently refused after
+                  // two declines), while a plain permission prompt can still be
+                  // answered inline.
+                  await ref
+                      .read(notificationServiceProvider)
+                      .openNotificationSettings();
                   await ref
                       .read(settingsProvider.notifier)
                       .setNotifications(true);
@@ -494,14 +501,20 @@ class _ReminderDiagnostics extends StatelessWidget {
   Widget build(BuildContext context) {
     final value = health.value;
     final blocked = value?.blockedByOs ?? false;
+    final channelOff = value?.blockedByChannel ?? false;
     final pending = value?.pending ?? 0;
     final status = value == null
         ? 'Checking…'
-        : blocked
-            ? 'Blocked by Android'
-            : pending > 0
-                ? '$pending reminder${pending == 1 ? '' : 's'} queued'
-                : 'Ready · none queued yet';
+        : channelOff
+            // App notifications are allowed, but this app's own channel was
+            // silenced — Android reports the app as enabled in that state, so
+            // the old copy claimed ACTIVE while nothing could be delivered.
+            ? 'This app’s reminder channel is turned off in system settings'
+            : blocked
+                ? 'Notifications are blocked for SubBurn in system settings'
+                : pending > 0
+                    ? '$pending reminder${pending == 1 ? '' : 's'} queued'
+                    : 'Ready · none queued yet';
 
     return Column(
       children: [
@@ -537,7 +550,7 @@ class _ReminderDiagnostics extends StatelessWidget {
                       color: context.sb.danger.withValues(alpha: 0.4)),
                   minimumSize: const Size.fromHeight(44),
                 ),
-                child: const Text('ALLOW'),
+                child: Text(channelOff ? 'TURN ON' : 'ALLOW'),
               ),
             ),
           ),

@@ -363,9 +363,17 @@ class ReminderHealth {
   bool get isWorking =>
       wantsReminders && status == ReminderStatus.ready && pending > 0;
 
-  /// True when the user asked for reminders but the OS is blocking them.
+  /// True when the user asked for reminders but the OS is blocking them —
+  /// either the app-level permission or this app's own notification channel.
   bool get blockedByOs =>
-      wantsReminders && status == ReminderStatus.permissionDenied;
+      wantsReminders &&
+      (status == ReminderStatus.permissionDenied ||
+          status == ReminderStatus.channelBlocked);
+
+  /// The channel was silenced while the app still looked enabled: a different
+  /// fix path (turn the channel back on) from a missing permission.
+  bool get blockedByChannel =>
+      wantsReminders && status == ReminderStatus.channelBlocked;
 }
 
 /// Cached for a short window: it performs two platform calls, and without

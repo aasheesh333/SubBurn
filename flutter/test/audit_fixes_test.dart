@@ -211,6 +211,99 @@ void main() {
     });
   });
 
+  group('reminder scheduling', () {
+    // Mirrors NotificationService's slot rule: a reminder is only scheduled if
+    // its fire time is still in the future (minus a 1-minute guard).
+    bool wouldSchedule(DateTime fireAt, DateTime now) =>
+        !fireAt.isBefore(now.add(const Duration(minutes: 1)));
+
+    final renewal = DateTime(2026, 11, 20, 9);
+
+    test('both reminders arm when the renewal is days away', () {
+      final now = DateTime(2026, 11, 12, 12);
+      expect(wouldSchedule(renewal.subtract(const Duration(hours: 48)), now),
+          isTrue);
+      expect(wouldSchedule(renewal.subtract(const Duration(hours: 24)), now),
+          isTrue);
+    });
+
+    test('the 48 h slot is skipped but the 24 h slot still arms', () {
+      // Renews in 36 h: the 48 h window already opened, 24 h has not.
+      final now = renewal.subtract(const Duration(hours: 36));
+      expect(wouldSchedule(renewal.subtract(const Duration(hours: 48)), now),
+          isFalse);
+      expect(wouldSchedule(renewal.subtract(const Duration(hours: 24)), now),
+          isTrue);
+    });
+
+    test('a renewal inside the guard window schedules nothing stale', () {
+      final now = renewal.subtract(const Duration(minutes: 30));
+      expect(wouldSchedule(renewal.subtract(const Duration(hours: 48)), now),
+          isFalse);
+      expect(wouldSchedule(renewal.subtract(const Duration(hours: 24)), now),
+          isFalse);
+    });
+
+    test('a renewal 2 days out on the exact boundary still arms', () {
+      final now = renewal.subtract(const Duration(hours: 48));
+      // fireAt == now, and the guard is `isBefore(now + 1min)`, so this is
+      // intentionally skipped: firing "in 2 days" at the same instant is a
+      // stale alarm by the time the OS delivers it.
+      expect(wouldSchedule(renewal.subtract(const Duration(hours: 48)), now),
+          isFalse);
+      expect(wouldSchedule(renewal.subtract(const Duration(hours: 24)), now),
+          isTrue);
+    });
+  });
+
+  group('reminder id space', () {
+    // Mirrors NotificationService._notificationId: FNV-1a over the id, folded
+    // into 0..1.999e9, times 10 plus the slot.
+    int notificationId(String id, int slot) {
+      var hash = 0x811C9DC5;
+      for (final unit in id.codeUnits) {
+        hash ^= unit;
+        hash = (hash * 0x01000193) & 0x7FFFFFFF;
+      }
+      return (hash % 200000000) * 10 + slot;
+    }
+
+    test('stays inside Android 32-bit id space for real ids', () {
+      final ids = [
+        for (var i = 0; i < 200; i++) 'inst_${i}abcxyz',
+        'sub_1750000000000_abcdef',
+      ];
+      for (final id in ids) {
+        for (var slot = 0; slot < 2; slot++) {
+          final n = notificationId(id, slot);
+          expect(n, greaterThanOrEqualTo(0));
+          // Android notification ids are signed 32-bit.
+          expect(n, lessThan(2147483647), reason: '$id slot $slot -> $n');
+        }
+      }
+    });
+
+    test('the two slots of one subscription never collide', () {
+      for (var i = 0; i < 50; i++) {
+        final id = 'sub_$i';
+        expect(notificationId(id, 0), isNot(notificationId(id, 1)));
+      }
+    });
+
+    test('distinct subscription ids rarely collide', () {
+      final seen = <int, String>{};
+      var collisions = 0;
+      for (var i = 0; i < 5000; i++) {
+        final id = 'sub_${i}_x';
+        final n = notificationId(id, 0);
+        if (seen.containsKey(n) && seen[n] != id) collisions++;
+        seen[n] = id;
+      }
+      // 200M buckets for 5k ids: expected collisions well under 1%.
+      expect(collisions, lessThan(5));
+    });
+  });
+
   group('app-open ad policy', () {
     final noon = DateTime(2026, 11, 12, 12);
 

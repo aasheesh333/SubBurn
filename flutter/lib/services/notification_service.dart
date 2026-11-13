@@ -18,6 +18,12 @@ enum ReminderStatus {
   /// OS permission not granted, or revoked in system settings.
   permissionDenied,
 
+  /// App notifications are allowed, but this app's own channel was switched
+  /// off (or silenced to zero importance) in system settings. Android reports
+  /// the app-level permission as granted in that state, so without this the UI
+  /// claimed "ACTIVE" while nothing could ever be delivered.
+  channelBlocked,
+
   /// Ready to schedule.
   ready,
 }
@@ -48,6 +54,9 @@ class NotificationService {
 
   bool _initialized = false;
   bool _permissionGranted = false;
+
+  /// True when the app-level permission is on but our channel is silenced.
+  bool _channelBlocked = false;
   String? lastError;
 
   /// Called with the subscription id when the user taps a reminder.
@@ -59,9 +68,9 @@ class NotificationService {
 
   ReminderStatus get status {
     if (!_initialized) return ReminderStatus.notInitialized;
-    return _permissionGranted
-        ? ReminderStatus.ready
-        : ReminderStatus.permissionDenied;
+    if (!_permissionGranted) return ReminderStatus.permissionDenied;
+    if (_channelBlocked) return ReminderStatus.channelBlocked;
+    return ReminderStatus.ready;
   }
 
   /// Initialises the plugin, retrying if a previous attempt failed.
@@ -182,6 +191,21 @@ class NotificationService {
         final android = _plugin.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
         _permissionGranted = await android?.areNotificationsEnabled() ?? false;
+        _channelBlocked = false;
+        if (_permissionGranted) {
+          // App-level permission being on is not enough: the user can silence
+          // just this app's channel, and Android still reports the app as
+          // enabled. Importance.none means nothing is ever delivered.
+          try {
+            final channels = await android?.getNotificationChannels();
+            final ours = channels?.where((c) => c.id == _channelId);
+            if (ours != null && ours.isNotEmpty) {
+              _channelBlocked = ours.first.importance == Importance.none;
+            }
+          } catch (error) {
+            debugPrint('Channel check failed: $error');
+          }
+        }
       } else if (Platform.isIOS) {
         final ios = _plugin.resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>();
@@ -353,5 +377,28 @@ class NotificationService {
     }
     final base = (hash % 200000000) * 10;
     return base + slot;
+  }
+
+  /// Opens this app's notification settings screen.
+  ///
+  /// The ALLOW button used to re-prompt, which Android silently refuses after
+  /// the user has declined twice — a dead end with no way forward. This is the
+  /// documented escape hatch.
+  Future<bool> openNotificationSettings() async {
+    try {
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (android != null) {
+        // Prompt first: if the user has not permanently declined, this is the
+        // least friction. If they have, Android no-ops and we fall through to
+        // the settings screen, which also lists our channel toggle.
+        final granted = await android.requestNotificationsPermission();
+        if (granted == true) return true;
+        return await android.openAppNotificationSettings() ?? false;
+      }
+    } catch (error) {
+      debugPrint('openNotificationSettings failed: $error');
+    }
+    return false;
   }
 }
