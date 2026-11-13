@@ -184,6 +184,15 @@ int _brand(String category) => switch (category) {
 /// because of it — a store screenshot that lied about the app.
 Future<void> _settle(WidgetTester tester) async {
   await tester.pump();
+  // Decode the brand asset before capturing: Image.asset resolves
+  // asynchronously and a golden captured mid-decode records an empty tile.
+  await tester.runAsync(() async {
+    final context = tester.element(find.byType(MaterialApp));
+    await precacheImage(
+      const AssetImage('assets/brand/app_icon.png'),
+      context,
+    );
+  });
   for (var i = 0; i < 12; i++) {
     await tester.pump(const Duration(milliseconds: 80));
   }

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_links.dart';
 import '../../core/theme/theme_tokens.dart';
+import '../../widgets/logo_mark.dart';
 import '../../widgets/press_scale.dart';
 import '../../widgets/sb_header.dart';
 import '../../widgets/status_badge.dart';
@@ -231,19 +232,8 @@ class _About extends StatelessWidget {
       children: [
         Row(
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(SbRadius.button),
-                gradient: context.sb.cta,
-              ),
-              child: Icon(
-                Icons.local_fire_department_rounded,
-                size: 26,
-                color: context.sb.onAccent,
-              ),
-            ),
+            // Same 48 px slot as the old flame tile, now the launcher artwork.
+            const SbLogoMark(size: 48),
             const SizedBox(width: SbSpace.x3),
             Expanded(
               child: Column(

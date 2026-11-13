@@ -62,6 +62,7 @@ flutter:
   assets:
     - assets/json/
     - assets/google_fonts/
+    - assets/brand/
   fonts:
     - family: PlusJakartaSans
       fonts:

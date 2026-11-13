@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/theme_tokens.dart';
+import 'logo_mark.dart';
 import '../widgets/press_scale.dart';
 
 /// The one header used by every screen.
@@ -63,19 +64,8 @@ class SbHeader extends StatelessWidget {
             const SizedBox(width: SbSpace.x2),
           ],
           if (showLogo) ...[
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(SbRadius.tile),
-                gradient: context.sb.cta,
-              ),
-              child: Icon(
-                Icons.local_fire_department_rounded,
-                size: 18,
-                color: context.sb.onAccent,
-              ),
-            ),
+            // Same 32 px slot as the old flame chip, now the launcher artwork.
+            const SbLogoMark(size: 32),
             const SizedBox(width: SbSpace.x2),
             // Flexible, not fixed: at 130 % text the wordmark plus the trailing
             // chip is wider than a 320 dp header.

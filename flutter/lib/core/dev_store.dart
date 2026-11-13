@@ -29,17 +29,20 @@ abstract final class DevStore {
     SiblingApp(
       name: 'DebtPayoff Pro',
       tagline: 'Debt tracker — the money sibling of SubBurn.',
-      playUrl: 'https://play.google.com/store/apps/details?id=com.dhanuk.debtbro',
+      playUrl:
+          'https://play.google.com/store/apps/details?id=com.dhanuk.debtbro',
     ),
     SiblingApp(
       name: 'GovPhoto',
       tagline: 'Exam photo resizer, rated 5.0 on Play.',
-      playUrl: 'https://play.google.com/store/apps/details?id=com.dhanuk.govphoto',
+      playUrl:
+          'https://play.google.com/store/apps/details?id=com.dhanuk.govphoto',
     ),
     SiblingApp(
       name: 'Lofiga',
       tagline: 'Lofi + slowed reverb streams, rated 5.0 on Play.',
-      playUrl: 'https://play.google.com/store/apps/details?id=com.dhanuk.lofiga',
+      playUrl:
+          'https://play.google.com/store/apps/details?id=com.dhanuk.lofiga',
     ),
   ];
 
