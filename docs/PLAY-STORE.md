@@ -93,7 +93,10 @@ Light and dark, following the device. Made for people with too many tabs.
 | Phone screenshots | ≥ 2, 16:9 or 9:16, 320–3840 px | ready: `flutter/test/goldens/*.png` |
 | Tablet screenshots | optional | — |
 
-Screenshots available: `01-dashboard`, `02-quick-add`, `03-studio`, `04-detail`,
+Screenshots: upload-ready 1080×1920 frames in
+`store/assets/screenshots-1080x1920/`; free Figma templates and the editable
+asset bundle are documented in `store/SCREENSHOTS.md`. Raw captures:
+`01-dashboard`, `02-quick-add`, `03-studio`, `04-detail`,
 `05-renewals`, `06-controls`, `08-first-run`.
 
 ---
