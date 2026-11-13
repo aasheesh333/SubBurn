@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:subburn/core/dev_store.dart';
 import 'package:subburn/core/theme/app_theme.dart';
 import 'package:subburn/core/utils/formatters.dart';
 import 'package:subburn/core/theme/theme_tokens.dart';
@@ -17,6 +18,7 @@ import 'package:subburn/data/models/preset_tool.dart';
 import 'package:subburn/data/models/subscription.dart';
 import 'package:subburn/data/models/usage_guilt.dart';
 import 'package:subburn/data/repositories/subscription_repository.dart';
+import 'package:subburn/features/controls/controls_screen.dart';
 import 'package:subburn/features/dashboard/burn_dashboard_screen.dart';
 import 'package:subburn/features/detail/sub_detail_screen.dart';
 import 'package:subburn/features/renewals/renewals_screen.dart';
@@ -752,6 +754,24 @@ void main() {
       await _settle(tester);
       expect(find.text('Subscriptions'), findsOneWidget);
       expect(find.text('ChatGPT Plus'), findsWidgets);
+    });
+
+    testWidgets('controls features exactly three sibling apps with share',
+        (tester) async {
+      tester.view.physicalSize = const Size(393 * 2, 852 * 2);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_app(const ControlsScreen(), repo));
+      await _settle(tester);
+
+      for (final app in DevStore.featured) {
+        expect(find.text(app.name), findsOneWidget);
+        expect(find.byTooltip('Share ${app.name}'), findsOneWidget);
+      }
+      expect(find.text('All apps by Dhanuk Softwares'), findsOneWidget);
+      // Three featured rows — not the full eight-app catalogue.
+      expect(find.byIcon(Icons.ios_share_rounded), findsNWidgets(3));
     });
 
     testWidgets('a renewal card opens its detail screen', (tester) async {

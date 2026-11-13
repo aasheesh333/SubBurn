@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_links.dart';
+import '../../core/dev_store.dart';
 import '../../core/motion.dart';
 import '../../core/theme/theme_tokens.dart';
 import '../../data/models/currency.dart';
@@ -271,6 +273,52 @@ class _ControlsScreenState extends ConsumerState<ControlsScreen> {
                     child: const Text('WATCH'),
                   ),
                 ),
+            ],
+          ),
+          const SizedBox(height: SbSpace.x3),
+          _Group(
+            title: 'More from ${DevStore.publisher}',
+            children: [
+              for (final app in DevStore.featured)
+                _SettingRow(
+                  title: app.name,
+                  subtitle: app.tagline,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Semantics(
+                        button: true,
+                        label: 'Share ${app.name}',
+                        child: IconButton(
+                          tooltip: 'Share ${app.name}',
+                          onPressed: () => SharePlus.instance.share(
+                            ShareParams(
+                              text: DevStore.shareText(app),
+                              subject: app.name,
+                            ),
+                          ),
+                          icon: Icon(
+                            Icons.ios_share_rounded,
+                            size: 16,
+                            color: context.sb.textSecondary,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _openSibling(context, app.playUrl),
+                        child: const Text('VIEW'),
+                      ),
+                    ],
+                  ),
+                ),
+              _SettingRow(
+                title: 'All apps by ${DevStore.publisher}',
+                subtitle: 'The full catalogue on the Play Store.',
+                child: TextButton(
+                  onPressed: () => _openSibling(context, DevStore.storeUrl),
+                  child: const Text('OPEN'),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: SbSpace.x3),
@@ -615,4 +663,26 @@ Future<void> _watchRewarded(
         ),
       ),
     );
+}
+
+/// Opens a Play Store page. Failures get a snackbar instead of a silent
+/// dead tap — the same contract as the cancel-link launcher.
+Future<void> _openSibling(BuildContext context, String url) async {
+  final messenger = ScaffoldMessenger.of(context);
+  var launched = false;
+  try {
+    launched = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.platformDefault,
+    );
+  } catch (error) {
+    debugPrint('Play Store link failed: $error');
+  }
+  if (!launched && context.mounted) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(content: Text('Could not open the Play Store page.')),
+      );
+  }
 }

@@ -1,6 +1,7 @@
 name: Build
 
-# Signed release APK + AAB on every push, both downloadable as artifacts.
+# Signed release UNIVERSAL APK (all ABIs, one file) + AAB on every push, both
+# downloadable as artifacts.
 # Tests run separately in `.github/workflows/ci.yml` so this stays fast.
 on:
   push:
@@ -65,8 +66,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Universal (all ABIs in one file), as requested for the release
+          # artifacts — a single APK that installs on any device.
           flutter build apk --release \
-            --target-platform android-arm64 \
             --build-number "$GITHUB_RUN_NUMBER"
 
       - name: Collect
@@ -75,7 +77,7 @@ jobs:
           set -euo pipefail
           mkdir -p out
           cp flutter/build/app/outputs/flutter-apk/app-release.apk \
-             "out/SubBurn-${GITHUB_SHA:0:7}-arm64.apk"
+             "out/SubBurn-${GITHUB_SHA:0:7}-universal.apk"
           ls -lh out
 
       - uses: actions/upload-artifact@v4
